@@ -1,26 +1,38 @@
 #pragma once
+#include <cstdint>
 
 struct DMIHeader;
+struct MemoryDeviceV1;
+struct MemoryDeviceV2;
+struct MemoryDeviceV3;
+struct MemoryDeviceV4;
 
+/// @brief Class-wrapper under raw memory structures
+/// Class instance does not "own" this memory, it just provide more convenient interface
+/// and useful types and enumerations
 class MemoryDeviceParser {
 public:
 
+    // @brief special values for ErrorHandle: uint16 - offset 0x06
     enum ErrorHandleValue : uint16_t {
         ErrorHandleNotProvided = 0xFFFE,
         ErrorHandleNoError = 0xFFFF
     };
 
+    // @brief special values for TotalWidth & DataWidth uint16 - offset 0x08, 0x0A
     enum DataWidthValue : uint16_t {
         DataWidthUnknown1 = 0x0,
         DataWidthUnknown2 = 0xFFFF
     };
 
+    // @brief special values for DeviceSize: uint16 - offset 0x0C
     enum DeviceSizeValue : uint16_t
     {
         DeviceSizeNoModuleInstalled = 0x0,
         DeviceSizeUnknown = 0xFFFF
     };
 
+    // @brief special values for FormFactor: uint8 - offset 0x0E
     enum FormFactorValue : uint8_t {
         FormFactorOutOfSpec = 0x00,
         FormFactorOther = 0x01,
@@ -40,12 +52,14 @@ public:
         FBDIMM = 0x0F,
     };
 
+    // @brief special values for DeviceSet: uint8 - offset 0x0F
     enum DeviceSetValue : uint8_t
     {
         DeviceSetNone = 0x0,
         DeviceSetUnknown = 0xFF
     };
 
+    // @brief special values for DeviceType: uint8 - offset 0x12
     enum DeviceTypeValue : uint8_t
     {
         DeviceTypeOutOfSpec = 0x00,
@@ -81,6 +95,7 @@ public:
         LPDDR4 = 0x1E,
     };
 
+    // @brief Bit-mask values for DeviceProperties: uint16 - offset 0x13
     enum DeviceProperties : uint16_t
     {
         DevicePropertiesOutOfSpec = 0,
@@ -101,37 +116,64 @@ public:
         LRDIMM = 0x1 << 14
     };
 
+    /// @brief Parse the header, recognize how much information do we have
+    /// in MemoryDevice SMBIOS entry
     MemoryDeviceParser(const DMIHeader& header);
 
+    /// @brief String representation
     const char* get_type() {
         return "Memory Device";
     }
 
-    const MemoryDeviceV1* get_memory_device_v1() const { return memory_device_v1_; }
-    const MemoryDeviceV2* get_memory_device_v2() const { return memory_device_v2_; }
-    const MemoryDeviceV3* get_memory_device_v3() const { return memory_device_v3_; }
-    const MemoryDeviceV4* get_memory_device_v4() const { return memory_device_v4_; }
-
+    /// @brief 0x06 offset
+    /// See ErrorHandleValue enum for special values
     uint16_t get_error_handle() const;
 
+    /// @brief 0x08 offset
+    /// See DataWidthValue enum for special values
     uint16_t get_total_width() const;
 
+    /// @brief 0x0A offset
+    /// See DataWidthValue enum for special values
     uint16_t get_data_width() const;
 
+    /// @brief 0x0C offset
+    /// See DeviceSizeValue enum for special values
     uint16_t get_device_size() const;
 
+    /// @brief 0x0E offset
+    /// See FormFactorValue enum for special values
     uint8_t get_form_factor() const;
 
+    /// @brief 0x0F offset
+    /// See DeviceSetValue enum for special values
     uint8_t get_device_set() const;
 
+    /// @brief 0x10 offset
     uint8_t get_device_locator() const;
 
+    /// @brief 0x11 offset
     uint8_t get_bank_locator() const;
 
+    /// @brief 0x12 offset
+    /// See DeviceTypeValue enum for special values
     uint8_t get_device_type() const;
 
+    /// @brief 0x13 offset
+    /// See DeviceProperties enum for special values
     uint16_t get_device_detail() const;
 
+    /// @brief Represent earliest versions of SMBIOS MemoryDevice (2.1+)
+    const MemoryDeviceV1* get_memory_device_v1() const { return memory_device_v1_; }
+
+    /// @brief Represent 2.3+ versions of SMBIOS MemoryDevice
+    const MemoryDeviceV2* get_memory_device_v2() const { return memory_device_v2_; }
+
+    /// @brief Represent 2.6+ versions of SMBIOS MemoryDevice
+    const MemoryDeviceV3* get_memory_device_v3() const { return memory_device_v3_; }
+
+    /// @brief Represent 2.7+ versions of SMBIOS MemoryDevice
+    const MemoryDeviceV4* get_memory_device_v4() const { return memory_device_v4_; }
 
 private:
     const DMIHeader& header_;

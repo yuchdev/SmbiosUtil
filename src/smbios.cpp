@@ -9,6 +9,10 @@
 
 SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
 {
+    static_assert(sizeof(uint8_t) == 1, "Very strange uint8_t size");
+    static_assert(sizeof(uint16_t) == 2, "Very strange uint16_t size");
+    static_assert(sizeof(uint32_t) == 4, "Very strange uint32_t size");
+
     read_smbios_table();
 }
 

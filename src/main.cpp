@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 #include <smbios_utility/smbios.h>
-#include <smbios_utility/memory_device.h>
+#include <smbios_utility/memory_device_parser.h>
 
 using namespace std;
 
@@ -10,17 +10,27 @@ int main(){
     SMBios bios;
     std::cout << "DMI version: " << bios.get_smbios_version() << '\n';
 
-    for (DMIHeader& header : bios) {
+    for (const DMIHeader& header : bios) {
 
         if (header.type == SMBios::MemoryDevice) {
 
             if (header.length < 15)
                 continue;
 
-            MemoryDeviceV1* memory_device_structure = reinterpret_cast<MemoryDeviceV1*>(header.data);
-            uint8_t memory_device_type = memory_device_structure->device_type;
+            MemoryDeviceParser memory_device_structure(header);
 
-            std::cout << "Memory device type = " << static_cast<unsigned short>(memory_device_type) << '\n';
+            if (MemoryDeviceParser::DeviceTypeUnknown == memory_device_structure.get_device_type()) {
+                std::cout << "Memory device type unknown\n";
+            }
+
+            if (MemoryDeviceParser::DRAM == memory_device_structure.get_device_type()) {
+                std::cout << "Memory device type = DRAM\n";
+            }
+
+            if (MemoryDeviceParser::DDR3 == memory_device_structure.get_device_type()) {
+                std::cout << "Memory device type = DDR3\n";
+            }
+
         }
     }
 

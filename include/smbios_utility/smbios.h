@@ -21,7 +21,11 @@ struct DMIHeader
     uint8_t *data;
 };
 
-
+/// @brief Class owns system-independent SMBIOS table 
+/// which however has been read using system-dependent API
+/// It also have a cache like table structures count and headers
+/// (it's obvious information could not be updated while computer is active)
+/// Class support bidirectional iterators to be used in STL algorithms and cycles
 class SMBios
 {
 public:
@@ -65,24 +69,26 @@ public:
         friend class SMBios;
         enum EndTag { end };
 
-        iterator(std::vector<DMIHeader>& headers) :headers_list_(headers) {
-            pointed_header_ = headers_list_.begin();
+        iterator() {}
+
+        iterator(std::vector<DMIHeader>& headers) :headers_list_(&headers) {
+            pointed_header_ = headers_list_->begin();
         };
 
-        iterator(std::vector<DMIHeader>& headers, EndTag) :headers_list_(headers) {
-            pointed_header_ = headers_list_.end();
+        iterator(std::vector<DMIHeader>& headers, EndTag) :headers_list_(&headers) {
+            pointed_header_ = headers_list_->end();
         };
 
-        DMIHeader& operator*() { 
+        const DMIHeader& operator*() {
             return *pointed_header_; 
         };
 
-        iterator& operator++() {
+        const iterator& operator++() {
             ++pointed_header_;
             return *this;
         }
 
-        iterator& operator--() {
+        const iterator& operator--() {
             --pointed_header_;
             return *this;
         }
@@ -96,7 +102,7 @@ public:
         }
 
     private:
-        std::vector<DMIHeader>& headers_list_;
+        std::vector<DMIHeader>* headers_list_ = nullptr;
         std::vector<DMIHeader>::iterator pointed_header_;
     };
 
@@ -132,6 +138,6 @@ private:
     /// Cached SMBIOS structures count
     size_t structures_count_ = 0;
 
-    /// 
+    /// Cached SMBIOS headers
     std::vector<DMIHeader> headers_list_;
 };
