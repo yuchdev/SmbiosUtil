@@ -1,7 +1,7 @@
 #if defined(_WIN32) || defined(_WIN64)
 #include <smbios_utility/win_bios.h>
 #else
-// #include posix/macos
+#include <smbios_utility/unix_bios.h>
 #endif
 
 #include <sstream>

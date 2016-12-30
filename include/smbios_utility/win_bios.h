@@ -2,6 +2,8 @@
 #include <vector>
 #include <cstdint>
 
+#if defined(_WIN32) || defined(_WIN64)
+
 /// @brief SMBIOS header+table beginning
 struct RawSMBIOSData {
     uint8_t calling_method;
@@ -47,3 +49,5 @@ private:
     /// Apply to the table with header
     RawSMBIOSData* smbios_data_ = nullptr;
 };
+
+#endif // defined(_WIN32) || defined(_WIN64)

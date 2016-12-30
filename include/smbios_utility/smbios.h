@@ -15,7 +15,7 @@ struct DMIHeader
     // Specifies the length of the formatted area of the structure, starting at the Type field
     uint8_t length;
 
-    // Specifies the structure’s handle, a unique 16-bit number in the range 0 to 0FFFEh
+    // Specifies the structure's handle, a unique 16-bit number in the range 0 to 0FFFEh
     // If the system configuration changes, a previously assigned handle might no longer exist!
     uint16_t handle;
     uint8_t *data;

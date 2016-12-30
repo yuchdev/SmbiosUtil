@@ -1,4 +1,35 @@
 cmake_minimum_required(VERSION 3.0)
 project(smbios_utility CXX)
 
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    message("UNIX congiguration, Clang")
+    set(CMAKE_CXX_FLAGS "-std=gnu++11 -stdlib=libc++")
+    set(CMAKE_EXE_LINKER_FLAGS "-std=gnu++11")
+elseif(${CMAKE_COMPILER_IS_GNUCXX})
+    message("UNIX congiguration, GCC")
+    # NOTE! gnu++1y is GCC 4.9 compiler option, in 5 it is deprectaed
+    set(CMAKE_CXX_FLAGS "-std=c++11 -std=gnu++1y -pthread -fPIC")
+    set(CMAKE_EXE_LINKER_FLAGS "-std=c++11 -std=gnu++1y -pthread")
+elseif(${WIN32})
+    message("Windows configuraion")
+    set(CMAKE_CXX_FLAGS "/EHsc")
+    set(MY_BOOST_DIR ${WINDOWS_BOOST_DIR})
+
+    # define WIN32 macro version
+    macro(get_WIN32_WINNT version)
+        if (WIN32 AND CMAKE_SYSTEM_VERSION)
+            set(ver ${CMAKE_SYSTEM_VERSION})
+            string(REPLACE "." "" ver ${ver})
+            string(REGEX REPLACE "([0-9])" "0\\1" ver ${ver})
+
+            set(${version} "0x${ver}")
+        endif()
+    endmacro()
+
+    get_WIN32_WINNT(ver)
+    add_definitions(-D_WIN32_WINNT=${ver})
+    add_definitions(-D_SCL_SECURE_NO_WARNINGS)
+
+endif()
+
 add_subdirectory(src)

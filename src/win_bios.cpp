@@ -1,5 +1,7 @@
 #include <smbios_utility/win_bios.h>
 
+#if defined(_WIN32) || defined(_WIN64)
+
 #include <cassert>
 #include <Windows.h>
 
@@ -50,3 +52,5 @@ void SMBiosImpl::compose_native_smbios_table()
     GetSystemFirmwareTable('RSMB', 0, &table_buffer_[0], smbios_table_size);
     smbios_data_ = reinterpret_cast<RawSMBIOSData*>(&table_buffer_[0]);
 }
+
+#endif // defined(_WIN32) || defined(_WIN64)
