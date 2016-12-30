@@ -9,6 +9,7 @@ int main(){
 
     SMBios bios;
     std::cout << "DMI version: " << bios.get_smbios_version() << '\n';
+    return 0;
 
     for (const DMIHeader& header : bios) {
 
