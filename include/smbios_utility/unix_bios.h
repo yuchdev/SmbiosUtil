@@ -43,6 +43,21 @@ public:
 
 private:
 
+    /// Looking for SMBIOS entry point in sysfs
+    bool sysfs_table_exists() const;
+
+    /// Looking for SMBIOS entry point in EFI, reading table from /dev/mem
+    bool efi_table_exists() const;
+
+    /// Looking for SMBIOS entry point directly in /dev/mem
+    bool scan_devmem_table() const;
+
+    /// Found SMBIOS entry point in sysfs
+    void reading_from_sysfs();
+
+    /// Found SMBIOS entry point in EFI, reading table from /dev/mem
+    void reading_from_efi();
+
     /// Implementation
     void compose_native_smbios_table();
 
