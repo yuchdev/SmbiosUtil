@@ -4,7 +4,7 @@
 #include <vector>
 
 
-#if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) or defined(__OpenBSD__) || defined(__sun)
+#if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
 
 /// @brief SMBIOS header+table beginning
 struct RawSMBIOSData {

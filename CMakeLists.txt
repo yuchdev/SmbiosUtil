@@ -14,20 +14,6 @@ elseif(${WIN32})
     message("Windows configuraion")
     set(CMAKE_CXX_FLAGS "/EHsc")
     set(MY_BOOST_DIR ${WINDOWS_BOOST_DIR})
-
-    # define WIN32 macro version
-    macro(get_WIN32_WINNT version)
-        if (WIN32 AND CMAKE_SYSTEM_VERSION)
-            set(ver ${CMAKE_SYSTEM_VERSION})
-            string(REPLACE "." "" ver ${ver})
-            string(REGEX REPLACE "([0-9])" "0\\1" ver ${ver})
-
-            set(${version} "0x${ver}")
-        endif()
-    endmacro()
-
-    get_WIN32_WINNT(ver)
-    add_definitions(-D_WIN32_WINNT=${ver})
     add_definitions(-D_SCL_SECURE_NO_WARNINGS)
 
 endif()
