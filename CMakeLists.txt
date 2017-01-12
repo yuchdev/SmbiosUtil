@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.0)
 project(smbios_utility CXX)
 
+set(BOOST_MIN_VERSION "1.61.0")
+set(Boost_ADDITIONAL_VERSIONS "1.61.0" "1.61")
+set(Boost_USE_STATIC_LIBS ON)
+set(BOOST_ROOT ${MY_BOOST_DIR})
+
+find_package(Boost ${BOOST_MIN_VERSION} REQUIRED)
+
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     message("UNIX congiguration, Clang")
     set(CMAKE_CXX_FLAGS "-std=gnu++11 -stdlib=libc++")
