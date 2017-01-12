@@ -11,8 +11,7 @@
 #include <iterator>
 
 namespace boost_io = boost::iostreams;
-
-#if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) or defined(__OpenBSD__) || defined(__sun)
+#if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
 
 SMBiosImpl::SMBiosImpl()
 {
@@ -205,4 +204,4 @@ void SMBiosImpl::reading_from_sysfs()
     }
 }
 
-#endif //defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) or defined(__OpenBSD__) || defined(__sun)
+#endif //defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
