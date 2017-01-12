@@ -1,3 +1,10 @@
 #pragma once
 
-class PhysicalMemory{};
+class PhysicalMemory{
+public:
+
+    PhysicalMemory();
+
+private:
+
+};

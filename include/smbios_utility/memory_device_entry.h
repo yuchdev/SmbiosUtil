@@ -3,6 +3,8 @@
 
 #include <cstdint>
 
+struct DMIHeader;
+
 // should be aligned to be mapped to physical memory
 #pragma pack(push, 1)
 
@@ -12,7 +14,7 @@
 // 'Memory Device' chapter
 
 /// @brief SMBIOS MemoryDevice entry Ver 2.1+
-struct MemoryDeviceV1 {
+struct MemoryDeviceV21 {
     uint32_t header;
     uint16_t array_handle;
     uint16_t array_error_handle;
@@ -28,12 +30,12 @@ struct MemoryDeviceV1 {
 };
 
 /// @brief SMBIOS MemoryDevice entry Ver 2.3+
-struct MemoryDeviceV2 : public MemoryDeviceV1 {
+struct MemoryDeviceV23 : public MemoryDeviceV21 {
     uint16_t device_speed;
 };
 
 /// @brief SMBIOS MemoryDevice entry Ver 2.6+
-struct MemoryDeviceV3 : public MemoryDeviceV2 {
+struct MemoryDeviceV26 : public MemoryDeviceV23 {
     uint8_t manufacturer;
     uint8_t serial_number;
     uint8_t asset_tag;
@@ -41,7 +43,7 @@ struct MemoryDeviceV3 : public MemoryDeviceV2 {
 };
 
 /// @brief SMBIOS MemoryDevice entry Ver 2.7+
-struct MemoryDeviceV4 : public MemoryDeviceV3 {
+struct MemoryDeviceV27 : public MemoryDeviceV26 {
     uint8_t device_rank;
     uint32_t extended_size;
     uint16_t memory_clock_speed;
@@ -208,21 +210,21 @@ public:
     uint16_t get_device_detail() const;
 
     /// @brief Represent earliest versions of SMBIOS MemoryDevice (2.1+)
-    const MemoryDeviceV1* get_memory_device_v1() const { return memory_device_v1_; }
+    const MemoryDeviceV21* get_memory_device_v1() const { return memory_device_v1_; }
 
     /// @brief Represent 2.3+ versions of SMBIOS MemoryDevice
-    const MemoryDeviceV2* get_memory_device_v2() const { return memory_device_v2_; }
+    const MemoryDeviceV23* get_memory_device_v2() const { return memory_device_v2_; }
 
     /// @brief Represent 2.6+ versions of SMBIOS MemoryDevice
-    const MemoryDeviceV3* get_memory_device_v3() const { return memory_device_v3_; }
+    const MemoryDeviceV26* get_memory_device_v3() const { return memory_device_v3_; }
 
     /// @brief Represent 2.7+ versions of SMBIOS MemoryDevice
-    const MemoryDeviceV4* get_memory_device_v4() const { return memory_device_v4_; }
+    const MemoryDeviceV27* get_memory_device_v4() const { return memory_device_v4_; }
 
 private:
     const DMIHeader& header_;
-    const MemoryDeviceV1* memory_device_v1_ = nullptr;
-    const MemoryDeviceV2* memory_device_v2_ = nullptr;
-    const MemoryDeviceV3* memory_device_v3_ = nullptr;
-    const MemoryDeviceV4* memory_device_v4_ = nullptr;
+    const MemoryDeviceV21* memory_device_v1_ = nullptr;
+    const MemoryDeviceV23* memory_device_v2_ = nullptr;
+    const MemoryDeviceV26* memory_device_v3_ = nullptr;
+    const MemoryDeviceV27* memory_device_v4_ = nullptr;
 };
