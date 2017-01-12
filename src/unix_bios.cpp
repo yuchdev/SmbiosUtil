@@ -159,9 +159,6 @@ bool SMBiosImpl::scan_devmem_table()
 
     std::cout << "checksum = " << checksum << std::endl;
 
-    for(size_t i = 0 ; i < 100 ; ++i){
-        std::cout << "table[" << i << "]" << " = " << static_cast<unsigned short>(table_buffer_[i]) << '\n';
-    }
 
     return true;
 }
