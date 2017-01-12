@@ -9,9 +9,10 @@ int main(){
 
     SMBios bios;
     std::cout << "DMI version: " << bios.get_smbios_version() << '\n';
-    return 0;
 
     for (const DMIHeader& header : bios) {
+
+		std::cout << "Header type = " << static_cast<unsigned short>(header.type) << '\n';
 
         if (header.type == SMBios::MemoryDevice) {
 

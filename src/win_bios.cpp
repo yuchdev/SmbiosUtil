@@ -3,6 +3,7 @@
 #if defined(_WIN32) || defined(_WIN64)
 
 #include <cassert>
+#include <iostream>
 #include <Windows.h>
 
 SMBiosImpl::SMBiosImpl()
@@ -51,6 +52,11 @@ void SMBiosImpl::compose_native_smbios_table()
     table_buffer_.resize(smbios_table_size);
     GetSystemFirmwareTable('RSMB', 0, &table_buffer_[0], smbios_table_size);
     smbios_data_ = reinterpret_cast<RawSMBIOSData*>(&table_buffer_[0]);
+
+	for (size_t i = 0; i < 100; ++i) {
+		std::cout << "table[" << i << "]" << " = " << static_cast<unsigned short>(table_buffer_[i]) << '\n';
+	}
+
 }
 
 #endif // defined(_WIN32) || defined(_WIN64)
