@@ -153,14 +153,13 @@ bool SMBiosImpl::scan_devmem_table()
         checksum += devmem_array[i];
         if (memcmp(&devmem_array[i], "_SM_", 4) == 0){
             std::cout << "32-bit SMBIOS header found at i = " << i << std::endl;
-            table_buffer_.assign(devmem_array.begin() + i, devmem_array.begin() + i + length);
+            entry_point_buffer_.assign(devmem_array.begin() + i, devmem_array.begin() + i + length);
         }
     }
 
     std::cout << "checksum = " << checksum << std::endl;
-    smbios_data_ = reinterpret_cast<RawSMBIOSData*>(&table_buffer_[0]);
 
-    for(size_t i = 0 ; i < 20 ; ++i){
+    for(size_t i = 0 ; i < 100 ; ++i){
         std::cout << "table[" << i << "]" << " = " << static_cast<unsigned short>(table_buffer_[i]) << '\n';
     }
 

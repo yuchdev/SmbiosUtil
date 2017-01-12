@@ -6,6 +6,38 @@
 
 #if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
 
+// should be aligned to be mapped to the physical memory
+#pragma pack(push, 1)
+
+struct SMBIOSEntryPoint32 {
+    uint8_t entry_point_anchor[4];
+    uint8_t entry_point_checksum;
+    uint8_t entry_point_length;
+    uint8_t major_version;
+    uint8_t minor_version;
+    uint16_t max_structure_size;
+    uint8_t entry_point_revision;
+    uint8_t formatted_area[5];
+    uint8_t intermediate_anchor[5];
+    uint8_t intermediate_checksum;
+    uint16_t structure_table_length;
+    uint32_t structure_table_address[1];
+    uint16_t smbios_structures_number;
+    uint8_t smbios_bcd_revision;
+};
+
+struct SMBIOSEntryPoint64 {
+    uint8_t entry_point_anchor[5];
+    uint8_t entry_point_checksum;
+    uint8_t entry_point_length;
+    uint8_t major_version;
+    uint8_t minor_version;
+    uint8_t smbios_docrev;
+    uint8_t reserved;
+    uint32_t max_structure_size;
+    uint64_t structure_table_address[1];
+};
+
 /// @brief SMBIOS header+table beginning
 struct RawSMBIOSData {
     uint8_t calling_method;
@@ -15,6 +47,7 @@ struct RawSMBIOSData {
     uint32_t length;
     uint8_t smbios_table_data[1];
 };
+#pragma pack(pop)
 
 /// @brief Class that owns memory allocated for SMBIOS table, offsets for table beginning
 /// (without header) and table size. It works under Linux, and has since been reported to work
@@ -63,6 +96,9 @@ private:
 
     /// Implementation
     void compose_native_smbios_table();
+
+    /// Save SMBIOS entry point here
+    std::vector<uint8_t> entry_point_buffer_;
 
     /// Save table with header here
     std::vector<uint8_t> table_buffer_;
