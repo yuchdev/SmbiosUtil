@@ -14,19 +14,19 @@ MemoryDeviceParser::MemoryDeviceParser(const DMIHeader& header) : header_(header
     }
 
     if (header.length >= 0x15) {
-        memory_device_v1_ = reinterpret_cast<MemoryDeviceV1*>(header.data);
+        memory_device_v1_ = reinterpret_cast<MemoryDeviceV21*>(header.data);
     }
 
     if (header.length >= 0x17) {
-        memory_device_v2_ = reinterpret_cast<MemoryDeviceV2*>(header.data);
+        memory_device_v2_ = reinterpret_cast<MemoryDeviceV23*>(header.data);
     }
 
     if (header.length >= 0x1B) {
-        memory_device_v3_ = reinterpret_cast<MemoryDeviceV3*>(header.data);
+        memory_device_v3_ = reinterpret_cast<MemoryDeviceV26*>(header.data);
     }
 
     if (header.length >= 0x1C) {
-        memory_device_v4_ = reinterpret_cast<MemoryDeviceV4*>(header.data);
+        memory_device_v4_ = reinterpret_cast<MemoryDeviceV27*>(header.data);
     }
 
 }

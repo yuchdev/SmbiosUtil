@@ -1,4 +1,5 @@
 #include <smbios_utility/unix_bios.h>
+#include <smbios_utility/physical_memory.h>
 
 #include <boost/iostreams/device/mapped_file.hpp>
 
@@ -114,37 +115,8 @@ bool SMBiosImpl::scan_devmem_table()
     size_t base = 0xF0000;
     size_t length = 0x10000;
 
-#ifdef _SC_PAGESIZE
-    size_t mmoffset = base % sysconf(_SC_PAGESIZE);
-#else
-    size_t mmoffset = base % getpagesize();
-#endif /* _SC_PAGESIZE */
-
-    boost_io::mapped_file_params params = {};
-    params.path = "/dev/mem";
-    params.flags = boost_io::mapped_file::mapmode::readonly;
-    params.length = length;
-    params.offset = base - mmoffset;
-    params.hint = nullptr;
-
-    std::cout << "Mapping, base = " << base << " mmoffset = " << mmoffset << " length = " << length << '\n';
-    std::vector<uint8_t> devmem_array;
-    try{
-        boost_io::mapped_file_source file(params);
-
-        if(!file.is_open()){
-            std::cout << "Unable to open /dev/mem\n";
-            return false;
-        }
-
-        devmem_array.assign(file.data(), file.data() + file.size());
-        std::cout << "Mapped file size = " << devmem_array.size() << '\n';
-
-    }
-    catch(const std::exception& e){
-        std::cout << "Exception: " << e.what();
-        return false;
-    }
+    // TODO: call physical memory
+    //std::vector<uint8_t> devmem_array = 
 
     // perform scanning here
     unsigned long checksum = 0;
