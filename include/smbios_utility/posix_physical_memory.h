@@ -14,11 +14,11 @@ public:
 
     NativePhysicalMemory();
 
-    NativePhysicalMemory(void* base, size_t length);
+    NativePhysicalMemory(uint8_t* base, size_t length);
 
     ~NativePhysicalMemory();
 
-    void map_physical_memory(void* base, size_t length);
+    void map_physical_memory(uint8_t* base, size_t length);
 
     bool is_mapped() const;
 

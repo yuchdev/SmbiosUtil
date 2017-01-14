@@ -11,11 +11,11 @@ public:
 
     NativePhysicalMemory();
 
-    NativePhysicalMemory(void* base, size_t length);
+    NativePhysicalMemory(uint8_t* base, size_t length);
 
     ~NativePhysicalMemory();
 
-    void map_physical_memory(void* base, size_t length);
+    void map_physical_memory(uint8_t* base, size_t length);
 
     bool is_mapped() const;
 
@@ -27,5 +27,7 @@ private:
 
     bool is_ntdll_compatible() const;
 
-    std::unique_ptr<WinHandlePtr, WinHandlePtr::Deleter> physical_memory_device_;
+    static HANDLE get_physical_memory_handle();
+
+    std::unique_ptr<WinHandlePtr> physical_memory_device_;
 };

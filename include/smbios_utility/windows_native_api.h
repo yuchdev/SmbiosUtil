@@ -85,19 +85,20 @@ NTSTATUS (__stdcall *NtMapViewOfSection)(IN HANDLE  SectionHandle,
 
 class WinHandlePtr {
 public:
-    WinHandlePtr(std::nullptr_t = nullptr) : value_(nullptr) {}
+    WinHandlePtr() : value_() {}
     
     WinHandlePtr(HANDLE value) : value_(value == INVALID_HANDLE_VALUE ? nullptr : value) {}
     
-    const WinHandlePtr& operator=(HANDLE value) { 
+    void set_handle(HANDLE value) { 
         value_ = (value == INVALID_HANDLE_VALUE ? nullptr : value); 
-        return (*this);
     }
 
     ~WinHandlePtr()
     {
         ::CloseHandle(value_);
     }
+
+    HANDLE handle() { return value_; }
 
     explicit operator bool() const { return value_ != nullptr; }
     operator HANDLE() const { return value_; }
@@ -110,7 +111,7 @@ public:
         void operator()(WinHandlePtr handle) const { ::CloseHandle(handle); }
     };
 private:
-    HANDLE value_;
+    HANDLE value_ = nullptr;
 };
 
 inline bool operator ==(HANDLE l, WinHandlePtr r) { return WinHandlePtr(l) == r; }
