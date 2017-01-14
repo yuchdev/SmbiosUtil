@@ -1,8 +1,11 @@
 #pragma once
 #include <vector>
 #include <cstdint>
+#include <memory>
 
 #if defined(_WIN32) || defined(_WIN64)
+
+class NativeSystemInformation;
 
 /// @brief SMBIOS header+table beginning
 struct RawSMBIOSData {
@@ -22,6 +25,9 @@ public:
 
     /// @brief Read the SMBIOS table using GetSystemFirmwareTable() 
     SMBiosImpl();
+
+    /// @brief Make compiler happy
+    ~SMBiosImpl();
 
     /// @brief Cast allocated memory to SMBIOS data (header and raw data)
     RawSMBIOSData* get_formatted_smbios_table() const;
@@ -45,6 +51,8 @@ private:
 
     /// Save table with header here
     std::vector<uint8_t> table_buffer_;
+
+    std::unique_ptr<NativeSystemInformation> native_system_information_;
 
     /// Apply to the table with header
     RawSMBIOSData* smbios_data_ = nullptr;

@@ -1,6 +1,5 @@
-#include <smbios_utility/memory_device_parser.h>
+#include <smbios_utility/memory_device_entry.h>
 #include <smbios_utility/smbios.h>
-#include <smbios_utility/memory_device.h>
 
 #include <sstream>
 

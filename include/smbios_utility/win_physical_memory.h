@@ -1,9 +1,9 @@
 #pragma once
 #include <vector>
 #include <cstdint>
+#include <memory>
 
 class WinHandlePtr;
-class WinHandlePtr::Deleter;
 
 class NativePhysicalMemory{
     
@@ -11,11 +11,11 @@ public:
 
     NativePhysicalMemory();
 
-    NativePhysicalMemory(uint8_t* base, size_t length);
+    NativePhysicalMemory(size_t base, size_t length);
 
     ~NativePhysicalMemory();
 
-    void map_physical_memory(uint8_t* base, size_t length);
+    void map_physical_memory(size_t base, size_t length);
 
     bool is_mapped() const;
 
@@ -27,7 +27,11 @@ private:
 
     bool is_ntdll_compatible() const;
 
-    static HANDLE get_physical_memory_handle();
+    void unmap_memory();
 
     std::unique_ptr<WinHandlePtr> physical_memory_device_;
+
+    uint8_t* virtual_address_ = nullptr;
+
+    size_t page_offset_ = 0u;
 };
