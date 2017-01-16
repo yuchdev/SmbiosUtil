@@ -18,6 +18,9 @@ SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
     // no one of system sources was successful, fallback to physical memory device scan
     if (!native_impl_->smbios_read_success()) {
         physical_memory_device_ = std::make_unique<NativePhysicalMemory>();
+        // TODO: read service memory
+        // TODO: scan for headers
+        // TODO: get the table
         //native_impl_->read_from_physical_memory(physical_memory_device_->get_memory_dump());
     }
 
