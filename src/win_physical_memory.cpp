@@ -8,7 +8,7 @@ namespace {
 
 HANDLE get_physical_memory_handle() {
 
-    UNICODE_STRING	memory_device_string;
+    UNICODE_STRING memory_device_string;
     WCHAR physical_memory_device_name[] = L"\\device\\physicalmemory";
 
     HANDLE physical_memory_native_handle = INVALID_HANDLE_VALUE;

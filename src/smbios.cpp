@@ -1,7 +1,9 @@
 #if defined(_WIN32) || defined(_WIN64)
 #include <smbios_utility/win_bios.h>
+#include <smbios_utility/win_physical_memory.h>
 #else
 #include <smbios_utility/unix_bios.h>
+#include <smbios_utility/posix_physical_memory.h>
 #endif
 
 #include <sstream>
@@ -12,6 +14,12 @@ SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
     static_assert(sizeof(uint8_t) == 1, "Very strange uint8_t size");
     static_assert(sizeof(uint16_t) == 2, "Very strange uint16_t size");
     static_assert(sizeof(uint32_t) == 4, "Very strange uint32_t size");
+
+    // no one of system sources was successful, fallback to physical memory device scan
+    if (!native_impl_->smbios_read_success()) {
+        physical_memory_device_ = std::make_unique<NativePhysicalMemory>();
+        //native_impl_->read_from_physical_memory(physical_memory_device_->get_memory_dump());
+    }
 
     read_smbios_table();
 }

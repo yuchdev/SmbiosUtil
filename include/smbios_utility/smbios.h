@@ -4,6 +4,8 @@
 #include <cstdint>
 
 class SMBiosImpl;
+class NativePhysicalMemory;
+
 
 struct DMIHeader
 {
@@ -134,6 +136,9 @@ private:
 
     /// Raw SMBIOS table
     std::unique_ptr<SMBiosImpl> native_impl_;
+
+    /// Physical memory device, initialized if necessary
+    std::unique_ptr<NativePhysicalMemory> physical_memory_device_;
 
     /// Cached SMBIOS structures count
     size_t structures_count_ = 0;

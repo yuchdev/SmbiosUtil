@@ -17,6 +17,11 @@ SMBiosImpl::~SMBiosImpl()
 
 }
 
+bool SMBiosImpl::smbios_read_success() const
+{
+    return !table_buffer_.empty() && smbios_data_;
+}
+
 RawSMBIOSData* SMBiosImpl::get_formatted_smbios_table() const
 {
     assert(table_buffer_.size());

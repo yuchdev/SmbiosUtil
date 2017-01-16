@@ -29,6 +29,9 @@ public:
     /// @brief Make compiler happy
     ~SMBiosImpl();
 
+    /// @brief System-specific SMBIOS source was successful
+    bool smbios_read_success() const;
+
     /// @brief Cast allocated memory to SMBIOS data (header and raw data)
     RawSMBIOSData* get_formatted_smbios_table() const;
 
