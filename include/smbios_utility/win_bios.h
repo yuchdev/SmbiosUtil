@@ -49,6 +49,9 @@ public:
 
 private:
 
+    /// Find ntdll entry point
+    bool is_ntdll_compatible() const;
+
     /// Implementation
     void compose_native_smbios_table();
 
