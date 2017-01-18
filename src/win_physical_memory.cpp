@@ -1,3 +1,4 @@
+#if defined(_WIN32) || defined(_WIN64)
 #include <smbios_utility/win_physical_memory.h>
 #include <smbios_utility/win_native_api.h>
 
@@ -91,7 +92,7 @@ std::vector<uint8_t> NativePhysicalMemory::get_memory_dump(size_t offset, size_t
     return std::move(memory_dump);
 }
 
-void* NativePhysicalMemory::get_memory_address(size_t offset) const
+void* NativePhysicalMemory::get_memory_offset(size_t offset) const
 {
     return virtual_address_ - page_offset_ + offset;
 }
@@ -129,3 +130,4 @@ void NativePhysicalMemory::unmap_memory()
     NtUnmapViewOfSection(INVALID_HANDLE_VALUE, virtual_address_);
     virtual_address_ = nullptr;
 }
+#endif // defined(_WIN32) || defined(_WIN64)

@@ -6,6 +6,7 @@
 #include <smbios_utility/posix_physical_memory.h>
 #endif
 
+#include <iostream>
 #include <sstream>
 #include <smbios_utility/smbios.h>
 
@@ -17,9 +18,16 @@ SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
 
     // no one of system sources was successful, fallback to physical memory device scan
     if (!native_impl_->smbios_read_success()) {
+
+        // TODO: call physical memory
+
+
         physical_memory_device_ = std::make_unique<NativePhysicalMemory>();
         // TODO: read service memory
+        //std::vector<uint8_t> devmem_array =
+
         // TODO: scan for headers
+
         // TODO: get the table
         //native_impl_->read_from_physical_memory(physical_memory_device_->get_memory_dump());
     }
@@ -121,4 +129,22 @@ void SMBios::count_smbios_structures()
     }
 
     structures_count_ = structures_count;
+}
+
+void SMBios::scan_physical_memory(const std::vector<uint8_t> &devmem_array)
+{
+
+    // perform scanning here
+    unsigned long checksum = 0;
+    for (size_t i = 0; i < devmem_array.size(); i+=16) {
+
+        checksum += devmem_array[i];
+        if (memcmp(&devmem_array[i], "_SM_", 4) == 0){
+            std::cout << "32-bit SMBIOS header found at i = " << i << std::endl;
+            entry_point_buffer_.assign(devmem_array.begin() + i, devmem_array.begin() + i + devmem_length);
+        }
+    }
+
+    std::cout << "checksum = " << checksum << std::endl;
+
 }

@@ -19,6 +19,16 @@ SMBiosImpl::SMBiosImpl()
     compose_native_smbios_table();
 }
 
+SMBiosImpl::~SMBiosImpl()
+{
+
+}
+
+bool SMBiosImpl::smbios_read_success() const
+{
+    return !table_buffer_.empty() && smbios_data_;
+}
+
 RawSMBIOSData* SMBiosImpl::get_formatted_smbios_table() const
 {
     assert(table_buffer_.size());
@@ -108,31 +118,6 @@ bool SMBiosImpl::efi_table_exists() const
     }
 
     return false;
-}
-
-bool SMBiosImpl::scan_devmem_table()
-{
-    size_t base = 0xF0000;
-    size_t length = 0x10000;
-
-    // TODO: call physical memory
-    //std::vector<uint8_t> devmem_array = 
-
-    // perform scanning here
-    unsigned long checksum = 0;
-    for (size_t i = 0; i < devmem_array.size(); i+=16) {
-
-        checksum += devmem_array[i];
-        if (memcmp(&devmem_array[i], "_SM_", 4) == 0){
-            std::cout << "32-bit SMBIOS header found at i = " << i << std::endl;
-            entry_point_buffer_.assign(devmem_array.begin() + i, devmem_array.begin() + i + length);
-        }
-    }
-
-    std::cout << "checksum = " << checksum << std::endl;
-
-
-    return true;
 }
 
 void SMBiosImpl::reading_from_efi()

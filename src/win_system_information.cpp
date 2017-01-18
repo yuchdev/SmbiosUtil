@@ -1,3 +1,4 @@
+#if defined(_WIN32) || defined(_WIN64)
 #include <smbios_utility/win_system_information.h>
 #include <Windows.h>
 #include <tchar.h>
@@ -123,3 +124,4 @@ std::string NativeSystemInformation::windows_10_type(unsigned long product_type)
     else
         return "Windows Server 2016";
 }
+#endif // defined(_WIN32) || defined(_WIN64)

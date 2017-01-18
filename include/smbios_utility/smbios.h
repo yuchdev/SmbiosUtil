@@ -132,9 +132,13 @@ private:
     /// Do it once at start
     void count_smbios_structures();
 
+    /// Fallback to physical memory scan if no one of system-specific interfaces
+    /// was available
+    void scan_physical_memory(const std::vector<uint8_t>& devmem_array);
+
 private:
 
-    /// Raw SMBIOS table
+    /// Raw SMBIOS table system-specific implementation
     std::unique_ptr<SMBiosImpl> native_impl_;
 
     /// Physical memory device, initialized if necessary
@@ -143,6 +147,15 @@ private:
     /// Cached SMBIOS structures count
     size_t structures_count_ = 0;
 
+    /// Save SMBIOS entry point here
+    std::vector<uint8_t> entry_point_buffer_;
+
     /// Cached SMBIOS headers
     std::vector<DMIHeader> headers_list_;
+
+    /// Scan physical memory from this address
+    static const size_t devmem_base = 0xF0000;
+
+    /// Lenght
+    static const size_t devmem_length = 0x10000;
 };

@@ -6,7 +6,7 @@ namespace boost_io = boost::iostreams;
 
 #if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
 
-NativePhysicalMemory::NativePhysicalMemory(uint8_t* base, size_t length)
+NativePhysicalMemory::NativePhysicalMemory(size_t base, size_t length)
 {
     map_physical_memory(base, length);
 }
@@ -20,7 +20,7 @@ NativePhysicalMemory::~NativePhysicalMemory()
 
 }
 
-void NativePhysicalMemory::map_physical_memory(uint8_t* base, size_t length)
+void NativePhysicalMemory::map_physical_memory(size_t base, size_t length)
 {
 #ifdef _SC_PAGESIZE
     size_t mempry_map_offset = base % sysconf(_SC_PAGESIZE);
@@ -50,15 +50,15 @@ std::vector<uint8_t> NativePhysicalMemory::get_memory_dump(size_t offset, size_t
     }
 
     std::vector<uint8_t> memory_dump(length);
-    uint8_t* dump_start = physical_memory_map_->data() + offset;
-    uint8_t* dump_end = dump_start + length;
+    const uint8_t* dump_start = reinterpret_cast<const uint8_t*>(physical_memory_map_->data()) + offset;
+    const uint8_t* dump_end = dump_start + length;
     memory_dump.assign(dump_start, dump_end);
     return std::move(memory_dump);
 }
 
-void* NativePhysicalMemory::get_memory_offset(size_t offset) const
+const uint8_t* NativePhysicalMemory::get_memory_offset(size_t offset) const
 {
-    return reinterpret_cast<uint8_t*>(physical_memory_map_->data() + offset);
+    return reinterpret_cast<const uint8_t*>(physical_memory_map_->data() + offset);
 }
 
 #endif

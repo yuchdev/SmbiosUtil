@@ -59,6 +59,12 @@ public:
     /// @brief Read the SMBIOS table using /sys/firmware/dmi/tables
     SMBiosImpl();
 
+    /// @brief Make compiler happy
+    ~SMBiosImpl();
+
+    /// @brief System-specific SMBIOS source was successful
+    bool smbios_read_success() const;
+
     /// @brief Cast allocated memory to SMBIOS data (header and raw data)
     RawSMBIOSData* get_formatted_smbios_table() const;
 
@@ -83,7 +89,7 @@ private:
     bool efi_table_exists() const;
 
     /// Looking for SMBIOS entry point directly in /dev/mem
-    bool scan_devmem_table();
+    //bool scan_devmem_table();
 
     /// Found SMBIOS entry point in sysfs
     void reading_from_sysfs();
@@ -96,9 +102,6 @@ private:
 
     /// Implementation
     void compose_native_smbios_table();
-
-    /// Save SMBIOS entry point here
-    std::vector<uint8_t> entry_point_buffer_;
 
     /// Save table with header here
     std::vector<uint8_t> table_buffer_;

@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <memory>
 
+#if defined(_WIN32) || defined(_WIN64)
+
 class WinHandlePtr;
 
 class NativePhysicalMemory{
@@ -21,7 +23,7 @@ public:
 
     std::vector<uint8_t> get_memory_dump(size_t offset, size_t length) const;
 
-    void* get_memory_address(size_t offset) const;
+    void* get_memory_offset(size_t offset) const;
 
 private:
 
@@ -35,3 +37,5 @@ private:
 
     size_t page_offset_ = 0u;
 };
+
+#endif // defined(_WIN32) || defined(_WIN64)
