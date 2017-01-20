@@ -6,6 +6,38 @@
 class SMBiosImpl;
 class NativePhysicalMemory;
 
+// should be aligned to be mapped to the physical memory
+#pragma pack(push, 1)
+
+struct SMBIOSEntryPoint32 {
+    uint8_t entry_point_anchor[4];
+    uint8_t entry_point_checksum;
+    uint8_t entry_point_length;
+    uint8_t major_version;
+    uint8_t minor_version;
+    uint16_t max_structure_size;
+    uint8_t entry_point_revision;
+    uint8_t formatted_area[5];
+    uint8_t intermediate_anchor[5];
+    uint8_t intermediate_checksum;
+    uint16_t structure_table_length;
+    uint32_t structure_table_address[1];
+    uint16_t smbios_structures_number;
+    uint8_t smbios_bcd_revision;
+};
+
+struct SMBIOSEntryPoint64 {
+    uint8_t entry_point_anchor[5];
+    uint8_t entry_point_checksum;
+    uint8_t entry_point_length;
+    uint8_t major_version;
+    uint8_t minor_version;
+    uint8_t smbios_docrev;
+    uint8_t reserved;
+    uint32_t max_structure_size;
+    uint64_t structure_table_address[1];
+};
+#pragma pack(pop)
 
 struct DMIHeader
 {
@@ -154,8 +186,8 @@ private:
     std::vector<DMIHeader> headers_list_;
 
     /// Scan physical memory from this address
-    static const size_t devmem_base = 0xF0000;
+    static const size_t devmem_base_ = 0xF0000;
 
     /// Lenght
-    static const size_t devmem_length = 0x10000;
+    static const size_t devmem_length_ = 0x10000;
 };

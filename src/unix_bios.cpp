@@ -74,7 +74,6 @@ void SMBiosImpl::compose_native_smbios_table()
         reading_from_efi();
         return;
     }
-    scan_devmem_table();
 }
 
 bool SMBiosImpl::sysfs_table_exists() const
@@ -138,16 +137,15 @@ void SMBiosImpl::reading_from_sysfs()
     std::istream_iterator<uint8_t> start(smbios_file), end;
     std::vector<uint8_t> smbios_array(start, end);
 
-    bool is_64_header = std::equal(smbios_array.begin(), smbios_array.begin() + sizeof(smbios_64_header),
-               std::begin(smbios_64_header), std::end(smbios_64_header));
+    bool is_64_header = std::equal(std::begin(smbios_64_header), std::end(smbios_64_header),
+                                   smbios_array.begin());
 
-    bool is_32_header = std::equal(smbios_array.begin(), smbios_array.begin() + sizeof(smbios_32_header),
-               std::begin(smbios_32_header), std::end(smbios_32_header));
+    bool is_32_header = std::equal(std::begin(smbios_32_header), std::end(smbios_32_header),
+                                   smbios_array.begin());
 
-    bool is_legacy_header = std::equal(smbios_array.begin(), smbios_array.begin() + sizeof(smbios_legacy_header),
-               std::begin(smbios_legacy_header), std::end(smbios_legacy_header));
+    bool is_legacy_header = std::equal(std::begin(smbios_legacy_header), std::end(smbios_legacy_header),
+                                       smbios_array.begin());
 
-    std::cout << "SMBIOS 32 header = " << is_32_header << '\n';
     std::cout << "SMBIOS 32 header = " << is_32_header << '\n';
     std::cout << "SMBIOS 64 header = " << is_64_header << '\n';
     std::cout << "SMBIOS legacy header = " << is_legacy_header << '\n';

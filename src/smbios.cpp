@@ -6,6 +6,7 @@
 #include <smbios_utility/posix_physical_memory.h>
 #endif
 
+#include <cstring> // memcmp()
 #include <iostream>
 #include <sstream>
 #include <smbios_utility/smbios.h>
@@ -19,14 +20,20 @@ SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
     // no one of system sources was successful, fallback to physical memory device scan
     if (!native_impl_->smbios_read_success()) {
 
-        // TODO: call physical memory
+        std::cout << "no one of system sources was successful, fallback to physical memory device scan\n";
 
-
+        // call physical memory
         physical_memory_device_ = std::make_unique<NativePhysicalMemory>();
-        // TODO: read service memory
-        //std::vector<uint8_t> devmem_array =
 
-        // TODO: scan for headers
+        // read service memory
+        std::cout << "read service memory\n";
+        physical_memory_device_->map_physical_memory(devmem_base_, devmem_length_);
+
+        std::vector<uint8_t> devmem_array = physical_memory_device_->get_memory_dump(0, devmem_length_);
+        std::cout << "Memory dump received, size = " << devmem_array.size() << '\n';
+
+        // scan for headers
+        scan_physical_memory(devmem_array);
 
         // TODO: get the table
         //native_impl_->read_from_physical_memory(physical_memory_device_->get_memory_dump());
@@ -134,6 +141,9 @@ void SMBios::count_smbios_structures()
 void SMBios::scan_physical_memory(const std::vector<uint8_t> &devmem_array)
 {
 
+    constexpr size_t smbios32_header_size = sizeof(SMBIOSEntryPoint32);
+    constexpr size_t smbios64_header_size = sizeof(SMBIOSEntryPoint64);
+
     // perform scanning here
     unsigned long checksum = 0;
     for (size_t i = 0; i < devmem_array.size(); i+=16) {
@@ -141,7 +151,8 @@ void SMBios::scan_physical_memory(const std::vector<uint8_t> &devmem_array)
         checksum += devmem_array[i];
         if (memcmp(&devmem_array[i], "_SM_", 4) == 0){
             std::cout << "32-bit SMBIOS header found at i = " << i << std::endl;
-            entry_point_buffer_.assign(devmem_array.begin() + i, devmem_array.begin() + i + devmem_length);
+            entry_point_buffer_.assign(devmem_array.begin() + i,
+                                       devmem_array.begin() + i + smbios32_header_size);
         }
     }
 

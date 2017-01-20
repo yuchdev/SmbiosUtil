@@ -7,11 +7,13 @@ namespace boost_io = boost::iostreams;
 #if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
 
 NativePhysicalMemory::NativePhysicalMemory(size_t base, size_t length)
+    : physical_memory_map_(std::make_unique<boost::iostreams::mapped_file_source>())
 {
     map_physical_memory(base, length);
 }
 
 NativePhysicalMemory::NativePhysicalMemory()
+    : physical_memory_map_(std::make_unique<boost::iostreams::mapped_file_source>())
 {
 }
 
@@ -23,16 +25,16 @@ NativePhysicalMemory::~NativePhysicalMemory()
 void NativePhysicalMemory::map_physical_memory(size_t base, size_t length)
 {
 #ifdef _SC_PAGESIZE
-    size_t mempry_map_offset = base % sysconf(_SC_PAGESIZE);
+    size_t mempry_page_offset = base % sysconf(_SC_PAGESIZE);
 #else
-    size_t mempry_map_offset = base % getpagesize();
+    size_t mempry_page_offset = base % getpagesize();
 #endif /* _SC_PAGESIZE */
 
     boost_io::mapped_file_params params = {};
     params.path = "/dev/mem";
     params.flags = boost_io::mapped_file::mapmode::readonly;
-    params.length = length;
-    params.offset = base - mempry_map_offset;
+    params.length = length + mempry_page_offset;
+    params.offset = base - mempry_page_offset;
     params.hint = nullptr;
     // TODO: process exception higher
     physical_memory_map_->open(params);
