@@ -1,15 +1,18 @@
 #if defined(_WIN32) || defined(_WIN64)
 #include <smbios_utility/win_bios.h>
-#include <smbios_utility/win_physical_memory.h>
 #else
 #include <smbios_utility/unix_bios.h>
-#include <smbios_utility/posix_physical_memory.h>
 #endif
 
-#include <cstring> // memcmp()
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <smbios_utility/smbios.h>
+#include <smbios_utility/physical_memory.h>
+
+using std::cout;
+using std::cerr;
+using std::endl;
 
 SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
 {
@@ -23,20 +26,31 @@ SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
         std::cout << "no one of system sources was successful, fallback to physical memory device scan\n";
 
         // call physical memory
-        physical_memory_device_ = std::make_unique<NativePhysicalMemory>();
+        PhysicalMemory physical_memory_device;
 
         // read service memory
         std::cout << "read service memory\n";
-        physical_memory_device_->map_physical_memory(devmem_base_, devmem_length_);
+        physical_memory_device.map_physical_memory(devmem_base_, devmem_length_);
 
-        std::vector<uint8_t> devmem_array = physical_memory_device_->get_memory_dump(0, devmem_length_);
+        std::vector<uint8_t> devmem_array = physical_memory_device.get_memory_dump(0, devmem_length_);
         std::cout << "Memory dump received, size = " << devmem_array.size() << '\n';
 
         // scan for headers
         scan_physical_memory(devmem_array);
 
-        // TODO: get the table
-        //native_impl_->read_from_physical_memory(physical_memory_device_->get_memory_dump());
+        // What version do we have (with some workaround)
+        extract_dmi_version();
+
+        // display if success
+        display_entry_point();
+    }
+
+    if(smbios_entry32_ && checksum_validated_){
+        PhysicalMemory smbios_physical_memory;
+        size_t smbios_base = smbios_entry32_->structure_table_address;
+        size_t smbios_table_length = smbios_entry32_->structure_table_length;
+        smbios_physical_memory.map_physical_memory(smbios_base, smbios_table_length);
+        native_impl_->read_from_physical_memory(smbios_physical_memory, smbios_table_length);
     }
 
     read_smbios_table();
@@ -49,7 +63,11 @@ SMBios::~SMBios()
 std::string SMBios::get_smbios_version() const
 {
     std::stringstream versionstr;
+#if defined(_WIN32) || defined(_WIN64)
     versionstr << native_impl_->get_major_version() << '.' << native_impl_->get_minor_version();
+#else
+    versionstr << major_version_ << '.' << minor_version_;
+#endif
     return std::move(versionstr.str());
 }
 
@@ -67,7 +85,6 @@ void SMBios::read_smbios_table()
 {
     count_smbios_structures();
 
-    RawSMBIOSData* smbios_data = native_impl_->get_formatted_smbios_table();
     uint8_t* table_base = native_impl_->get_table_base();
     uint8_t* table_end = table_base + native_impl_->get_table_size();
     
@@ -93,7 +110,9 @@ void SMBios::read_smbios_table()
 
         // look to the current structure end '\0\0'
         current_structure_begin = current_structure_begin + header.length;
-        while (current_structure_begin < table_end && (current_structure_begin[0] != 0 || current_structure_begin[1] != 0)) {
+        while (current_structure_begin < table_end &&
+               (current_structure_begin[0] != 0 || current_structure_begin[1] != 0)) {
+
             current_structure_begin++;
         }
         current_structure_begin += 2;
@@ -140,22 +159,78 @@ void SMBios::count_smbios_structures()
 
 void SMBios::scan_physical_memory(const std::vector<uint8_t> &devmem_array)
 {
-
+    uint8_t smbios_32_header[] = {'_','S','M','_'};
+    uint8_t smbios_64_header[] = {'_','S','M','3','_'};
     constexpr size_t smbios32_header_size = sizeof(SMBIOSEntryPoint32);
     constexpr size_t smbios64_header_size = sizeof(SMBIOSEntryPoint64);
 
     // perform scanning here
     unsigned long checksum = 0;
-    for (size_t i = 0; i < devmem_array.size(); i+=16) {
 
-        checksum += devmem_array[i];
-        if (memcmp(&devmem_array[i], "_SM_", 4) == 0){
-            std::cout << "32-bit SMBIOS header found at i = " << i << std::endl;
-            entry_point_buffer_.assign(devmem_array.begin() + i,
-                                       devmem_array.begin() + i + smbios32_header_size);
+    for (auto it = devmem_array.begin(); std::distance(it, devmem_array.end()) > 16; it += 16) {
+
+        checksum += (*it);
+        if(std::equal(std::begin(smbios_32_header), std::end(smbios_32_header), it)){
+
+            std::cout << "32-bit SMBIOS header found\n";
+            entry_point_buffer_.assign(it, it + smbios32_header_size);
+            smbios_entry32_ = reinterpret_cast<const SMBIOSEntryPoint32*>(&entry_point_buffer_[0]);
+
+            // TODO: checksum
         }
+
+        if(std::equal(std::begin(smbios_64_header), std::end(smbios_64_header), it)){
+
+            std::cout << "64-bit SMBIOS header found\n";
+            entry_point_buffer_.assign(it, it + smbios64_header_size);
+            smbios_entry64_ = reinterpret_cast<const SMBIOSEntryPoint64*>(&entry_point_buffer_[0]);
+
+            // TODO: checksum
+        }
+
+    }
+    std::cout << "checksum = " << checksum << std::endl;
+}
+
+void SMBios::extract_dmi_version()
+{
+    if(smbios_entry32_ && checksum_validated_) {
+        major_version_ = static_cast<size_t>(smbios_entry32_->major_version);
+        minor_version_ = static_cast<size_t>(smbios_entry32_->minor_version);
+    }
+    if(smbios_entry64_ && checksum_validated_) {
+        major_version_ = static_cast<size_t>(smbios_entry64_->major_version);
+        minor_version_ = static_cast<size_t>(smbios_entry64_->minor_version);
+    }
+}
+
+void SMBios::display_entry_point() const
+{
+    if(smbios_entry32_ && checksum_validated_) {
+
+        cout << "SMBIOS checksum: " << static_cast<size_t>(smbios_entry32_->entry_point_checksum) << '\n';
+        cout << "SMBIOS length: " << static_cast<size_t>(smbios_entry32_->entry_point_length) << '\n';
+        cout << "SMBIOS major version: " << static_cast<size_t>(smbios_entry32_->major_version) << '\n';
+        cout << "SMBIOS minor version: " << static_cast<size_t>(smbios_entry32_->minor_version) << '\n';
+        cout << "Maximum structure size: " << smbios_entry32_->max_structure_size << '\n';
+        cout << "Entry point revision: " << static_cast<size_t>(smbios_entry32_->entry_point_revision) << '\n';
+        cout << "SMBIOS intermediate checksum: " << static_cast<size_t>(smbios_entry32_->intermediate_checksum) << '\n';
+        cout << "Structure table length: " << smbios_entry32_->structure_table_length << '\n';
+        cout << "Table address: " << std::hex << smbios_entry32_->structure_table_address << std::dec << '\n';
+        cout << "SMBIOS structures count: " << smbios_entry32_->smbios_structures_number << '\n';
+        cout << "SMBIOS BCD revision: " << static_cast<size_t>(smbios_entry32_->smbios_bcd_revision) << '\n';
+
     }
 
-    std::cout << "checksum = " << checksum << std::endl;
+    if(smbios_entry64_ && checksum_validated_) {
 
+        cout << "SMBIOS checksum: " << static_cast<size_t>(smbios_entry64_->entry_point_checksum) << '\n';
+        cout << "SMBIOS length: " << static_cast<size_t>(smbios_entry64_->entry_point_length) << '\n';
+        cout << "SMBIOS major version: " << static_cast<size_t>(smbios_entry64_->major_version) << '\n';
+        cout << "SMBIOS minor version: " << static_cast<size_t>(smbios_entry32_->minor_version) << '\n';
+        cout << "SMBIOS doc version: " << static_cast<size_t>(smbios_entry64_->smbios_docrev) << '\n';
+        cout << "Reserved byte: " <<  static_cast<size_t>(smbios_entry64_->reserved) << '\n';
+        cout << "Maximum structure size: " << smbios_entry64_->max_structure_size << '\n';
+        cout << "Table address: " << std::hex << smbios_entry64_->structure_table_address << std::dec << '\n';
+    }
 }

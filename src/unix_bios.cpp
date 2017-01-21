@@ -1,8 +1,6 @@
 #include <smbios_utility/unix_bios.h>
 #include <smbios_utility/physical_memory.h>
 
-#include <boost/iostreams/device/mapped_file.hpp>
-
 #include <cassert>
 #include <string>
 #include <vector>
@@ -11,7 +9,6 @@
 #include <fstream>
 #include <iterator>
 
-namespace boost_io = boost::iostreams;
 #if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
 
 SMBiosImpl::SMBiosImpl()
@@ -26,35 +23,21 @@ SMBiosImpl::~SMBiosImpl()
 
 bool SMBiosImpl::smbios_read_success() const
 {
-    return !table_buffer_.empty() && smbios_data_;
-}
-
-RawSMBIOSData* SMBiosImpl::get_formatted_smbios_table() const
-{
-    assert(table_buffer_.size());
-    assert(smbios_data_);
-    return smbios_data_;
+    return !table_buffer_.empty();
 }
 
 uint8_t* SMBiosImpl::get_table_base() const
 {
-    assert(table_buffer_.size());
-    assert(smbios_data_);
+    //assert(table_buffer_.size());
+    //assert(smbios_data_);
     return &smbios_data_->smbios_table_data[0];
 }
 
-size_t SMBiosImpl::get_major_version() const
-{
-    assert(table_buffer_.size());
-    assert(smbios_data_);
-    return smbios_data_->major_version;
-}
 
-size_t SMBiosImpl::get_minor_version() const
+void SMBiosImpl::read_from_physical_memory(const PhysicalMemory& physical_memory, size_t length)
 {
-    assert(table_buffer_.size());
-    assert(smbios_data_);
-    return smbios_data_->minor_version;
+    smbios_data_ = std::move(physical_memory.get_memory_dump(0, length));
+    std::cout << "Read " << smbios_data_.size() << " bytes" << std::endl;
 }
 
 size_t SMBiosImpl::get_table_size() const

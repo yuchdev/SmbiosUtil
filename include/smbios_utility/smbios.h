@@ -21,7 +21,7 @@ struct SMBIOSEntryPoint32 {
     uint8_t intermediate_anchor[5];
     uint8_t intermediate_checksum;
     uint16_t structure_table_length;
-    uint32_t structure_table_address[1];
+    uint32_t structure_table_address;
     uint16_t smbios_structures_number;
     uint8_t smbios_bcd_revision;
 };
@@ -35,7 +35,7 @@ struct SMBIOSEntryPoint64 {
     uint8_t smbios_docrev;
     uint8_t reserved;
     uint32_t max_structure_size;
-    uint64_t structure_table_address[1];
+    uint64_t structure_table_address;
 };
 #pragma pack(pop)
 
@@ -168,16 +168,28 @@ private:
     /// was available
     void scan_physical_memory(const std::vector<uint8_t>& devmem_array);
 
+    /// Get DMI version major.minor
+    void extract_dmi_version();
+
+    /// Display SMBIOS entry point data
+    void display_entry_point() const;
+
 private:
 
     /// Raw SMBIOS table system-specific implementation
     std::unique_ptr<SMBiosImpl> native_impl_;
 
     /// Physical memory device, initialized if necessary
-    std::unique_ptr<NativePhysicalMemory> physical_memory_device_;
+    //std::unique_ptr<NativePhysicalMemory> physical_memory_device_;
 
     /// Cached SMBIOS structures count
     size_t structures_count_ = 0;
+
+    /// Cached major SMBIOS version
+    size_t major_version_ = 0;
+
+    /// Cached major SMBIOS version
+    size_t minor_version_ = 0;
 
     /// Save SMBIOS entry point here
     std::vector<uint8_t> entry_point_buffer_;
@@ -185,9 +197,16 @@ private:
     /// Cached SMBIOS headers
     std::vector<DMIHeader> headers_list_;
 
+    /// Entry points, mapped to memory dump
+    const SMBIOSEntryPoint32* smbios_entry32_ = nullptr;
+    const SMBIOSEntryPoint64* smbios_entry64_ = nullptr;
+
+    /// Set this flag if SMBIOS entry point checksum is valid
+    bool checksum_validated_ = true;
+
     /// Scan physical memory from this address
     static const size_t devmem_base_ = 0xF0000;
 
-    /// Lenght
+    /// Scanned lenght (SMBIOS could not be beyond this offset)
     static const size_t devmem_length_ = 0x10000;
 };
