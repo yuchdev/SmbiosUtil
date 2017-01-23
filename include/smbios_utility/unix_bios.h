@@ -25,7 +25,7 @@ public:
     bool smbios_read_success() const;
 
     /// @brief Actual table base (offset from header beginning)
-    uint8_t* get_table_base()  const;
+    const uint8_t* get_table_base()  const;
 
     /// @brief Actual table size from table beginning (without header)
     size_t get_table_size()  const;

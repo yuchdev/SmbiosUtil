@@ -28,7 +28,7 @@ PhysicalMemory::~PhysicalMemory()
 
 void PhysicalMemory::map_physical_memory(size_t base, size_t length)
 {
-    native_physical_memory_->map_physical_memory(base, length)
+    native_physical_memory_->map_physical_memory(base, length);
 }
 
 bool PhysicalMemory::is_mapped() const

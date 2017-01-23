@@ -8,6 +8,7 @@
 #include <iostream>
 #include <sstream>
 #include <smbios_utility/smbios.h>
+#include <smbios_utility/smbios_anchor.h>
 #include <smbios_utility/physical_memory.h>
 
 using std::cout;
@@ -53,6 +54,10 @@ SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
         native_impl_->read_from_physical_memory(smbios_physical_memory, smbios_table_length);
     }
 
+    if(smbios_entry64_ && checksum_validated_){
+        // TODO:
+    }
+
     read_smbios_table();
 }
 
@@ -76,6 +81,36 @@ size_t SMBios::get_structures_count() const
     return structures_count_;
 }
 
+const uint8_t *SMBios::get_table_base() const
+{
+    if(native_impl_->get_table_base()){
+        return native_impl_->get_table_base();
+    }
+    if(smbios_entry32_ && checksum_validated_){
+        // convert from intptr_t
+        return reinterpret_cast<uint8_t *>(smbios_entry32_->structure_table_address);
+    }
+    if(smbios_entry64_ && checksum_validated_){
+        // convert from intptr_t
+        return reinterpret_cast<uint8_t *>(smbios_entry64_->structure_table_address);
+    }
+    return nullptr;
+}
+
+size_t SMBios::get_table_size() const
+{
+    if(native_impl_->get_table_size()){
+        return native_impl_->get_table_size();
+    }
+    if(smbios_entry32_ && checksum_validated_){
+        return smbios_entry32_->structure_table_length;
+    }
+    if(smbios_entry64_ && checksum_validated_){
+        return smbios_entry64_->max_structure_size;
+    }
+    return 0;
+}
+
 std::vector<DMIHeader>& SMBios::get_headers_list()
 {
     return headers_list_;
@@ -85,15 +120,15 @@ void SMBios::read_smbios_table()
 {
     count_smbios_structures();
 
-    uint8_t* table_base = native_impl_->get_table_base();
-    uint8_t* table_end = table_base + native_impl_->get_table_size();
+    const uint8_t* table_base = get_table_base();
+    const uint8_t* table_end = table_base + get_table_size();
     
     size_t number_of_structures = get_structures_count();
-    uint8_t* current_structure_begin = table_base;
+    const uint8_t* current_structure_begin = table_base;
 
     for (size_t i = 0; i < number_of_structures && current_structure_begin <= table_end; ++i) {
 
-        DMIHeader header = *reinterpret_cast<DMIHeader*>(current_structure_begin);
+        DMIHeader header = *reinterpret_cast<const DMIHeader*>(current_structure_begin);
         header.data = current_structure_begin;
 
         if (header.length < 4) {
@@ -123,14 +158,14 @@ void SMBios::read_smbios_table()
 void SMBios::count_smbios_structures()
 {
     // start and end of the BIOS table
-    uint8_t* start_table = native_impl_->get_table_base();
-    uint8_t* end_table = start_table + native_impl_->get_table_size();
+    const uint8_t* start_table = get_table_base();
+    const uint8_t* end_table = start_table + get_table_size();
 
     //points to the actual address in the buff that's been checked
-    uint8_t* offset = start_table;
+    const uint8_t* offset = start_table;
 
     //header of the struct been read to get the length to increase the offset
-    DMIHeader* header = nullptr;
+    const DMIHeader* header = nullptr;
 
     size_t structures_count = 0;
 
@@ -138,14 +173,14 @@ void SMBios::count_smbios_structures()
     while (offset < end_table) {
 
         //get the header to read the length and to increase the offset
-        header = reinterpret_cast<DMIHeader*>(offset);
+        header = reinterpret_cast<const DMIHeader*>(offset);
         offset += header->length;
 
         structures_count++;
 
         // increases the offset to point to the next header that's
         // after the strings at the end of the structure.
-        while ((*reinterpret_cast<uint16_t*>(offset) != 0) && (offset < end_table)) {
+        while ((*reinterpret_cast<const uint16_t*>(offset) != 0) && (offset < end_table)) {
             offset++;
         }
 
@@ -155,39 +190,35 @@ void SMBios::count_smbios_structures()
     }
 
     structures_count_ = structures_count;
+    std::cout << structures_count_ << " structures has been read\n";
 }
 
 void SMBios::scan_physical_memory(const std::vector<uint8_t> &devmem_array)
 {
-    uint8_t smbios_32_header[] = {'_','S','M','_'};
-    uint8_t smbios_64_header[] = {'_','S','M','3','_'};
-    constexpr size_t smbios32_header_size = sizeof(SMBIOSEntryPoint32);
-    constexpr size_t smbios64_header_size = sizeof(SMBIOSEntryPoint64);
-
     // perform scanning here
     unsigned long checksum = 0;
+
+    constexpr size_t smbios32_header_size = sizeof(SMBIOSEntryPoint32);
+    constexpr size_t smbios64_header_size = sizeof(SMBIOSEntryPoint64);
 
     for (auto it = devmem_array.begin(); std::distance(it, devmem_array.end()) > 16; it += 16) {
 
         checksum += (*it);
-        if(std::equal(std::begin(smbios_32_header), std::end(smbios_32_header), it)){
+        if(detect_smbios_anchor(it) == SMBiosAnchorType::SMBios32){
 
             std::cout << "32-bit SMBIOS header found\n";
             entry_point_buffer_.assign(it, it + smbios32_header_size);
             smbios_entry32_ = reinterpret_cast<const SMBIOSEntryPoint32*>(&entry_point_buffer_[0]);
-
             // TODO: checksum
         }
 
-        if(std::equal(std::begin(smbios_64_header), std::end(smbios_64_header), it)){
+        if(detect_smbios_anchor(it) == SMBiosAnchorType::SMBios64){
 
             std::cout << "64-bit SMBIOS header found\n";
             entry_point_buffer_.assign(it, it + smbios64_header_size);
             smbios_entry64_ = reinterpret_cast<const SMBIOSEntryPoint64*>(&entry_point_buffer_[0]);
-
             // TODO: checksum
         }
-
     }
     std::cout << "checksum = " << checksum << std::endl;
 }

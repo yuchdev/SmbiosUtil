@@ -21,7 +21,7 @@ struct SMBIOSEntryPoint32 {
     uint8_t intermediate_anchor[5];
     uint8_t intermediate_checksum;
     uint16_t structure_table_length;
-    uint32_t structure_table_address;
+    intptr_t structure_table_address;
     uint16_t smbios_structures_number;
     uint8_t smbios_bcd_revision;
 };
@@ -35,7 +35,7 @@ struct SMBIOSEntryPoint64 {
     uint8_t smbios_docrev;
     uint8_t reserved;
     uint32_t max_structure_size;
-    uint64_t structure_table_address;
+    intptr_t structure_table_address;
 };
 #pragma pack(pop)
 
@@ -52,7 +52,7 @@ struct DMIHeader
     // Specifies the structure's handle, a unique 16-bit number in the range 0 to 0FFFEh
     // If the system configuration changes, a previously assigned handle might no longer exist!
     uint16_t handle;
-    uint8_t *data;
+    const uint8_t *data;
 };
 
 /// @brief Class owns system-independent SMBIOS table 
@@ -95,6 +95,12 @@ public:
 
     /// @brief Get SMBIOS structures stored in class
     size_t get_structures_count() const;
+
+    /// @brief Actual table base (offset from header beginning)
+    const uint8_t* get_table_base()  const;
+
+    /// @brief Actual table size from table beginning (without header)
+    size_t get_table_size()  const;
 
     /// @brief Implement bidirectional iterator for STL-style processing
     class iterator {
