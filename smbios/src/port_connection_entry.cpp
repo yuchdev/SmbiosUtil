@@ -12,7 +12,7 @@ PortConnectionEntry::PortConnectionEntry(const DMIHeader& header) {
     // TODO: check entry size
     if (header.type != SMBios::PortConnection) {
         std::stringstream err;
-        err << "Wrong device type, expected Port Connection, called Type = " << header.type;
+        err << "Wrong entry type, expected Port Connection, called Type = " << header.type;
         throw std::runtime_error(err.str().c_str());
     }
     port_connection_ = reinterpret_cast<const PortConnection*>(header.data);

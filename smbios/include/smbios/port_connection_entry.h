@@ -14,7 +14,7 @@ struct DMIHeader;
 // Standard according to current SMBIOS version, 'Port Connection' chapter
 // By 3.1 version fully compatible with all previous versions
 
-/// @brief SMBIOS MemoryDevice entry Ver 2.1+
+/// @brief SMBIOS PortConnection entry Ver 2.0+
 struct PortConnection {
     uint32_t header;
     uint8_t internal_designator;
