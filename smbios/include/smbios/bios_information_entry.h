@@ -42,15 +42,60 @@ class BiosInformationEntry : public AbstractSMBiosEntry {
 public:
 
     // @brief 
-    enum BiosProperties : uint32_t {
+    enum BiosProperties : uint64_t {
+        Reserved1 = 0x1,
+        Reserved2 = 0x1 << 1,
+        Unknown = 0x1 << 2,
+        NotSupported = 0x1 << 3,
+        ISASupported = 0x1 << 4,
+        MCASupported = 0x1 << 5,
+        EISASupported = 0x1 << 6,
+        PCISupported = 0x1 << 7,
+        PCMCIASupported = 0x1 << 8,
+        PnPSupported = 0x1 << 9,
+        APMSupported = 0x1 << 10,
+        BIOSUpgradeable = 0x1 << 11,
+        BIOSShadowingAllowed = 0x1 << 12,
+        VLVESASupported = 0x1 << 13,
+        ESCDSupported = 0x1 << 14,
+        BootFromCDSupported = 0x1 << 15,
+        SelectableBootSupported = 0x1 << 16,
+        BIOSROMSocketed = 0x1 << 17,
+        BootFromPCMCIASupported = 0x1 << 18,
+        EDDSpecificationSupported = 0x1 << 19,
+        FloppyNECSupported = 0x1 << 20,
+        FloppyToshibaSupported = 0x1 << 21,
+        Floppy360kSupported = 0x1 << 21,
+        Floppy12MSupported = 0x1 << 21,
+        Floppy720kSupported = 0x1 << 21,
+        Floppy28MSupported = 0x1 << 21,
+        PrintScreenSupported = 0x1 << 21,
+        KeyboardServicesSupported = 0x1 << 21,
+        SerialServicesSupported = 0x1 << 21,
+        PrinterServicesSupported = 0x1 << 21,
+        MonoVideoSupported = 0x1 << 21,
+        NECPC = 0x1 << 21
     };
 
     // @brief 
     enum BiosPropertiesEx1 : uint8_t {
+        ACPISupported = 0x1 << 0,
+        USBLegacySupported = 0x1 << 1,
+        AGPSupported = 0x1 << 2,
+        I2OBootSupported = 0x1 << 3,
+        SuperDiskBootSupported = 0x1 << 4,
+        ZIPDriveBootSupported = 0x1 << 5,
+        IEEE1394BootSupported = 0x1 << 6,
+        SmartBatterySupported = 0x1 << 7
     };
 
     // @brief 
     enum BiosPropertiesEx2 : uint8_t {
+        BootSpecificationSupported,
+        KeyInitiatedNetworkBoot,
+        TargetedContentDistribution,
+        UEFISpecificationSupported,
+        VirtualMachine
     };
 
 
@@ -72,7 +117,7 @@ public:
 
     /// @brief 0x06 offset
     /// 
-    uint8_t* get_starting_address() const;
+    uint16_t get_starting_address() const;
 
     /// @brief 0x09 offset
     /// 
@@ -110,11 +155,8 @@ public:
     // String values
 
     /// @brief 
-    const PortConnection* get_port_connection_struct() const { return port_connection_; }
-    const BiosInformationV24* get_bios_information_struct_ver24 const { return bios_information24_; }
-    const BiosInformationV31* get_bios_information_struct_ver31 const { return bios_information31_; }
-
-
+    const BiosInformationV24* bios_information_struct_ver24() const { return bios_information24_; }
+    const BiosInformationV31* bios_information_struct_ver31() const { return bios_information31_; }
 
 private:
 
