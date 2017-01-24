@@ -43,7 +43,8 @@ public:
 
     // @brief 
     enum BiosProperties : uint64_t {
-        Reserved1 = 0x1,
+        BiosPropertiesOutOfSpec = 0x0,
+        Reserved1 = 0x1 << 0,
         Reserved2 = 0x1 << 1,
         Unknown = 0x1 << 2,
         NotSupported = 0x1 << 3,
@@ -65,20 +66,21 @@ public:
         EDDSpecificationSupported = 0x1 << 19,
         FloppyNECSupported = 0x1 << 20,
         FloppyToshibaSupported = 0x1 << 21,
-        Floppy360kSupported = 0x1 << 21,
-        Floppy12MSupported = 0x1 << 21,
-        Floppy720kSupported = 0x1 << 21,
-        Floppy28MSupported = 0x1 << 21,
-        PrintScreenSupported = 0x1 << 21,
-        KeyboardServicesSupported = 0x1 << 21,
-        SerialServicesSupported = 0x1 << 21,
-        PrinterServicesSupported = 0x1 << 21,
-        MonoVideoSupported = 0x1 << 21,
-        NECPC = 0x1 << 21
+        Floppy360kSupported = 0x1 << 22,
+        Floppy12MSupported = 0x1 << 23,
+        Floppy720kSupported = 0x1 << 24,
+        Floppy28MSupported = 0x1 << 25,
+        PrintScreenSupported = 0x1 << 26,
+        KeyboardServicesSupported = 0x1 << 27,
+        SerialServicesSupported = 0x1 << 28,
+        PrinterServicesSupported = 0x1 << 29,
+        MonoVideoSupported = 0x1 << 30,
+        NECPC = 0x1 << 31
     };
 
     // @brief 
     enum BiosPropertiesEx1 : uint8_t {
+        BiosPropertiesEx1OutOfSpec = 0x0,
         ACPISupported = 0x1 << 0,
         USBLegacySupported = 0x1 << 1,
         AGPSupported = 0x1 << 2,
@@ -91,11 +93,12 @@ public:
 
     // @brief 
     enum BiosPropertiesEx2 : uint8_t {
-        BootSpecificationSupported,
-        KeyInitiatedNetworkBoot,
-        TargetedContentDistribution,
-        UEFISpecificationSupported,
-        VirtualMachine
+        BiosPropertiesEx2OutOfSpec = 0x0,
+        BootSpecificationSupported = 0x1 << 0,
+        KeyInitiatedNetworkBoot = 0x1 << 1,
+        TargetedContentDistribution = 0x1 << 2,
+        UEFISpecificationSupported = 0x1 << 3,
+        VirtualMachine = 0x1 << 4
     };
 
 

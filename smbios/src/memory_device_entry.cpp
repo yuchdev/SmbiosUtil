@@ -297,7 +297,7 @@ std::string smbios::MemoryDeviceEntry::get_device_detail_string() const
     uint16_t current_property = 0x1;
     const uint16_t properties = get_device_detail();
     for (size_t i = 0, current_property = 0x1; i < details_count; current_property <<= 1, ++i) {
-        auto it = device_properties_map_.find(current_property >> 1);
+        auto it = device_properties_map_.find(current_property);
         if (properties & current_property && (it != device_properties_map_.end())) {
             properties_stream << '\t' << (*it).second << '\n';
         }
@@ -369,6 +369,7 @@ void smbios::MemoryDeviceEntry::init_string_values()
     device_type_map_[LPDDR4] = "LPDDR4";
 
     device_properties_map_[DevicePropertiesOutOfSpec] = "OutOfSpec";
+    device_properties_map_[DevicePropertiesReserved] = "Reserved";
     device_properties_map_[DevicePropertiesOther] = "Other";
     device_properties_map_[DevicePropertiesUnknown] = "Unknown";
     device_properties_map_[FastPaged] = "Fast-Paged";
