@@ -25,4 +25,5 @@ elseif(${WIN32})
 
 endif()
 
-add_subdirectory(src)
+add_subdirectory(smbios)
+add_subdirectory(smbios_util)

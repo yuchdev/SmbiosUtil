@@ -23,7 +23,7 @@ public:
 
     std::vector<uint8_t> get_memory_dump(size_t offset, size_t length) const;
 
-    void* get_memory_offset(size_t offset) const;
+    uint8_t* get_memory_offset(size_t offset) const;
 
 private:
 

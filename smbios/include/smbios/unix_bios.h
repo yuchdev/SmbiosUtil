@@ -6,6 +6,8 @@
 
 #if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
 
+namespace smbios {
+
 class PhysicalMemory;
 
 /// @brief Class that owns memory allocated for SMBIOS table, offsets for table beginning
@@ -49,9 +51,6 @@ private:
     /// Found SMBIOS entry point in EFI, reading table from /dev/mem
     void reading_from_efi();
 
-    /// Reading from /dev/mem
-    void reading_from_devmem();
-
     /// Implementation
     void compose_native_smbios_table();
 
@@ -59,5 +58,8 @@ private:
     std::vector<uint8_t> table_buffer_;
 };
 
+} // namespace smbios
 
 #endif //defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) or defined(__OpenBSD__) || defined(__sun)
+
+

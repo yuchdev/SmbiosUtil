@@ -3,8 +3,12 @@
 #include <memory>
 #include <cstdint>
 
+class PhysicalMemory;
+
+namespace smbios {
+
 class SMBiosImpl;
-class NativePhysicalMemory;
+
 
 // should be aligned to be mapped to the physical memory
 #pragma pack(push, 1)
@@ -216,3 +220,5 @@ private:
     /// Scanned lenght (SMBIOS could not be beyond this offset)
     static const size_t devmem_length_ = 0x10000;
 };
+
+} // namespace smbios

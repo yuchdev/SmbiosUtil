@@ -1,6 +1,7 @@
-#include <smbios_utility/unix_bios.h>
-#include <smbios_utility/physical_memory.h>
-#include <smbios_utility/smbios_anchor.h>
+#if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
+#include <smbios/unix_bios.h>
+#include <smbios/physical_memory.h>
+#include <smbios/smbios_anchor.h>
 
 #include <cassert>
 #include <string>
@@ -10,7 +11,7 @@
 #include <fstream>
 #include <iterator>
 
-#if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
+using namespace smbios;
 
 SMBiosImpl::SMBiosImpl()
 {

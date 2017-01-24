@@ -1,19 +1,22 @@
 #if defined(_WIN32) || defined(_WIN64)
-#include <smbios_utility/win_bios.h>
+#include <smbios/win_bios.h>
 #else
-#include <smbios_utility/unix_bios.h>
+#include <smbios/unix_bios.h>
 #endif
 
+#include <limits>
 #include <algorithm>
 #include <iostream>
 #include <sstream>
-#include <smbios_utility/smbios.h>
-#include <smbios_utility/smbios_anchor.h>
-#include <smbios_utility/physical_memory.h>
+#include <smbios/smbios.h>
+#include <smbios/smbios_anchor.h>
+#include <smbios/physical_memory.h>
 
 using std::cout;
 using std::cerr;
 using std::endl;
+using std::numeric_limits;
+using namespace smbios;
 
 SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
 {
@@ -55,7 +58,7 @@ SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
     }
 
     if(smbios_entry64_ && checksum_validated_){
-        // TODO:
+        // TODO: debug under x64
     }
 
     read_smbios_table();
@@ -68,11 +71,17 @@ SMBios::~SMBios()
 std::string SMBios::get_smbios_version() const
 {
     std::stringstream versionstr;
-#if defined(_WIN32) || defined(_WIN64)
-    versionstr << native_impl_->get_major_version() << '.' << native_impl_->get_minor_version();
-#else
-    versionstr << major_version_ << '.' << minor_version_;
-#endif
+    size_t major_version = native_impl_->get_major_version();
+    size_t minor_version = native_impl_->get_minor_version();
+
+    // native implementation provides version
+    if (numeric_limits<size_t>::max() != major_version && numeric_limits<size_t>::max() != minor_version) {
+        versionstr << major_version << '.' << minor_version;
+    }
+    else {
+        versionstr << major_version_ << '.' << minor_version_;
+    }
+    
     return std::move(versionstr.str());
 }
 

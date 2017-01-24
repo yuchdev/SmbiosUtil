@@ -1,7 +1,9 @@
 #pragma once
 #include <cstdint>
+#include <map>
+#include <smbios/abstract_smbios_entry.h>
 
-#include <cstdint>
+namespace smbios {
 
 struct DMIHeader;
 
@@ -56,7 +58,7 @@ struct MemoryDeviceV27 : public MemoryDeviceV26 {
 /// @brief Class-wrapper under raw memory structures
 /// Class instance does not "own" this memory, it just provide more convenient interface
 /// and useful types and enumerations
-class MemoryDeviceParser {
+class MemoryDeviceEntry : public AbstractSMBiosEntry {
 public:
 
     // @brief special values for ErrorHandle: uint16 - offset 0x06
@@ -164,12 +166,23 @@ public:
 
     /// @brief Parse the header, recognize how much information do we have
     /// in MemoryDevice SMBIOS entry
-    MemoryDeviceParser(const DMIHeader& header);
+    MemoryDeviceEntry(const DMIHeader& header);
+
+    // @brief Parent is abstract
+    virtual ~MemoryDeviceEntry();
 
     /// @brief String representation
-    const char* get_type() {
-        return "Memory Device";
-    }
+    virtual std::string get_type() const override;
+
+    /// @brief Render all entry information into single string
+    virtual std::string render_to_description() const override;
+
+    //////////////////////////////////////////////////////////////////////////
+    // Byte values
+
+    /// @brief 0x05 offset
+    /// Handle, or instance number, associated with the structure
+    uint16_t get_array_handle() const;
 
     /// @brief 0x06 offset
     /// See ErrorHandleValue enum for special values
@@ -209,6 +222,53 @@ public:
     /// See DeviceProperties enum for special values
     uint16_t get_device_detail() const;
 
+    //////////////////////////////////////////////////////////////////////////
+    // String values
+
+    /// @brief 0x05 offset
+    /// Handle string representation
+    std::string get_array_handle_string() const;
+
+    /// @brief 0x06 offset
+    /// ErrorHandleValue string representation
+    std::string get_error_handle_string() const;
+
+    /// @brief 0x08 offset
+    /// DataWidthValue string representation
+    std::string get_total_width_string() const;
+
+    /// @brief 0x0A offset
+    /// DataWidthValue string representation
+    std::string get_data_width_string() const;
+
+    /// @brief 0x0C offset
+    /// DeviceSizeValue string representation
+    std::string get_device_size_string() const;
+
+    /// @brief 0x0E offset
+    /// FormFactorValue string representation
+    std::string get_form_factor_string() const;
+
+    /// @brief 0x0F offset
+    /// DeviceSetValue string representation
+    std::string get_device_set_string() const;
+
+    /// @brief 0x10 offset
+    /// DeviceLocator string representation
+    std::string get_device_locator_string() const;
+
+    /// @brief 0x11 offset
+    /// BankLocator string representation
+    std::string get_bank_locator_string() const;
+
+    /// @brief 0x12 offset
+    /// DeviceType string representation
+    std::string get_device_type_string() const;
+
+    /// @brief 0x13 offset
+    /// DeviceProperties string representation
+    std::string get_device_detail_string() const;
+
     /// @brief Represent earliest versions of SMBIOS MemoryDevice (2.1+)
     const MemoryDeviceV21* get_memory_device_v1() const { return memory_device_v1_; }
 
@@ -222,9 +282,26 @@ public:
     const MemoryDeviceV27* get_memory_device_v4() const { return memory_device_v4_; }
 
 private:
-    const DMIHeader& header_;
+
+    /// Map flags data to string values
+    void init_string_values();
+
+private:
+
+    /// Init pointers depend on SMBIOS version
     const MemoryDeviceV21* memory_device_v1_ = nullptr;
     const MemoryDeviceV23* memory_device_v2_ = nullptr;
     const MemoryDeviceV26* memory_device_v3_ = nullptr;
     const MemoryDeviceV27* memory_device_v4_ = nullptr;
+
+    /// Bitwise to string representation
+    mutable std::map<uint16_t, std::string> error_handle_map_;
+    mutable std::map<uint16_t, std::string> data_width_map_;
+    mutable std::map<uint16_t, std::string> device_size_map_;
+    mutable std::map<uint8_t, std::string> form_factor_map_;
+    mutable std::map<uint8_t, std::string> device_set_map_;
+    mutable std::map<uint8_t, std::string> device_type_map_;
+    mutable std::map<uint16_t, std::string> device_properties_map_;
 };
+
+} // namespace smbios

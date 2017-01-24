@@ -1,10 +1,9 @@
-#include <smbios_utility/posix_physical_memory.h>
+#if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
+#include <smbios/posix_physical_memory.h>
 #include <boost/iostreams/device/mapped_file.hpp>
-
 
 namespace boost_io = boost::iostreams;
 
-#if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
 
 NativePhysicalMemory::NativePhysicalMemory(size_t base, size_t length)
     : physical_memory_map_(std::make_unique<boost::iostreams::mapped_file_source>())
@@ -64,4 +63,3 @@ const uint8_t* NativePhysicalMemory::get_memory_offset(size_t offset) const
 }
 
 #endif
-

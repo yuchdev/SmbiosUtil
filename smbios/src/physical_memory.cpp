@@ -1,10 +1,10 @@
 #include <boost/iostreams/device/mapped_file.hpp>
 
-#include <smbios_utility/physical_memory.h>
+#include <smbios/physical_memory.h>
 #if defined(_WIN32) || defined(_WIN64)
-#include <smbios_utility/win_physical_memory.h>
+#include <smbios/win_physical_memory.h>
 #elif defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
-#include <smbios_utility/posix_physical_memory.h>
+#include <smbios/posix_physical_memory.h>
 #endif
 
 

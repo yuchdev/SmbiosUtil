@@ -1,11 +1,16 @@
-#include <smbios_utility/win_bios.h>
-#include <smbios_utility/win_system_information.h>
+#include <smbios/win_bios.h>
+#include <smbios/physical_memory.h>
+#include <smbios/win_system_information.h>
 
 #if defined(_WIN32) || defined(_WIN64)
 
+#define NOMINMAX
+#include <limits>
 #include <cassert>
 #include <iostream>
 #include <Windows.h>
+
+using namespace smbios;
 
 SMBiosImpl::SMBiosImpl() : native_system_information_(std::make_unique<NativeSystemInformation>())
 {
@@ -32,22 +37,26 @@ RawSMBIOSData* SMBiosImpl::get_formatted_smbios_table() const
 uint8_t* SMBiosImpl::get_table_base() const
 {
     assert(table_buffer_.size());
-    assert(smbios_data_);
-    return &smbios_data_->smbios_table_data[0];
+    if (smbios_data_) {
+        return &smbios_data_->smbios_table_data[0];
+    }
+    return nullptr;
 }
 
 size_t SMBiosImpl::get_major_version() const
 {
-    assert(table_buffer_.size());
-    assert(smbios_data_);
-    return smbios_data_->major_version;
+    if (smbios_data_) {
+        return smbios_data_->major_version;
+    }
+    return std::numeric_limits<size_t>::max();
 }
 
 size_t SMBiosImpl::get_minor_version() const
 {
-    assert(table_buffer_.size());
-    assert(smbios_data_);
-    return smbios_data_->minor_version;
+    if (smbios_data_) {
+        return smbios_data_->minor_version;
+    }
+    return std::numeric_limits<size_t>::max();
 }
 
 size_t SMBiosImpl::get_table_size() const
@@ -55,8 +64,17 @@ size_t SMBiosImpl::get_table_size() const
     if (table_buffer_.empty()) {
         return 0;
     }
-    assert(smbios_data_);
-    return smbios_data_->length;
+    if (smbios_data_) {
+        return smbios_data_->length;
+    }
+    else {
+        return table_buffer_.size();
+    }        
+}
+
+void SMBiosImpl::read_from_physical_memory(const PhysicalMemory& physical_memory, size_t length)
+{
+    table_buffer_ = std::move(physical_memory.get_memory_dump(0, length));
 }
 
 bool SMBiosImpl::is_ntdll_compatible() const

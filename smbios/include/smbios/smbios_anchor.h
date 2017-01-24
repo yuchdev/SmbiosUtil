@@ -1,6 +1,8 @@
 #pragma once
 #include <algorithm>
 
+namespace smbios {
+
 enum SMBiosAnchorType{
     SMBios32,
     SMBios64,
@@ -28,3 +30,5 @@ SMBiosAnchorType detect_smbios_anchor(IterType it)
     }
     return SMBiosAnchorType::NoHeader;
 }
+
+} // namespace smbios

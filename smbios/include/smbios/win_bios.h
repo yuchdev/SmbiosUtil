@@ -6,6 +6,9 @@
 #if defined(_WIN32) || defined(_WIN64)
 
 class NativeSystemInformation;
+class PhysicalMemory;
+
+namespace smbios {
 
 /// @brief SMBIOS header+table beginning
 struct RawSMBIOSData {
@@ -47,6 +50,9 @@ public:
     /// @brief Minor version (from header)
     size_t get_minor_version() const;
 
+    /// @brief 
+    void read_from_physical_memory(const PhysicalMemory& physical_memory, size_t length);
+
 private:
 
     /// Find ntdll entry point
@@ -63,5 +69,7 @@ private:
     /// Apply to the table with header
     RawSMBIOSData* smbios_data_ = nullptr;
 };
+
+} // namespace smbios
 
 #endif // defined(_WIN32) || defined(_WIN64)
