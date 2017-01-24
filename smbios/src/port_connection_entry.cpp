@@ -19,12 +19,13 @@ PortConnectionEntry::PortConnectionEntry(const DMIHeader& header) {
     init_string_values();
 }
 
-MemoryDeviceEntry::~MemoryDeviceEntry()
+PortConnectionEntry::~PortConnectionEntry()
 {
+
 }
 
 
-void MemoryDeviceEntry::init_string_values()
+void PortConnectionEntry::init_string_values()
 {
     connection_type_map_[] = "Not Provided";
     connection_type_map_[] = "No Error";

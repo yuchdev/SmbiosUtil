@@ -11,12 +11,17 @@ struct DMIHeader;
 #pragma pack(push, 1)
 
 // See http://www.dmtf.org/standards/smbios
-// Standard according to current SMBIOS version
-// 'Memory Device' chapter
+// Standard according to current SMBIOS version, 'Port Connection' chapter
+// By 3.1 version fully compatible with all previous versions
 
 /// @brief SMBIOS MemoryDevice entry Ver 2.1+
 struct PortConnection {
     uint32_t header;
+    uint8_t internal_designator;
+    uint8_t internal_connection;
+    uint8_t external_designator;
+    uint8_t external_connection;
+    uint8_t port_type;
 };
 
 #pragma pack(pop)
@@ -27,10 +32,88 @@ public:
 
     // @brief 
     enum ConnectorType : uint8_t {
+        None = 0x00,
+        Centronics = 0x01,
+        MiniCentronics = 0x02,
+        Proprietary = 0x03,
+        DB25PinMale = 0x04,
+        DB25PinFemale = 0x05,
+        DB15PinMale = 0x06,
+        DB15PinFemale = 0x07,
+        DB9PinMale = 0x08,
+        DB9PinFemale = 0x09,
+        RJ11 = 0x0A,
+        RJ45 = 0x0B,
+        MiniSCSI50pin = 0x0C,
+        MiniDIN = 0x0D,
+        Micro_DIN = 0x0E,
+        PS2 = 0x0F,
+        Infrared = 0x10,
+        HPHIL = 0x11,
+        AccessBusUSB = 0x12,
+        SSA_SCSI = 0x13,
+        CircularDIN8Male = 0x14,
+        CircularDIN8Female = 0x15,
+        OnBoardIDE = 0x16,
+        OnBoardFloppy = 0x17,
+        DualInline9pin = 0x18,
+        DualInline25pin = 0x19,
+        DualInline50pin = 0x1A,
+        DualInline68pin = 0x1B,
+        OnBoardSound = 0x1C,
+        MiniCentronicsType14 = 0x1D,
+        MiniCentronicsType26 = 0x1E,
+        MiniJack = 0x1F,
+        BNC = 0x20,
+        IEEE1394 = 0x21,
+        SAS_SATA = 0x22,
+        PC98 = 0xA0,
+        PC98Hireso = 0xA1,
+        PCH98 = 0xA2,
+        PC98Note = 0xA3,
+        PC98Full = 0xA4,
+        Other = 0xFF
     };
 
     // @brief 
     enum PortType : uint8_t {
+        None = 0x00,
+        ParallelXT_AT = 0x01,
+        ParallelPS_2 = 0x02,
+        ParallelECP = 0x03,
+        ParallelEPP = 0x04,
+        ParallelECP_EPP = 0x05,
+        SerialXT_AT = 0x06,
+        Serial16450 = 0x07,
+        Serial16550 = 0x08,
+        Serial16550A = 0x09,
+        SCSI = 0x0A,
+        MIDI = 0x0B,
+        JoyStick = 0x0C,
+        Keyboard = 0x0D,
+        Mouse = 0x0E,
+        SSA_SCSI = 0x0F,
+        USB = 0x10,
+        FireWire = 0x11,
+        PCMCIA = 0x12,
+        PCMCIAType2 = 0x13,
+        PCMCIAType3 = 0x14,
+        Cardbus = 0x15,
+        AccessBusPort = 0x16,
+        SCSI2 = 0x17,
+        SCSIWide = 0x18,
+        PC98 = 0x19,
+        PC98Hireso = 0x1A,
+        PCH98 = 0x1B,
+        Video = 0x1C,
+        Audio = 0x1D,
+        Modem = 0x1E,
+        Network = 0x1F,
+        SATA = 0x20,
+        SAS = 0x21,
+        Compatible8251 = 0xA0,
+        CompatibleFIFO8251 = 0xA1,
+        Other = 0xFF
     };
 
 
@@ -97,7 +180,7 @@ private:
 
 private:
 
-    PortConnection* port_connection_;
+    const PortConnection* port_connection_;
 
     /// Bitwise to string representation
     mutable std::map<uint8_t, std::string> connection_type_map_;
