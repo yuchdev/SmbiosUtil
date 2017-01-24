@@ -1,6 +1,6 @@
 #if defined(_WIN32) || defined(_WIN64)
 #include <smbios/win_physical_memory.h>
-#include <smbios/win_native_api.h>
+#include <smbios/win_native_api_helper.h>
 #include <smbios/win_handle_ptr.h>
 
 #include <memory>

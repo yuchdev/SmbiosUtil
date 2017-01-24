@@ -295,13 +295,13 @@ private:
     const MemoryDeviceV27* memory_device_v4_ = nullptr;
 
     /// Bitwise to string representation
-    mutable std::map<uint16_t, std::string> error_handle_map_;
-    mutable std::map<uint16_t, std::string> data_width_map_;
-    mutable std::map<uint16_t, std::string> device_size_map_;
-    mutable std::map<uint8_t, std::string> form_factor_map_;
-    mutable std::map<uint8_t, std::string> device_set_map_;
-    mutable std::map<uint8_t, std::string> device_type_map_;
-    mutable std::map<uint16_t, std::string> device_properties_map_;
+    std::map<uint16_t, std::string> error_handle_map_;
+    std::map<uint16_t, std::string> data_width_map_;
+    std::map<uint16_t, std::string> device_size_map_;
+    std::map<uint8_t, std::string> form_factor_map_;
+    std::map<uint8_t, std::string> device_set_map_;
+    std::map<uint8_t, std::string> device_type_map_;
+    std::map<uint16_t, std::string> device_properties_map_;
 };
 
 } // namespace smbios

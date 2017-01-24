@@ -15,6 +15,8 @@ MemoryDeviceEntry::MemoryDeviceEntry(const DMIHeader& header) {
         throw std::runtime_error(err.str().c_str());
     }
 
+    // TODO: check entry size
+
     if (header.length >= 0x15) {
         memory_device_v1_ = reinterpret_cast<const MemoryDeviceV21*>(header.data);
     }
@@ -88,8 +90,15 @@ uint8_t MemoryDeviceEntry::get_form_factor() const
     if (nullptr == memory_device_v1_) {
         return FormFactorValue::FormFactorOutOfSpec;
     }
-
-    return memory_device_v1_->device_form_factor;
+    
+    auto it = form_factor_map_.find(memory_device_v1_->device_form_factor);
+    if (it != form_factor_map_.end()) {
+        return (*it).first;
+    }
+    
+    // should not be undefined values
+    assert(false);
+    return FormFactorValue::FormFactorOutOfSpec;
 }
 
 uint8_t MemoryDeviceEntry::get_device_set() const
@@ -125,7 +134,14 @@ uint8_t MemoryDeviceEntry::get_device_type() const
         return DeviceTypeValue::DeviceTypeOutOfSpec;
     }
 
-    return memory_device_v1_->device_type;
+    auto it = device_type_map_.find(memory_device_v1_->device_type);
+    if (it != device_type_map_.end()) {
+        return (*it).first;
+    }
+
+    // should not be undefined values
+    assert(false);
+    return DeviceTypeValue::DeviceTypeOutOfSpec;
 }
 
 uint16_t MemoryDeviceEntry::get_device_detail() const
@@ -134,7 +150,12 @@ uint16_t MemoryDeviceEntry::get_device_detail() const
         return DeviceProperties::DevicePropertiesOutOfSpec;
     }
 
-    return memory_device_v1_->type_detail;
+    auto it = device_properties_map_.find(memory_device_v1_->type_detail);
+    if (it != device_properties_map_.end()) {
+        return (*it).first;
+    }
+
+    return DeviceProperties::DevicePropertiesOutOfSpec;
 }
 
 std::string MemoryDeviceEntry::get_type() const
@@ -145,6 +166,7 @@ std::string MemoryDeviceEntry::get_type() const
 std::string MemoryDeviceEntry::render_to_description() const
 {
     std::stringstream decsription;
+    decsription << "Header type: " << get_type() << '\n';
     decsription << "Array Handle: " << get_array_handle_string() << '\n';
     decsription << "Error Handle: " << get_error_handle_string() << '\n';
     decsription << "Total width: " << get_total_width_string() << '\n';
@@ -171,10 +193,14 @@ std::string MemoryDeviceEntry::get_array_handle_string() const
 std::string MemoryDeviceEntry::get_error_handle_string() const
 {
     uint16_t error_handle = get_error_handle();
-    string error_handle_string = error_handle_map_[error_handle];
-    if (!error_handle_string.empty()) {
-        return error_handle_string;
+
+    // special values
+    auto it = error_handle_map_.find(error_handle);
+    if (it != error_handle_map_.end()) {
+        return (*it).second;
     }
+
+    // just value in hex
     std::stringstream err_handle_stream;
     err_handle_stream << std::hex << error_handle << std::dec;
     return std::move(err_handle_stream.str());
@@ -182,34 +208,48 @@ std::string MemoryDeviceEntry::get_error_handle_string() const
 
 std::string MemoryDeviceEntry::get_total_width_string() const
 {
-    string width = data_width_map_[get_total_width()];
-    if (!width.empty()) {
-        return width;
+    uint16_t total_width = get_total_width();
+
+    // special values
+    auto it = data_width_map_.find(total_width);
+    if (it != data_width_map_.end()) {
+        return (*it).second;
     }
-    width = std::to_string(get_total_width());
+
+    // formatted output
+    string width = std::to_string(get_total_width());
     width += " bits";
     return width;
 }
 
 std::string smbios::MemoryDeviceEntry::get_data_width_string() const
 {
-    string width = data_width_map_[get_data_width()];
-    if (!width.empty()) {
-        return width;
+    uint16_t data_width = get_data_width();
+
+    // special values
+    auto it = data_width_map_.find(data_width);
+    if (it != data_width_map_.end()) {
+        return (*it).second;
     }
-    width = std::to_string(get_total_width());
+
+    // formatted output
+    string width = std::to_string(get_total_width());
     width += " bits";
     return width;
 }
 
-std::string smbios::MemoryDeviceEntry::get_device_size_string() const
+std::string MemoryDeviceEntry::get_device_size_string() const
 {
     uint16_t device_size = get_device_size();
-    string device_size_string = device_size_map_[device_size];
-    if (!device_size_string.empty()) {
-        return device_size_string;
+
+    // special values
+    auto it = device_size_map_.find(device_size);
+    if (it != device_size_map_.end()) {
+        return (*it).second;
     }
 
+    // formatted output
+    string device_size_string;
     if (device_size & 0x8000) {
         device_size_string += std::to_string(device_size & 0x7FFF);
         device_size_string += " kB";
@@ -223,16 +263,14 @@ std::string smbios::MemoryDeviceEntry::get_device_size_string() const
 
 std::string MemoryDeviceEntry::get_form_factor_string() const
 {
-    string form_factor = form_factor_map_[get_form_factor()];
-    assert(!form_factor.empty());
-    return form_factor;
+    return (*form_factor_map_.find(get_form_factor())).second;
 }
 
 std::string MemoryDeviceEntry::get_device_set_string() const
 {
-    string device_set = device_set_map_[get_device_set()];
-    if (!device_set.empty()) {
-        return device_set;
+    auto it = device_set_map_.find(get_device_set());
+    if (it != device_set_map_.end()) {
+        return (*it).second;
     }
     return std::to_string(get_device_set());
 }
@@ -249,9 +287,7 @@ std::string smbios::MemoryDeviceEntry::get_bank_locator_string() const
 
 std::string smbios::MemoryDeviceEntry::get_device_type_string() const
 {
-    string device_type_string = device_type_map_[get_device_type()];
-    assert(!device_type_string.empty());
-    return device_type_string;
+    return (*device_type_map_.find(get_device_type())).second;
 }
 
 std::string smbios::MemoryDeviceEntry::get_device_detail_string() const
@@ -261,8 +297,9 @@ std::string smbios::MemoryDeviceEntry::get_device_detail_string() const
     uint16_t current_property = 0x1;
     const uint16_t properties = get_device_detail();
     for (size_t i = 0, current_property = 0x1; i < details_count; current_property <<= 1, ++i) {
-        if (properties & current_property) {
-            properties_stream << '\t' << device_properties_map_[current_property>>1] << '\n';
+        auto it = device_properties_map_.find(current_property >> 1);
+        if (properties & current_property && (it != device_properties_map_.end())) {
+            properties_stream << '\t' << (*it).second << '\n';
         }
     }
     return std::move(properties_stream.str());
@@ -287,7 +324,7 @@ void smbios::MemoryDeviceEntry::init_string_values()
     form_factor_map_[Chip] = "Chip";
     form_factor_map_[DIP] = "DIP";
     form_factor_map_[ZIP] = "ZIP";
-    form_factor_map_[ProprietaryCard] = "ProprietaryCard";
+    form_factor_map_[ProprietaryCard] = "Proprietary Card";
     form_factor_map_[DIMM] = "DIMM";
     form_factor_map_[TSOP] = "TSOP";
     form_factor_map_[Rowofchips] = "Rowofchips";
@@ -331,20 +368,20 @@ void smbios::MemoryDeviceEntry::init_string_values()
     device_type_map_[LPDDR3] = "LPDDR3";
     device_type_map_[LPDDR4] = "LPDDR4";
 
-    device_properties_map_[DevicePropertiesOutOfSpec] = "DevicePropertiesOutOfSpec";
-    device_properties_map_[DevicePropertiesOther] = "DevicePropertiesOther";
-    device_properties_map_[DevicePropertiesUnknown] = "DevicePropertiesUnknown";
-    device_properties_map_[FastPaged] = "FastPaged";
-    device_properties_map_[StaticColumn] = "StaticColumn";
-    device_properties_map_[PseudoStatic] = "PseudoStatic";
+    device_properties_map_[DevicePropertiesOutOfSpec] = "OutOfSpec";
+    device_properties_map_[DevicePropertiesOther] = "Other";
+    device_properties_map_[DevicePropertiesUnknown] = "Unknown";
+    device_properties_map_[FastPaged] = "Fast-Paged";
+    device_properties_map_[StaticColumn] = "Static Column";
+    device_properties_map_[PseudoStatic] = "Pseudo-Static";
     device_properties_map_[RAMBUS] = "RAMBUS";
     device_properties_map_[Synchronous] = "Synchronous";
     device_properties_map_[CMOS] = "CMOS";
     device_properties_map_[EDO] = "EDO";
     device_properties_map_[WindowDRAM] = "WindowDRAM";
     device_properties_map_[CacheDRAM] = "CacheDRAM";
-    device_properties_map_[NonVolatile] = "NonVolatile";
+    device_properties_map_[NonVolatile] = "Non-Volatile";
     device_properties_map_[Registered] = "Registered";
-    device_properties_map_[Unregistered] = "Unregistered";
+    device_properties_map_[Unregistered] = "Non-Registered";
     device_properties_map_[LRDIMM] = "LRDIMM";
 }

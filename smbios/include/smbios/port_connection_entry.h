@@ -32,7 +32,7 @@ public:
 
     // @brief 
     enum ConnectorType : uint8_t {
-        None = 0x00,
+        NoneConnector = 0x00,
         Centronics = 0x01,
         MiniCentronics = 0x02,
         Proprietary = 0x03,
@@ -46,12 +46,12 @@ public:
         RJ45 = 0x0B,
         MiniSCSI50pin = 0x0C,
         MiniDIN = 0x0D,
-        Micro_DIN = 0x0E,
+        MicroDIN = 0x0E,
         PS2 = 0x0F,
         Infrared = 0x10,
         HPHIL = 0x11,
         AccessBusUSB = 0x12,
-        SSA_SCSI = 0x13,
+        SSA_SCSIConnector = 0x13,
         CircularDIN8Male = 0x14,
         CircularDIN8Female = 0x15,
         OnBoardIDE = 0x16,
@@ -67,17 +67,17 @@ public:
         BNC = 0x20,
         IEEE1394 = 0x21,
         SAS_SATA = 0x22,
-        PC98 = 0xA0,
-        PC98Hireso = 0xA1,
-        PCH98 = 0xA2,
+        PC98Connector = 0xA0,
+        PC98HiresoConnector = 0xA1,
+        PCH98Connector = 0xA2,
         PC98Note = 0xA3,
         PC98Full = 0xA4,
-        Other = 0xFF
+        OtherConnector = 0xFF
     };
 
     // @brief 
     enum PortType : uint8_t {
-        None = 0x00,
+        NonePort = 0x00,
         ParallelXT_AT = 0x01,
         ParallelPS_2 = 0x02,
         ParallelECP = 0x03,
@@ -92,7 +92,7 @@ public:
         JoyStick = 0x0C,
         Keyboard = 0x0D,
         Mouse = 0x0E,
-        SSA_SCSI = 0x0F,
+        SSA_SCSIPort = 0x0F,
         USB = 0x10,
         FireWire = 0x11,
         PCMCIA = 0x12,
@@ -102,9 +102,9 @@ public:
         AccessBusPort = 0x16,
         SCSI2 = 0x17,
         SCSIWide = 0x18,
-        PC98 = 0x19,
-        PC98Hireso = 0x1A,
-        PCH98 = 0x1B,
+        PC98Port = 0x19,
+        PC98HiresoPort = 0x1A,
+        PCH98Port = 0x1B,
         Video = 0x1C,
         Audio = 0x1D,
         Modem = 0x1E,
@@ -113,9 +113,8 @@ public:
         SAS = 0x21,
         Compatible8251 = 0xA0,
         CompatibleFIFO8251 = 0xA1,
-        Other = 0xFF
+        OtherPort = 0xFF
     };
-
 
     /// @brief Parse the header, recognize how much information do we have
     /// in MemoryDevice SMBIOS entry
@@ -132,10 +131,6 @@ public:
 
     //////////////////////////////////////////////////////////////////////////
     // Byte values
-
-    /// @brief 0x04 offset
-    /// Handle, or instance number, associated with the structure
-    uint16_t get_handle() const;
 
     /// @brief 0x05 offset
     /// 
@@ -183,8 +178,8 @@ private:
     const PortConnection* port_connection_;
 
     /// Bitwise to string representation
-    mutable std::map<uint8_t, std::string> connection_type_map_;
-    mutable std::map<uint8_t, std::string> port_type_map_;
+    std::map<uint8_t, std::string> connection_type_map_;
+    std::map<uint8_t, std::string> port_type_map_;
 };
 
 } // namespace smbios

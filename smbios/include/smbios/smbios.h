@@ -80,6 +80,7 @@ public:
         SystemEnclosure = 3,
         ProcessorInformation = 4,
         CacheInformation = 7,
+        PortConnection = 8,
         SystemSlots = 9,
         PhysicalMemoryArray = 16,
         MemoryDevice = 17,
