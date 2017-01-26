@@ -7,24 +7,22 @@
 using std::string;
 using namespace smbios;
 
-PortConnectionEntry::PortConnectionEntry(const DMIHeader& header) {
+PortConnectionEntry::PortConnectionEntry(const DMIHeader& header, const SMBiosVersion& version) {
 
-    // TODO: check entry size
     if (header.type != SMBios::PortConnection) {
         std::stringstream err;
         err << "Wrong entry type, expected Port Connection, called Type = " << header.type;
         throw std::runtime_error(err.str().c_str());
     }
-    port_connection_ = reinterpret_cast<const PortConnection*>(header.data);
 
     init_string_values();
+
+    // check empty entry
+    if (header.length < 0x09)
+        return;
+
+    port_connection_ = reinterpret_cast<const PortConnection*>(header.data);
 }
-
-PortConnectionEntry::~PortConnectionEntry()
-{
-
-}
-
 
 void PortConnectionEntry::init_string_values()
 {
@@ -115,13 +113,21 @@ std::string PortConnectionEntry::get_type() const
     return "Port Connection";
 }
 
-std::string smbios::PortConnectionEntry::render_to_description() const
+std::string PortConnectionEntry::render_to_description() const
 {
-    return "NOT IMPLEMENTED";
+    std::stringstream decsription;
+    decsription << "Header type: " << get_type() << '\n';
+    decsription << "Internal Reference Designator: " << get_internal_connection_type() << '\n'; // dmi-string
+    decsription << "Internal Connection Type: " << get_internal_connection_string() << '\n';
+    decsription << "External Reference Designator: " << get_external_connection_type() << '\n'; // dmi-string
+    decsription << "External Connection Type: " << get_external_connection_string() << '\n';
+    decsription << "Port Type: " << get_port_string() << '\n';
+
+    return std::move(decsription.str());
 }
 
 
-uint8_t smbios::PortConnectionEntry::get_internal_connection_type() const
+uint8_t PortConnectionEntry::get_internal_connection_type() const
 {
     if (nullptr == port_connection_) {
         return ConnectorType::NoneConnector;
@@ -135,7 +141,7 @@ uint8_t smbios::PortConnectionEntry::get_internal_connection_type() const
     return ConnectorType::NoneConnector;
 }
 
-uint8_t smbios::PortConnectionEntry::get_external_connection_type() const
+uint8_t PortConnectionEntry::get_external_connection_type() const
 {
     if (nullptr == port_connection_) {
         return ConnectorType::NoneConnector;
@@ -149,7 +155,7 @@ uint8_t smbios::PortConnectionEntry::get_external_connection_type() const
     return ConnectorType::NoneConnector;
 }
 
-uint8_t smbios::PortConnectionEntry::get_port_type() const
+uint8_t PortConnectionEntry::get_port_type() const
 {
     if (nullptr == port_connection_) {
         return PortType::NonePort;
@@ -163,17 +169,17 @@ uint8_t smbios::PortConnectionEntry::get_port_type() const
     return PortType::NonePort;
 }
 
-std::string smbios::PortConnectionEntry::get_internal_connection_string() const
+std::string PortConnectionEntry::get_internal_connection_string() const
 {
     return (*connection_type_map_.find(get_internal_connection_type())).second;
 }
 
-std::string smbios::PortConnectionEntry::get_external_connection_string() const
+std::string PortConnectionEntry::get_external_connection_string() const
 {
     return (*connection_type_map_.find(get_external_connection_type())).second;
 }
 
-std::string smbios::PortConnectionEntry::get_port_string() const
+std::string PortConnectionEntry::get_port_string() const
 {
     return (*port_type_map_.find(get_port_type())).second;
 }

@@ -18,6 +18,29 @@ using std::endl;
 using std::numeric_limits;
 using namespace smbios;
 
+bool smbios::operator>(const SMBiosVersion& lhs, const SMBiosVersion& rhs)
+{
+    if (lhs.major_version > rhs.major_version) {
+        return true;
+    }
+    if (lhs.minor_version > rhs.minor_version) {
+        return true;
+    }
+    return false;
+}
+
+bool smbios::operator<(const SMBiosVersion& lhs, const SMBiosVersion& rhs)
+{
+    if (lhs.major_version < rhs.major_version) {
+        return true;
+    }
+    if (lhs.minor_version < rhs.minor_version) {
+        return true;
+    }
+    return false;
+}
+
+
 SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
 {
     static_assert(sizeof(uint8_t) == 1, "Very strange uint8_t size");
@@ -68,21 +91,24 @@ SMBios::~SMBios()
 {
 }
 
-std::string SMBios::get_smbios_version() const
+SMBiosVersion SMBios::get_smbios_version() const
 {
-    std::stringstream versionstr;
+    SMBiosVersion ver;
     size_t major_version = native_impl_->get_major_version();
     size_t minor_version = native_impl_->get_minor_version();
 
     // native implementation provides version
     if (numeric_limits<size_t>::max() != major_version && numeric_limits<size_t>::max() != minor_version) {
-        versionstr << major_version << '.' << minor_version;
+        ver.major_version = major_version;
+        ver.minor_version = minor_version;
     }
+    // Low-level table provides version
     else {
-        versionstr << major_version_ << '.' << minor_version_;
+        ver.major_version = major_version_;
+        ver.minor_version = minor_version_;
     }
-    
-    return std::move(versionstr.str());
+
+    return ver;
 }
 
 size_t SMBios::get_structures_count() const

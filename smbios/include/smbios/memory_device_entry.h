@@ -6,6 +6,7 @@
 namespace smbios {
 
 struct DMIHeader;
+struct SMBiosVersion;
 
 // should be aligned to be mapped to physical memory
 #pragma pack(push, 1)
@@ -165,12 +166,17 @@ public:
         LRDIMM = 0x1 << 15
     };
 
+    enum DeviceSpeed : uint16_t {
+        DeviceSpeedUnknown = 0x0,
+        DeviceSpeedReserved = 0xFFFF
+    };
+
     /// @brief Parse the header, recognize how much information do we have
     /// in MemoryDevice SMBIOS entry
-    MemoryDeviceEntry(const DMIHeader& header);
+    MemoryDeviceEntry(const DMIHeader& header, const SMBiosVersion& version);
 
     // @brief Parent is abstract
-    virtual ~MemoryDeviceEntry();
+    virtual ~MemoryDeviceEntry() = default;
 
     /// @brief String representation
     virtual std::string get_type() const override;
@@ -179,7 +185,7 @@ public:
     virtual std::string render_to_description() const override;
 
     //////////////////////////////////////////////////////////////////////////
-    // Byte values
+    // Bitwise values
 
     /// @brief 0x05 offset
     /// Handle, or instance number, associated with the structure
@@ -222,6 +228,10 @@ public:
     /// @brief 0x13 offset
     /// See DeviceProperties enum for special values
     uint16_t get_device_detail() const;
+
+    /// @brief 0x15 offset
+    /// Identifies the maximum capable speed of the device
+    uint16_t get_device_speed() const;
 
     //////////////////////////////////////////////////////////////////////////
     // String values
@@ -270,17 +280,9 @@ public:
     /// DeviceProperties string representation
     std::string get_device_detail_string() const;
 
-    /// @brief Represent earliest versions of SMBIOS MemoryDevice (2.1+)
-    const MemoryDeviceV21* get_memory_device_v1() const { return memory_device_v1_; }
-
-    /// @brief Represent 2.3+ versions of SMBIOS MemoryDevice
-    const MemoryDeviceV23* get_memory_device_v2() const { return memory_device_v2_; }
-
-    /// @brief Represent 2.6+ versions of SMBIOS MemoryDevice
-    const MemoryDeviceV26* get_memory_device_v3() const { return memory_device_v3_; }
-
-    /// @brief Represent 2.7+ versions of SMBIOS MemoryDevice
-    const MemoryDeviceV27* get_memory_device_v4() const { return memory_device_v4_; }
+    /// @brief 0x15 offset
+    /// Maximum capable speed string representation
+    std::string get_device_speed_string() const;
 
 private:
 
@@ -303,6 +305,7 @@ private:
     std::map<uint8_t, std::string> device_set_map_;
     std::map<uint8_t, std::string> device_type_map_;
     std::map<uint16_t, std::string> device_properties_map_;
+    std::map<uint16_t, std::string> device_speed_map_;
 };
 
 } // namespace smbios

@@ -6,6 +6,7 @@
 namespace smbios {
 
 struct DMIHeader;
+struct SMBiosVersion;
 
 // should be aligned to be mapped to physical memory
 #pragma pack(push, 1)
@@ -118,10 +119,10 @@ public:
 
     /// @brief Parse the header, recognize how much information do we have
     /// in MemoryDevice SMBIOS entry
-    PortConnectionEntry(const DMIHeader& header);
+    PortConnectionEntry(const DMIHeader& header, const SMBiosVersion& version);
 
     // @brief Parent is abstract
-    virtual ~PortConnectionEntry();
+    virtual ~PortConnectionEntry() = default;
 
     /// @brief String representation
     virtual std::string get_type() const override;
@@ -148,10 +149,6 @@ public:
     //////////////////////////////////////////////////////////////////////////
     // String values
 
-    /// @brief 0x04 offset
-    /// Handle, or instance number, associated with the structure
-    std::string get_handle_string() const;
-
     /// @brief 0x05 offset
     /// 
     std::string get_internal_connection_string() const;
@@ -166,7 +163,6 @@ public:
 
     /// @brief 
     const PortConnection* get_port_connection_struct() const { return port_connection_; }
-
 
 private:
 

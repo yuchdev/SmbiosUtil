@@ -6,6 +6,7 @@
 namespace smbios {
 
 struct DMIHeader;
+struct SMBiosVersion;
 
 // should be aligned to be mapped to physical memory
 #pragma pack(push, 1)
@@ -104,10 +105,10 @@ public:
 
     /// @brief Parse the header, recognize how much information do we have
     /// in MemoryDevice SMBIOS entry
-    BiosInformationEntry(const DMIHeader& header);
+    BiosInformationEntry(const DMIHeader& header, const SMBiosVersion& version);
 
     // @brief Parent is abstract
-    virtual ~BiosInformationEntry();
+    virtual ~BiosInformationEntry() = default;
 
     /// @brief String representation
     virtual std::string get_type() const override;
@@ -118,9 +119,21 @@ public:
     //////////////////////////////////////////////////////////////////////////
     // Byte values
 
+    /// @brief 0x04 offset
+    /// Index of vendor DMI string
+    uint8_t get_vendor_index() const;
+
+    /// @brief 0x04 offset
+    /// Index of version DMI string
+    uint8_t get_version_index() const;
+
     /// @brief 0x06 offset
     /// 
     uint16_t get_starting_address() const;
+
+    /// @brief 0x08 offset
+    /// Index of release date DMI string
+    uint8_t get_release_date_index() const;
 
     /// @brief 0x09 offset
     /// 
@@ -157,9 +170,35 @@ public:
     //////////////////////////////////////////////////////////////////////////
     // String values
 
+    /// @brief Vendor DMI string
+    std::string get_vendor_string() const;
+
+    /// @brief Version DMI string
+    std::string get_version_string() const;
+
     /// @brief 
-    const BiosInformationV24* bios_information_struct_ver24() const { return bios_information24_; }
-    const BiosInformationV31* bios_information_struct_ver31() const { return bios_information31_; }
+    std::string get_starting_address_string() const;
+
+    /// @brief Index of release date DMI string
+    std::string get_release_date_string() const;
+
+    /// @brief 
+    std::string get_rom_size_string() const;
+
+    /// @brief 
+    std::string get_properties_string() const;
+
+    /// @brief 
+    std::string get_properties_extension1_string() const;
+
+    /// @brief 
+    std::string get_properties_extension2_string() const;
+
+    /// @brief 
+    std::string get_bios_version_string() const;
+
+    /// @brief 
+    std::string get_firmware_version_string() const;
 
 private:
 

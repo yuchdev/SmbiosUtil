@@ -7,7 +7,7 @@
 using std::string;
 using namespace smbios;
 
-MemoryDeviceEntry::MemoryDeviceEntry(const DMIHeader& header) {
+MemoryDeviceEntry::MemoryDeviceEntry(const DMIHeader& header, const SMBiosVersion& version) {
 
     if (header.type != SMBios::MemoryDevice) {
         std::stringstream err;
@@ -15,7 +15,11 @@ MemoryDeviceEntry::MemoryDeviceEntry(const DMIHeader& header) {
         throw std::runtime_error(err.str().c_str());
     }
 
-    // TODO: check entry size
+    init_string_values();
+
+    // check empty entry
+    if (header.length < 0x15)
+        return;
 
     if (header.length >= 0x15) {
         memory_device_v1_ = reinterpret_cast<const MemoryDeviceV21*>(header.data);
@@ -32,12 +36,6 @@ MemoryDeviceEntry::MemoryDeviceEntry(const DMIHeader& header) {
     if (header.length >= 0x1C) {
         memory_device_v4_ = reinterpret_cast<const MemoryDeviceV27*>(header.data);
     }
-
-    init_string_values();
-}
-
-MemoryDeviceEntry::~MemoryDeviceEntry()
-{
 }
 
 uint16_t MemoryDeviceEntry::get_array_handle() const
@@ -144,6 +142,15 @@ uint8_t MemoryDeviceEntry::get_device_type() const
     return DeviceTypeValue::DeviceTypeOutOfSpec;
 }
 
+uint16_t MemoryDeviceEntry::get_device_speed() const
+{
+    if (nullptr == memory_device_v2_) {
+        return DeviceSpeed::DeviceSpeedUnknown;
+    }
+    return memory_device_v2_->device_speed;
+}
+
+
 uint16_t MemoryDeviceEntry::get_device_detail() const
 {
     if (nullptr == memory_device_v1_) {
@@ -173,11 +180,12 @@ std::string MemoryDeviceEntry::render_to_description() const
     decsription << "Data width: " << get_data_width_string() << '\n';
     decsription << "Device size: " << get_device_size_string() << '\n';
     decsription << "Form factor: " << get_form_factor_string() << '\n';
-    decsription << "Device set: " << get_device_set_string() << '\n';
-    decsription << "Device locator: " << get_device_locator_string() << '\n';
+    decsription << "Device set: " << get_device_set_string() << '\n'; // dmi-string
+    decsription << "Device locator: " << get_device_locator_string() << '\n'; // dmi-string
     decsription << "Bank locator: " << get_bank_locator_string() << '\n';
     decsription << "Device type: " << get_device_type_string() << '\n';
-    decsription << "Device details: " << '\n' << get_device_detail_string() << '\n';
+    decsription << "Device details: " << '\n' << get_device_detail_string();
+    decsription << "Device speed: " << get_device_speed_string();
 
     return std::move(decsription.str());
 }
@@ -186,12 +194,15 @@ std::string MemoryDeviceEntry::get_array_handle_string() const
 {
     uint16_t array_handle = get_array_handle();
     std::stringstream array_handle_stream;
-    array_handle_stream << std::hex << array_handle << std::dec;
+    array_handle_stream << std::hex << std::showbase
+        << array_handle 
+        << std::dec << std::noshowbase;
     return std::move(array_handle_stream.str());
 }
 
 std::string MemoryDeviceEntry::get_error_handle_string() const
 {
+    assert(!error_handle_map_.empty());
     uint16_t error_handle = get_error_handle();
 
     // special values
@@ -208,6 +219,7 @@ std::string MemoryDeviceEntry::get_error_handle_string() const
 
 std::string MemoryDeviceEntry::get_total_width_string() const
 {
+    assert(!data_width_map_.empty());
     uint16_t total_width = get_total_width();
 
     // special values
@@ -222,8 +234,9 @@ std::string MemoryDeviceEntry::get_total_width_string() const
     return width;
 }
 
-std::string smbios::MemoryDeviceEntry::get_data_width_string() const
+std::string MemoryDeviceEntry::get_data_width_string() const
 {
+    assert(!data_width_map_.empty());
     uint16_t data_width = get_data_width();
 
     // special values
@@ -240,6 +253,7 @@ std::string smbios::MemoryDeviceEntry::get_data_width_string() const
 
 std::string MemoryDeviceEntry::get_device_size_string() const
 {
+    assert(!device_size_map_.empty());
     uint16_t device_size = get_device_size();
 
     // special values
@@ -263,11 +277,13 @@ std::string MemoryDeviceEntry::get_device_size_string() const
 
 std::string MemoryDeviceEntry::get_form_factor_string() const
 {
+    assert(!form_factor_map_.empty());
     return (*form_factor_map_.find(get_form_factor())).second;
 }
 
 std::string MemoryDeviceEntry::get_device_set_string() const
 {
+    assert(!device_set_map_.empty());
     auto it = device_set_map_.find(get_device_set());
     if (it != device_set_map_.end()) {
         return (*it).second;
@@ -280,32 +296,37 @@ std::string MemoryDeviceEntry::get_device_locator_string() const
     return "Not Specified";
 }
 
-std::string smbios::MemoryDeviceEntry::get_bank_locator_string() const
+std::string MemoryDeviceEntry::get_bank_locator_string() const
 {
     return "Not Specified";
 }
 
-std::string smbios::MemoryDeviceEntry::get_device_type_string() const
+std::string MemoryDeviceEntry::get_device_type_string() const
 {
+    assert(!device_type_map_.empty());
     return (*device_type_map_.find(get_device_type())).second;
 }
 
-std::string smbios::MemoryDeviceEntry::get_device_detail_string() const
+std::string MemoryDeviceEntry::get_device_detail_string() const
 {
-    std::stringstream properties_stream;
-    constexpr size_t details_count = sizeof(uint16_t) * 8;
-    uint16_t current_property = 0x1;
+    assert(!device_properties_map_.empty());
     const uint16_t properties = get_device_detail();
-    for (size_t i = 0, current_property = 0x1; i < details_count; current_property <<= 1, ++i) {
-        auto it = device_properties_map_.find(current_property);
-        if (properties & current_property && (it != device_properties_map_.end())) {
-            properties_stream << '\t' << (*it).second << '\n';
-        }
-    }
-    return std::move(properties_stream.str());
+    return AbstractSMBiosEntry::bitset_to_properties<uint16_t>(properties, device_properties_map_);
 }
 
-void smbios::MemoryDeviceEntry::init_string_values()
+std::string MemoryDeviceEntry::get_device_speed_string() const
+{
+    assert(!device_speed_map_.empty());
+    auto it = device_speed_map_.find(get_device_speed());
+    if (it != device_speed_map_.end()) {
+        return (*it).second;
+    }
+    string speed = std::to_string(get_device_speed());
+    speed += " MHz";
+    return speed;
+}
+
+void MemoryDeviceEntry::init_string_values()
 {
     error_handle_map_[ErrorHandleNotProvided] = "Not Provided";
     error_handle_map_[ErrorHandleNoError] = "No Error";
@@ -385,4 +406,7 @@ void smbios::MemoryDeviceEntry::init_string_values()
     device_properties_map_[Registered] = "Registered";
     device_properties_map_[Unregistered] = "Non-Registered";
     device_properties_map_[LRDIMM] = "LRDIMM";
+
+    device_speed_map_[DeviceSpeedUnknown] = "Unknown";
+    device_speed_map_[DeviceSpeedReserved] = "Reserved";
 }

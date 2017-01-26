@@ -56,8 +56,25 @@ struct DMIHeader
     // Specifies the structure's handle, a unique 16-bit number in the range 0 to 0FFFEh
     // If the system configuration changes, a previously assigned handle might no longer exist!
     uint16_t handle;
+
+    // Pointer to the entry beginning
     const uint8_t *data;
+
+    /// @brief Printable size
+    size_t get_length() const { return static_cast<size_t>(length); }
+
+    /// @brief Printable type ID
+    size_t get_type() const { return static_cast<size_t>(type); }
 };
+
+struct SMBiosVersion
+{
+    uint16_t major_version;
+    uint16_t minor_version;
+};
+
+bool operator >(const SMBiosVersion& lhs, const SMBiosVersion& rhs);
+bool operator <(const SMBiosVersion& lhs, const SMBiosVersion& rhs);
 
 /// @brief Class owns system-independent SMBIOS table 
 /// which however has been read using system-dependent API
@@ -73,7 +90,7 @@ public:
     // See SMBIOS specification
     // http://www.dmtf.org/standards/smbios
     // Table called 'Required structures and data'
-    enum SMBiosHandler
+    enum SMBiosHandler : uint8_t
     {
         BIOSInformation = 0,
         SystemInformation = 1,
@@ -95,8 +112,8 @@ public:
     /// @brief Should be exist to satisfy compiler
     ~SMBios();
 
-    /// @brief Get SMBIOS string version
-    std::string get_smbios_version() const;
+    /// @brief Get SMBIOS version
+    SMBiosVersion get_smbios_version() const;
 
     /// @brief Get SMBIOS structures stored in class
     size_t get_structures_count() const;
