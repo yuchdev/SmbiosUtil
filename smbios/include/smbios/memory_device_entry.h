@@ -35,24 +35,30 @@ struct MemoryDeviceV21 {
 /// @brief SMBIOS MemoryDevice entry Ver 2.3+
 struct MemoryDeviceV23 : public MemoryDeviceV21 {
     uint16_t device_speed;
-};
-
-/// @brief SMBIOS MemoryDevice entry Ver 2.6+
-struct MemoryDeviceV26 : public MemoryDeviceV23 {
     uint8_t manufacturer;
     uint8_t serial_number;
     uint8_t asset_tag;
     uint8_t part_number;
 };
 
+/// @brief SMBIOS MemoryDevice entry Ver 2.6+
+struct MemoryDeviceV26 : public MemoryDeviceV23 {
+    uint8_t device_rank;
+};
+
 /// @brief SMBIOS MemoryDevice entry Ver 2.7+
 struct MemoryDeviceV27 : public MemoryDeviceV26 {
-    uint8_t device_rank;
+    
     uint32_t extended_size;
     uint16_t memory_clock_speed;
 };
 
-// Further versions contain more information like voltage, but do not parsed here
+/// @brief SMBIOS MemoryDevice entry Ver 2.8+
+struct MemoryDeviceV28 : public MemoryDeviceV27 {
+    uint16_t minimum_voltage;
+    uint16_t maximum_voltage;
+    uint16_t configured_voltage;
+};
 
 #pragma pack(pop)
 
@@ -233,6 +239,26 @@ public:
     /// Identifies the maximum capable speed of the device
     uint16_t get_device_speed() const;
 
+    /// @brief 0x17 offset
+    /// 
+    uint8_t get_manufacturer_index() const;
+
+    /// @brief 0x18 offset
+    /// 
+    uint8_t get_serial_number_index() const;
+
+    /// @brief 0x19 offset
+    /// 
+    uint8_t get_asset_tag_index() const;
+
+    /// @brief 0x1A offset
+    /// 
+    uint8_t get_part_number_index() const;
+
+    /// @brief 0x1A offset
+    /// 
+    uint8_t get_device_rank() const;
+
     //////////////////////////////////////////////////////////////////////////
     // String values
 
@@ -284,6 +310,21 @@ public:
     /// Maximum capable speed string representation
     std::string get_device_speed_string() const;
 
+    /// @brief 0x17 offset
+    std::string get_manufacturer_string() const;
+
+    /// @brief 0x18 offset
+    std::string get_serial_number_string() const;
+
+    /// @brief 0x19 offset
+    std::string get_asset_tag_string() const;
+
+    /// @brief 0x1A offset
+    std::string get_part_number_string() const;
+
+    /// @brief 0x1A offset
+    std::string get_device_rank_string() const;
+
 private:
 
     /// Map flags data to string values
@@ -292,10 +333,11 @@ private:
 private:
 
     /// Init pointers depend on SMBIOS version
-    const MemoryDeviceV21* memory_device_v1_ = nullptr;
-    const MemoryDeviceV23* memory_device_v2_ = nullptr;
-    const MemoryDeviceV26* memory_device_v3_ = nullptr;
-    const MemoryDeviceV27* memory_device_v4_ = nullptr;
+    const MemoryDeviceV21* memory_device_v21_ = nullptr;
+    const MemoryDeviceV23* memory_device_v23_ = nullptr;
+    const MemoryDeviceV26* memory_device_v26_ = nullptr;
+    const MemoryDeviceV27* memory_device_v27_ = nullptr;
+    const MemoryDeviceV28* memory_device_v28_ = nullptr;
 
     /// Bitwise to string representation
     std::map<uint16_t, std::string> error_handle_map_;
