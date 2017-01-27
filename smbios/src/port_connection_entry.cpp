@@ -7,7 +7,8 @@
 using std::string;
 using namespace smbios;
 
-PortConnectionEntry::PortConnectionEntry(const DMIHeader& header, const SMBiosVersion& version) {
+PortConnectionEntry::PortConnectionEntry(const DMIHeader& header, const SMBiosVersion& version) 
+    : AbstractSMBiosEntry(header) {
 
     if (header.type != SMBios::PortConnection) {
         std::stringstream err;

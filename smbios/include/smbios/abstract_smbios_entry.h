@@ -1,32 +1,30 @@
 #pragma once
-#include <string>
 #include <map>
 #include <sstream>
 #include <type_traits>
+#include <vector>
+#include <string>
+#include <memory>
+#include <smbios/smbios_entry_interface.h>
 
 namespace smbios {
 
 struct DMIHeader;
 
-class SMBiosInterface {
-
-};
-
-class AbstractSMBiosEntry{
+class AbstractSMBiosEntry : public SMBiosInterface {
 public:
 
-    virtual ~AbstractSMBiosEntry() {}
+    AbstractSMBiosEntry(const DMIHeader& header);
 
-    /// @brief String representation
-    virtual std::string get_type() const = 0;
-
-    /// @brief Render all entry information into single string
-    virtual std::string render_to_description() const = 0;
+    virtual ~AbstractSMBiosEntry() = default;
 
 protected:
 
     /// Default implementation of SMBIOS string extractor
-    std::string dmi_string(const DMIHeader& header, size_t string_index);
+    std::string dmi_string(size_t string_index) const;
+
+    /// Print segment-based offset
+    std::string address_string(uint16_t string_index) const;
 
     /// Default implementation of SMBIOS bitwise properties to string representation
     template <typename T>
@@ -43,6 +41,16 @@ protected:
         }
         return std::move(properties_stream.str());
     }
+private:
+
+    void parse_dmi_strings();
+
+private:
+    
+    /// copy of entry header
+    std::unique_ptr<DMIHeader> header_;
+
+    std::vector<std::string> dmi_strings_;
 };
 
 } // namespace smbios

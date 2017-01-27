@@ -7,7 +7,8 @@
 using std::string;
 using namespace smbios;
 
-MemoryDeviceEntry::MemoryDeviceEntry(const DMIHeader& header, const SMBiosVersion& version) {
+MemoryDeviceEntry::MemoryDeviceEntry(const DMIHeader& header, const SMBiosVersion& version) 
+    : AbstractSMBiosEntry(header){
 
     if (header.type != SMBios::MemoryDevice) {
         std::stringstream err;
@@ -108,7 +109,7 @@ uint8_t MemoryDeviceEntry::get_device_set() const
     return memory_device_v1_->device_set;
 }
 
-uint8_t MemoryDeviceEntry::get_device_locator() const
+uint8_t MemoryDeviceEntry::get_device_locator_index() const
 {
     if (nullptr == memory_device_v1_) {
         return 0x0;
@@ -117,7 +118,7 @@ uint8_t MemoryDeviceEntry::get_device_locator() const
     return memory_device_v1_->device_locator;
 }
 
-uint8_t MemoryDeviceEntry::get_bank_locator() const
+uint8_t MemoryDeviceEntry::get_bank_locator_index() const
 {
     if (nullptr == memory_device_v1_) {
         return 0x0;
@@ -192,12 +193,7 @@ std::string MemoryDeviceEntry::render_to_description() const
 
 std::string MemoryDeviceEntry::get_array_handle_string() const
 {
-    uint16_t array_handle = get_array_handle();
-    std::stringstream array_handle_stream;
-    array_handle_stream << std::hex << std::showbase
-        << array_handle 
-        << std::dec << std::noshowbase;
-    return std::move(array_handle_stream.str());
+    return AbstractSMBiosEntry::address_string(get_array_handle());
 }
 
 std::string MemoryDeviceEntry::get_error_handle_string() const
@@ -293,12 +289,12 @@ std::string MemoryDeviceEntry::get_device_set_string() const
 
 std::string MemoryDeviceEntry::get_device_locator_string() const
 {
-    return "Not Specified";
+    return AbstractSMBiosEntry::dmi_string(get_device_locator_index());
 }
 
 std::string MemoryDeviceEntry::get_bank_locator_string() const
 {
-    return "Not Specified";
+    return AbstractSMBiosEntry::dmi_string(get_bank_locator_index());
 }
 
 std::string MemoryDeviceEntry::get_device_type_string() const

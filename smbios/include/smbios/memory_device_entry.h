@@ -216,10 +216,10 @@ public:
     uint8_t get_device_set() const;
 
     /// @brief 0x10 offset
-    uint8_t get_device_locator() const;
+    uint8_t get_device_locator_index() const;
 
     /// @brief 0x11 offset
-    uint8_t get_bank_locator() const;
+    uint8_t get_bank_locator_index() const;
 
     /// @brief 0x12 offset
     /// See DeviceTypeValue enum for special values

@@ -131,6 +131,10 @@ public:
     /// 
     uint16_t get_starting_address() const;
 
+    /// @brief 0x06 offset (yeah, same as starting offset)
+    /// 
+    uint32_t get_runtime_size() const;
+
     /// @brief 0x08 offset
     /// Index of release date DMI string
     uint8_t get_release_date_index() const;
@@ -179,6 +183,9 @@ public:
     /// @brief 
     std::string get_starting_address_string() const;
 
+    /// @brief 
+    std::string get_runtime_size_string() const;
+
     /// @brief Index of release date DMI string
     std::string get_release_date_string() const;
 
@@ -201,6 +208,8 @@ public:
     std::string get_firmware_version_string() const;
 
 private:
+
+    std::string stream_to_version(uint16_t major, uint16_t minor) const;
 
     /// Map flags data to string values
     void init_string_values();

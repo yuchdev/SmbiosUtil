@@ -7,9 +7,9 @@
 using std::string;
 using namespace smbios;
 
-BiosInformationEntry::BiosInformationEntry(const DMIHeader& header, const SMBiosVersion& version) {
-
-    // TODO: check entry size
+BiosInformationEntry::BiosInformationEntry(const DMIHeader& header, const SMBiosVersion& version) 
+    : AbstractSMBiosEntry(header) 
+{
     if (header.type != SMBios::BIOSInformation) {
         std::stringstream err;
         err << "Wrong entry type, expected BIOS Information, called Type = " << header.type;
@@ -42,12 +42,17 @@ std::string BiosInformationEntry::render_to_description() const
     decsription << "Header type: " << get_type() << '\n';
     decsription << "Vendor: " << get_vendor_string() << '\n';
     decsription << "Version: " << get_version_string() << '\n';
-    decsription << "Address: " << get_starting_address() << '\n';
+    decsription << "Address: " << get_starting_address_string() << '\n';
+    decsription << "Runtime size: " << get_runtime_size_string() << '\n';
     decsription << "Release Date: " << get_release_date_string() << '\n';
-    // TODO: other properties
+    decsription << "ROM Size: " << get_rom_size_string() << '\n';
+    decsription << "BIOS properties: " << '\n' << get_properties_string();
+    decsription << "BIOS properties extend1: " << '\n' << get_properties_extension1_string();
+    decsription << "BIOS properties extend2: " << '\n' << get_properties_extension2_string();
+    decsription << "BIOS Revision: " << get_bios_version_string() << '\n';
+    decsription << "Firmware Revision: " << get_firmware_version_string() << '\n';
 
     return std::move(decsription.str());
-
 }
 
 uint8_t BiosInformationEntry::get_vendor_index() const
@@ -74,6 +79,14 @@ uint16_t BiosInformationEntry::get_starting_address() const
     return bios_information24_->starting_segment;
 }
 
+uint32_t BiosInformationEntry::get_runtime_size() const
+{
+    if (nullptr == bios_information24_) {
+        return 0;
+    }
+    return static_cast<uint32_t>((0x10000 - bios_information24_->starting_segment) << 4);
+}
+
 uint8_t BiosInformationEntry::get_release_date_index() const
 {
     if (nullptr == bios_information24_) {
@@ -88,12 +101,12 @@ uint8_t BiosInformationEntry::get_rom_size() const
         return 0;
     }
 
-    // see extended_rom_size
+    // see extended_rom_size then
     if (0xFF == bios_information24_->rom_size) {
         return 0;
     }
 
-    return (0x10000 - bios_information24_->rom_size) << 4;
+    return (bios_information24_->rom_size + 1) << 6;
 }
 
 uint64_t BiosInformationEntry::get_properties() const
@@ -209,51 +222,81 @@ void BiosInformationEntry::init_string_values()
 
 std::string BiosInformationEntry::get_vendor_string() const
 {
-    return AbstractSMBiosEntry::dmi_string();
+    return AbstractSMBiosEntry::dmi_string(get_vendor_index());
 }
 
 std::string BiosInformationEntry::get_version_string() const
 {
-    return AbstractSMBiosEntry::dmi_string();
+    return AbstractSMBiosEntry::dmi_string(get_version_index());
 }
 
 std::string BiosInformationEntry::get_starting_address_string() const
 {
-
+    return AbstractSMBiosEntry::address_string(get_starting_address());
 }
 
 std::string BiosInformationEntry::get_release_date_string() const
 {
-    return AbstractSMBiosEntry::dmi_string();
+    return AbstractSMBiosEntry::dmi_string(get_release_date_index());
 }
 
 std::string BiosInformationEntry::get_rom_size_string() const
 {
+    string rom_size = std::to_string(static_cast<unsigned>(get_rom_size()));
+    rom_size += " kB";
+    return rom_size;
+}
 
+std::string BiosInformationEntry::get_runtime_size_string() const
+{
+    uint32_t runtime_size = get_runtime_size();
+    string runtime_size_string;
+    if (get_runtime_size() & 0x000003FF) {
+        runtime_size_string = std::to_string(runtime_size);
+        runtime_size_string += " bytes";
+    }
+    else {
+        runtime_size_string = std::to_string(runtime_size >> 10);
+        runtime_size_string += " kB";
+    }
+    return runtime_size_string;
 }
 
 std::string BiosInformationEntry::get_properties_string() const
 {
-
+    assert(!properties_map_.empty());
+    const uint64_t properties = get_properties();
+    return AbstractSMBiosEntry::bitset_to_properties<uint64_t>(properties, properties_map_);
 }
 
 std::string BiosInformationEntry::get_properties_extension1_string() const
 {
-
+    assert(!properties_extensions1_map_.empty());
+    const uint8_t properties = get_properties_extension1();
+    return AbstractSMBiosEntry::bitset_to_properties<uint8_t>(properties, properties_extensions1_map_);
 }
 
 std::string BiosInformationEntry::get_properties_extension2_string() const
 {
-
+    assert(!properties_extensions2_map_.empty());
+    const uint8_t properties = get_properties_extension2();
+    return AbstractSMBiosEntry::bitset_to_properties<uint8_t>(properties, properties_extensions2_map_);
 }
 
 std::string BiosInformationEntry::get_bios_version_string() const
 {
-
+    return stream_to_version(get_bios_major_release(), get_bios_minor_release());
 }
 
 std::string BiosInformationEntry::get_firmware_version_string() const
 {
+    return stream_to_version(get_firmware_major_release(), get_firmware_minor_release());
+}
 
+std::string BiosInformationEntry::stream_to_version(uint16_t major, uint16_t minor) const
+{
+    std::stringstream version_stream;
+    version_stream << major << '.' << minor;
+    return std::move(version_stream.str());
 }
 
