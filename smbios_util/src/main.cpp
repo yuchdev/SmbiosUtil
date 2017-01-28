@@ -9,6 +9,7 @@ using namespace smbios;
 
 int main(){
 
+
     try{
 
         SMBios bios;
