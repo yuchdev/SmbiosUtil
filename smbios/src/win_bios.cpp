@@ -34,7 +34,6 @@ RawSMBIOSData* SMBiosImpl::get_formatted_smbios_table() const
 
 uint8_t* SMBiosImpl::get_table_base() const
 {
-    assert(table_buffer_.size());
     if (smbios_data_) {
         return &smbios_data_->smbios_table_data[0];
     }

@@ -46,19 +46,25 @@ SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
     // no one of system sources was successful, fallback to physical memory device scan
     if (!native_impl_->smbios_read_success()) {
 
-        // call physical memory
-        PhysicalMemory physical_memory_device;
+        try{
+            // call physical memory
+            PhysicalMemory physical_memory_device;
 
-        // read service memory
-        physical_memory_device.map_physical_memory(devmem_base_, devmem_length_);
+            // read service memory
+            physical_memory_device.map_physical_memory(devmem_base_, devmem_length_);
 
-        std::vector<uint8_t> devmem_array = physical_memory_device.get_memory_dump(0, devmem_length_);
+            std::vector<uint8_t> devmem_array = physical_memory_device.get_memory_dump(0, devmem_length_);
 
-        // scan for headers
-        scan_physical_memory(devmem_array);
+            // scan for headers
+            scan_physical_memory(devmem_array);
 
-        // What version do we have (with some workaround)
-        extract_dmi_version();
+            // What version do we have (with some workaround)
+            extract_dmi_version();
+        }
+        catch (...) {
+            // Exception occur while scanning physical memory
+            // At could be any so leave object in consistent, but empty state
+        }
     }
 
     if(smbios_entry32_ && checksum_validated_){
@@ -107,7 +113,7 @@ size_t SMBios::get_structures_count() const
 
 const uint8_t *SMBios::get_table_base() const
 {
-    if(native_impl_->get_table_base()){
+    if(native_impl_ && native_impl_->get_table_base()){
         return native_impl_->get_table_base();
     }
     if(smbios_entry32_ && checksum_validated_){
@@ -123,7 +129,7 @@ const uint8_t *SMBios::get_table_base() const
 
 size_t SMBios::get_table_size() const
 {
-    if(native_impl_->get_table_size()){
+    if(native_impl_ && native_impl_->get_table_size()){
         return native_impl_->get_table_size();
     }
     if(smbios_entry32_ && checksum_validated_){

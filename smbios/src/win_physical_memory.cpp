@@ -128,7 +128,9 @@ bool NativePhysicalMemory::is_ntdll_compatible() const
 
 void NativePhysicalMemory::unmap_memory()
 {
-    NtUnmapViewOfSection(INVALID_HANDLE_VALUE, virtual_address_);
-    virtual_address_ = nullptr;
+    if (virtual_address_) {
+        NtUnmapViewOfSection(INVALID_HANDLE_VALUE, virtual_address_);
+        virtual_address_ = nullptr;
+    }
 }
 #endif // defined(_WIN32) || defined(_WIN64)
