@@ -46,25 +46,19 @@ SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
     // no one of system sources was successful, fallback to physical memory device scan
     if (!native_impl_->smbios_read_success()) {
 
-        try{
-            // call physical memory
-            PhysicalMemory physical_memory_device;
+        // call physical memory
+        PhysicalMemory physical_memory_device;
 
-            // read service memory
-            physical_memory_device.map_physical_memory(devmem_base_, devmem_length_);
+        // read service memory
+        physical_memory_device.map_physical_memory(devmem_base_, devmem_length_);
 
-            std::vector<uint8_t> devmem_array = physical_memory_device.get_memory_dump(0, devmem_length_);
+        std::vector<uint8_t> devmem_array = physical_memory_device.get_memory_dump(0, devmem_length_);
 
-            // scan for headers
-            scan_physical_memory(devmem_array);
+        // scan for headers
+        scan_physical_memory(devmem_array);
 
-            // What version do we have (with some workaround)
-            extract_dmi_version();
-        }
-        catch (...) {
-            // Exception occur while scanning physical memory
-            // At could be any so leave object in consistent, but empty state
-        }
+        // What version do we have (with some workaround)
+        extract_dmi_version();
     }
 
     if(smbios_entry32_ && checksum_validated_){
