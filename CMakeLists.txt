@@ -27,3 +27,5 @@ endif()
 
 add_subdirectory(smbios)
 add_subdirectory(smbios_util)
+
+SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)

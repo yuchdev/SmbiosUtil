@@ -6,7 +6,6 @@
 #define NOMINMAX
 #include <limits>
 #include <cassert>
-#include <iostream>
 #include <Windows.h>
 
 using namespace smbios;

@@ -124,6 +124,9 @@ public:
     /// @brief Actual table size from table beginning (without header)
     size_t get_table_size()  const;
 
+    /// Display SMBIOS description
+    std::string render_to_description() const;
+
     /// @brief Implement bidirectional iterator for STL-style processing
     class iterator {
     public:
@@ -198,9 +201,6 @@ private:
 
     /// Get DMI version major.minor
     void extract_dmi_version();
-
-    /// Display SMBIOS entry point data
-    void display_entry_point() const;
 
 private:
 

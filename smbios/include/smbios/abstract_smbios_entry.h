@@ -18,6 +18,8 @@ public:
 
     virtual ~AbstractSMBiosEntry() = default;
 
+    size_t get_entry_size() const override;
+
 protected:
 
     /// Default implementation of SMBIOS string extractor

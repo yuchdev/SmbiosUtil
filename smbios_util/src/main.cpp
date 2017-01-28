@@ -13,6 +13,7 @@ int main(){
     SMBiosVersion ver = bios.get_smbios_version();
     std::cout << "DMI version: " << ver.major_version << '.' << ver.minor_version << '\n';
     std::cout << "Table size: " << bios.get_table_size() << '\n';
+    std::cout << bios.render_to_description();
 
     SMBiosEntryFactory smbios_factory;
     for (const DMIHeader& header : bios) {

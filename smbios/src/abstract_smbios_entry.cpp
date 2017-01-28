@@ -37,6 +37,11 @@ std::string AbstractSMBiosEntry::dmi_string(size_t string_index) const
     return dmi_strings_[string_index];
 }
 
+size_t smbios::AbstractSMBiosEntry::get_entry_size() const
+{
+    return static_cast<size_t>(header_->length);
+}
+
 std::string smbios::AbstractSMBiosEntry::address_string(uint16_t string_address) const
 {
     std::stringstream address_stream;

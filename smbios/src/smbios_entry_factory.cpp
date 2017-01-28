@@ -15,10 +15,10 @@ SMBiosEntryFactory::SMBiosEntryFactory()
 std::unique_ptr<AbstractSMBiosEntry> smbios::SMBiosEntryFactory::create(const DMIHeader& header, 
     const SMBiosVersion& version)
 {
-    try{
+    if (entries_factory_.find(header.type) != entries_factory_.end()) {
         return std::unique_ptr<AbstractSMBiosEntry>(entries_factory_.at(header.type)(header, version));
-    }
-    catch (const std::out_of_range& e){
+    } 
+    else{
         // no such index, just proceed
         return nullptr;
     }
