@@ -6,6 +6,10 @@
 
 #if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
 
+namespace helpers {
+class PhysicalMemory;
+}
+
 namespace smbios {
 
 class PhysicalMemory;
@@ -32,7 +36,13 @@ public:
     /// @brief Actual table size from table beginning (without header)
     size_t get_table_size()  const;
 
-    void read_from_physical_memory(const PhysicalMemory& physical_memory, size_t length);
+    /// @brief Major version (from header)
+    size_t get_major_version() const;
+
+    /// @brief Minor version (from header)
+    size_t get_minor_version() const;
+
+    void read_from_physical_memory(const helpers::PhysicalMemory& physical_memory, size_t length);
 
 private:
 

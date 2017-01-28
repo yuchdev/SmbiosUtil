@@ -7,7 +7,7 @@
 #include <smbios/posix_physical_memory.h>
 #endif
 
-
+using namespace helpers;
 namespace boost_io = boost::iostreams;
 
 PhysicalMemory::PhysicalMemory() : native_physical_memory_(std::make_unique<NativePhysicalMemory>())

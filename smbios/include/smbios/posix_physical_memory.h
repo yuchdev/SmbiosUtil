@@ -10,6 +10,8 @@ class mapped_file_source;
 } // namespace iostreams 
 } // namespace boost 
 
+namespace helpers {
+
 class NativePhysicalMemory{
 public:
 
@@ -30,3 +32,5 @@ public:
 private:
     std::unique_ptr<boost::iostreams::mapped_file_source> physical_memory_map_;
 };
+
+} // namespace helpers

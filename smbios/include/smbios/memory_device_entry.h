@@ -154,22 +154,22 @@ public:
     enum DeviceProperties : uint16_t
     {
         DevicePropertiesOutOfSpec = 0x0,
-        DevicePropertiesReserved = 0x1 << 0,
-        DevicePropertiesOther = 0x1 << 1,
-        DevicePropertiesUnknown = 0x1 << 2,
-        FastPaged = 0x1 << 3,
-        StaticColumn = 0x1 << 4,
-        PseudoStatic = 0x1 << 5,
-        RAMBUS = 0x1 << 6,
-        Synchronous = 0x1 << 7,
-        CMOS = 0x1 << 8,
-        EDO = 0x1 << 9,
-        WindowDRAM = 0x1 << 10,
-        CacheDRAM = 0x1 << 11,
-        NonVolatile = 0x1 << 12,
-        Registered = 0x1 << 13,
-        Unregistered = 0x1 << 14,
-        LRDIMM = 0x1 << 15
+        DevicePropertiesReserved = 0x1u << 0,
+        DevicePropertiesOther = 0x1u << 1,
+        DevicePropertiesUnknown = 0x1u << 2,
+        FastPaged = 0x1u << 3,
+        StaticColumn = 0x1u << 4,
+        PseudoStatic = 0x1u << 5,
+        RAMBUS = 0x1u << 6,
+        Synchronous = 0x1u << 7,
+        CMOS = 0x1u << 8,
+        EDO = 0x1u << 9,
+        WindowDRAM = 0x1u << 10,
+        CacheDRAM = 0x1u << 11,
+        NonVolatile = 0x1u << 12,
+        Registered = 0x1u << 13,
+        Unregistered = 0x1u << 14,
+        LRDIMM = 0x1u << 15
     };
 
     enum DeviceSpeed : uint16_t {

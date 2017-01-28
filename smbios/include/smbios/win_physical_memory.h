@@ -5,6 +5,8 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 
+namespace helpers {
+
 class WinHandlePtr;
 
 class NativePhysicalMemory{
@@ -37,5 +39,7 @@ private:
 
     size_t page_offset_ = 0u;
 };
+
+} // namespace helpers
 
 #endif // defined(_WIN32) || defined(_WIN64)

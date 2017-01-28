@@ -3,6 +3,8 @@
 #include <vector>
 #include <cstdint>
 
+namespace helpers {
+
 class NativePhysicalMemory;
 
 class PhysicalMemory{
@@ -25,3 +27,5 @@ public:
 private:
     std::unique_ptr<NativePhysicalMemory> native_physical_memory_;
 };
+
+} // namespace helpers

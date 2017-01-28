@@ -28,6 +28,8 @@ HANDLE get_physical_memory_handle() {
 
 }
 
+using namespace helpers;
+
 NativePhysicalMemory::NativePhysicalMemory()
 {
 }

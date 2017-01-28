@@ -11,6 +11,9 @@
 #include <smbios/smbios_anchor.h>
 #include <smbios/physical_memory.h>
 
+// DEBUG
+#include <iostream>
+
 using std::numeric_limits;
 using namespace smbios;
 
@@ -47,7 +50,7 @@ SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
     if (!native_impl_->smbios_read_success()) {
 
         // call physical memory
-        PhysicalMemory physical_memory_device;
+        helpers::PhysicalMemory physical_memory_device;
 
         // read service memory
         physical_memory_device.map_physical_memory(devmem_base_, devmem_length_);
@@ -59,19 +62,29 @@ SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
 
         // What version do we have (with some workaround)
         extract_dmi_version();
-    }
 
-    if(smbios_entry32_ && checksum_validated_){
-        PhysicalMemory smbios_physical_memory;
-        size_t smbios_base = smbios_entry32_->structure_table_address;
-        size_t smbios_table_length = smbios_entry32_->structure_table_length;
+        size_t smbios_base{};
+        size_t smbios_table_length{};
+
+        if(smbios_entry32_ && checksum_validated_){
+            smbios_base = smbios_entry32_->structure_table_address;
+            smbios_table_length = smbios_entry32_->structure_table_length;
+        }
+
+        if(smbios_entry64_ && checksum_validated_){
+            smbios_base = smbios_entry64_->structure_table_address;
+            smbios_table_length = smbios_entry64_->max_structure_size;
+        }
+        helpers::PhysicalMemory smbios_physical_memory;
         smbios_physical_memory.map_physical_memory(smbios_base, smbios_table_length);
         native_impl_->read_from_physical_memory(smbios_physical_memory, smbios_table_length);
+
+    }
+    else{
+        // no need to validate checksum, performed by native implementation
+        checksum_validated_ = true;
     }
 
-    if(smbios_entry64_ && checksum_validated_){
-        // TODO: debug under x64
-    }
 
     read_smbios_table();
 }
@@ -218,27 +231,23 @@ void SMBios::count_smbios_structures()
 
 void SMBios::scan_physical_memory(const std::vector<uint8_t> &devmem_array)
 {
-    // perform scanning here
-    unsigned long checksum = 0;
-
     constexpr size_t smbios32_header_size = sizeof(SMBIOSEntryPoint32);
     constexpr size_t smbios64_header_size = sizeof(SMBIOSEntryPoint64);
 
     for (auto it = devmem_array.begin(); std::distance(it, devmem_array.end()) > 16; it += 16) {
 
-        checksum += (*it);
         if(detect_smbios_anchor(it) == SMBiosAnchorType::SMBios32){
 
             entry_point_buffer_.assign(it, it + smbios32_header_size);
             smbios_entry32_ = reinterpret_cast<const SMBIOSEntryPoint32*>(&entry_point_buffer_[0]);
-            // TODO: checksum
+            checksum_validated_ = checksum32();
         }
 
         if(detect_smbios_anchor(it) == SMBiosAnchorType::SMBios64){
 
             entry_point_buffer_.assign(it, it + smbios64_header_size);
             smbios_entry64_ = reinterpret_cast<const SMBIOSEntryPoint64*>(&entry_point_buffer_[0]);
-            // TODO: checksum
+            checksum_validated_ = checksum64();
         }
     }
 }
@@ -255,7 +264,34 @@ void SMBios::extract_dmi_version()
     }
 }
 
-std::string smbios::SMBios::render_to_description() const
+bool SMBios::checksum32() const
+{
+    uint8_t smbios_intermediate_anchor[] = {'_','D','M','I','_'};
+    bool is_anchor_correct = std::equal(
+                std::begin(smbios_intermediate_anchor),
+                std::end(smbios_intermediate_anchor),
+                smbios_entry32_->intermediate_anchor);
+
+    bool crc_correct = (0u == smbios_crc(0, smbios_entry32_->entry_point_length)
+                        && (0u == smbios_crc(0x10, 0x0F)));
+
+    return is_anchor_correct && crc_correct;
+}
+
+bool SMBios::checksum64() const
+{
+    return (0u == smbios_crc(0, smbios_entry64_->entry_point_length));
+}
+
+uint8_t SMBios::smbios_crc(uint8_t start_offset, uint8_t length) const
+{
+    uint8_t sum{};
+    for (size_t a = start_offset; a < length; a++)
+        sum += entry_point_buffer_[a];
+    return sum;
+}
+
+std::string SMBios::render_to_description() const
 {
     if(smbios_entry32_ && checksum_validated_) {
 

@@ -202,13 +202,19 @@ private:
     /// Get DMI version major.minor
     void extract_dmi_version();
 
+    /// Check correctness of 32-bit header checksum (see SMBIOS spec for details)
+    bool checksum32() const;
+
+    /// Check correctness of 64-bit header checksum (see SMBIOS spec for details)
+    bool checksum64() const;
+
+    /// checksum from start offset to offset+length should be zero
+    uint8_t smbios_crc(uint8_t start_offset, uint8_t length) const;
+
 private:
 
     /// Raw SMBIOS table system-specific implementation
     std::unique_ptr<SMBiosImpl> native_impl_;
-
-    /// Physical memory device, initialized if necessary
-    //std::unique_ptr<NativePhysicalMemory> physical_memory_device_;
 
     /// Cached SMBIOS structures count
     size_t structures_count_ = 0;
