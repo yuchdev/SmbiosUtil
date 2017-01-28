@@ -1,7 +1,7 @@
 #if defined(_WIN32) || defined(_WIN64)
-#include <smbios/win_bios.h>
 #include <smbios/physical_memory.h>
 #include <smbios/win_system_information.h>
+#include <smbios/win_bios.h>
 
 #define NOMINMAX
 #include <limits>
@@ -10,7 +10,7 @@
 
 using namespace smbios;
 
-SMBiosImpl::SMBiosImpl() : native_system_information_(std::make_unique<NativeSystemInformation>())
+SMBiosImpl::SMBiosImpl() : native_system_information_(std::make_unique<smbios::NativeSystemInformation>())
 {
     compose_native_smbios_table();
 }

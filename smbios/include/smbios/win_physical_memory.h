@@ -5,7 +5,7 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 
-namespace helpers {
+namespace smbios {
 
 class WinHandlePtr;
 
@@ -40,6 +40,6 @@ private:
     size_t page_offset_ = 0u;
 };
 
-} // namespace helpers
+} // namespace smbios
 
 #endif // defined(_WIN32) || defined(_WIN64)

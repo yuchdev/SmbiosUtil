@@ -3,6 +3,8 @@
 #include <map>
 #if defined(_WIN32) || defined(_WIN64)
 
+namespace smbios {
+
 /// @brief x64 application on x64 system
 constexpr bool is_x64_application()
 {
@@ -120,5 +122,7 @@ private:
     /// Map major.minor OS version to string
     static std::map<unsigned short, std::string> cpu_architectures_;
 };
+
+} // namespace smbios
 
 #endif

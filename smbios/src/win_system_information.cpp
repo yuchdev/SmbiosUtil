@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include <tchar.h>
 
+using namespace smbios;
 
 typedef BOOL(WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
 

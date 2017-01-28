@@ -6,6 +6,8 @@
 #include <memory>
 #include <system_error>
 
+using namespace smbios;
+
 namespace {
 
 HANDLE get_physical_memory_handle() {
@@ -27,8 +29,6 @@ HANDLE get_physical_memory_handle() {
 }
 
 }
-
-using namespace helpers;
 
 NativePhysicalMemory::NativePhysicalMemory()
 {

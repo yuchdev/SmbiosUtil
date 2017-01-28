@@ -2,6 +2,8 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 
+namespace smbios {
+
 class WinHandlePtr {
 public:
     WinHandlePtr() : value_() {}
@@ -37,5 +39,7 @@ inline bool operator ==(HANDLE l, WinHandlePtr r) { return WinHandlePtr(l) == r;
 inline bool operator !=(HANDLE l, WinHandlePtr r) { return !(l == r); }
 inline bool operator ==(WinHandlePtr l, HANDLE r) { return l == WinHandlePtr(r); }
 inline bool operator !=(WinHandlePtr l, HANDLE r) { return !(l == r); }
+
+} // namlespace smbios
 
 #endif // defined(_WIN32) || defined(_WIN64)

@@ -50,7 +50,7 @@ SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
     if (!native_impl_->smbios_read_success()) {
 
         // call physical memory
-        helpers::PhysicalMemory physical_memory_device;
+        smbios::PhysicalMemory physical_memory_device;
 
         // read service memory
         physical_memory_device.map_physical_memory(devmem_base_, devmem_length_);
@@ -75,7 +75,7 @@ SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
             smbios_base = smbios_entry64_->structure_table_address;
             smbios_table_length = smbios_entry64_->max_structure_size;
         }
-        helpers::PhysicalMemory smbios_physical_memory;
+        smbios::PhysicalMemory smbios_physical_memory;
         smbios_physical_memory.map_physical_memory(smbios_base, smbios_table_length);
         native_impl_->read_from_physical_memory(smbios_physical_memory, smbios_table_length);
 

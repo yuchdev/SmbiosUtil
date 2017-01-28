@@ -5,10 +5,10 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 
+namespace smbios {
+
 class NativeSystemInformation;
 class PhysicalMemory;
-
-namespace smbios {
 
 /// @brief SMBIOS header+table beginning
 struct RawSMBIOSData {

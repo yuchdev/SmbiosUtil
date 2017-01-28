@@ -3,7 +3,7 @@
 #include <boost/iostreams/device/mapped_file.hpp>
 
 namespace boost_io = boost::iostreams;
-using namespace helpers;
+using namespace smbios;
 
 NativePhysicalMemory::NativePhysicalMemory(size_t base, size_t length)
     : physical_memory_map_(std::make_unique<boost::iostreams::mapped_file_source>())

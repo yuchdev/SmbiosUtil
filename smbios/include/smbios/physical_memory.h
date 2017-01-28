@@ -3,7 +3,8 @@
 #include <vector>
 #include <cstdint>
 
-namespace helpers {
+
+namespace smbios {
 
 class NativePhysicalMemory;
 
@@ -28,4 +29,4 @@ private:
     std::unique_ptr<NativePhysicalMemory> native_physical_memory_;
 };
 
-} // namespace helpers
+} // namespace smbios
