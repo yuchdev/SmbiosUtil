@@ -1,6 +1,12 @@
 #pragma once
-
 #if defined(_WIN32) || defined(_WIN64)
+
+// Function pointers in NTDLL that allows access to physical memory
+// and other Native API helpers
+// Made by Mark Russinovich
+// Systems Internals
+// see more on:
+// http://www.sysinternals.com/Information/TipsAndTrivia.html#PhysMem
 
 #include <Windows.h>
 
@@ -54,17 +60,6 @@ typedef OBJECT_ATTRIBUTES *POBJECT_ATTRIBUTES;
     (p)->SecurityQualityOfService = NULL;               \
     }
 
-
-/*
- * Functions in NTDLL that allows access to physical memory
- * from Windows NT to Windows XP.
- * 
- * Made by Mark Russinovich
- * Systems Internals
- *
- * see more on:
- * http://www.sysinternals.com/Information/TipsAndTrivia.html#PhysMem
- */
 NTSTATUS (__stdcall *NtUnmapViewOfSection)(IN HANDLE  ProcessHandle, IN PVOID  BaseAddress);
 
 NTSTATUS (__stdcall *NtOpenSection)(OUT PHANDLE  SectionHandle, IN ACCESS_MASK  DesiredAccess, IN POBJECT_ATTRIBUTES  ObjectAttributes);

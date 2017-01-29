@@ -3,13 +3,15 @@
 
 namespace smbios {
 
+/// @brief Interface for any SMBIOS entry
 class SMBiosInterface {
 
 public:
 
+    /// @brief Hierarchy is polymorph
     virtual ~SMBiosInterface() = default;
 
-    /// @brief String representation
+    /// @brief Entry string representation
     virtual std::string get_type() const = 0;
 
     /// @brief Render all entry information into single string

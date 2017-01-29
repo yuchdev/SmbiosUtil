@@ -3,6 +3,12 @@
 #include <map>
 #include <smbios/abstract_smbios_entry.h>
 
+// Memory device entry
+// See http://www.dmtf.org/standards/smbios
+// Standard according to current SMBIOS version
+// 'Memory Device' chapter
+// Entry format changes version to version
+
 namespace smbios {
 
 struct DMIHeader;
@@ -10,11 +16,6 @@ struct SMBiosVersion;
 
 // should be aligned to be mapped to physical memory
 #pragma pack(push, 1)
-
-
-// See http://www.dmtf.org/standards/smbios
-// Standard according to current SMBIOS version
-// 'Memory Device' chapter
 
 /// @brief SMBIOS MemoryDevice entry Ver 2.1+
 struct MemoryDeviceV21 {
@@ -63,8 +64,6 @@ struct MemoryDeviceV28 : public MemoryDeviceV27 {
 #pragma pack(pop)
 
 /// @brief Class-wrapper under raw memory structures
-/// Class instance does not "own" this memory, it just provide more convenient interface
-/// and useful types and enumerations
 class MemoryDeviceEntry : public AbstractSMBiosEntry {
 public:
 
@@ -177,8 +176,8 @@ public:
         DeviceSpeedReserved = 0xFFFF
     };
 
-    /// @brief Parse the header, recognize how much information do we have
-    /// in MemoryDevice SMBIOS entry
+    /// @brief Parse the header, recognize SMBIOS version and how much information 
+    /// do we have in MemoryDevice SMBIOS entry
     MemoryDeviceEntry(const DMIHeader& header, const SMBiosVersion& version);
 
     // @brief Parent is abstract
@@ -198,33 +197,52 @@ public:
     uint16_t get_array_handle() const;
 
     /// @brief 0x06 offset
+    /// Handle, or instance number, associated with any
+    /// error that was previously detected for the device
     /// See ErrorHandleValue enum for special values
     uint16_t get_error_handle() const;
 
     /// @brief 0x08 offset
+    /// Total width, in bits, of this memory device, including
+    /// any check or error-correction bits
     /// See DataWidthValue enum for special values
     uint16_t get_total_width() const;
 
     /// @brief 0x0A offset
+    /// Data width, in bits, of this memory device
     /// See DataWidthValue enum for special values
     uint16_t get_data_width() const;
 
     /// @brief 0x0C offset
+    /// Size of the memory device. If the size is 32 GB-1 MB or greater, the
+    /// field value is 7FFFh and the actual size is stored in
+    /// the Extended Size field.
     /// See DeviceSizeValue enum for special values
     uint16_t get_device_size() const;
 
     /// @brief 0x0E offset
+    /// Implementation form factor for this memory device
     /// See FormFactorValue enum for special values
     uint8_t get_form_factor() const;
 
     /// @brief 0x0F offset
+    /// Identifies when the Memory Device is one of a set
+    /// of Memory Devices that must be populated
     /// See DeviceSetValue enum for special values
     uint8_t get_device_set() const;
 
     /// @brief 0x10 offset
+    /// Index of Device Locator string
+    /// String number of the string that identifies the
+    /// physically-labeled socket or board position where
+    /// the memory device is located. EXAMPLE : 'DIMM 3'
     uint8_t get_device_locator_index() const;
 
     /// @brief 0x11 offset
+    /// Index of Bank Locator string
+    /// String number of the string that identifies the
+    /// physically labeled bank where the memory device is located
+    /// EXAMPLE: 'Bank 0' or 'A'
     uint8_t get_bank_locator_index() const;
 
     /// @brief 0x12 offset
@@ -240,89 +258,81 @@ public:
     uint16_t get_device_speed() const;
 
     /// @brief 0x17 offset
-    /// 
+    /// String number for the manufacturer of this memory device
     uint8_t get_manufacturer_index() const;
 
     /// @brief 0x18 offset
-    /// 
+    /// String number for the serial number of this memory device
     uint8_t get_serial_number_index() const;
 
     /// @brief 0x19 offset
-    /// 
+    /// String number for the asset tag of this memory device
     uint8_t get_asset_tag_index() const;
 
     /// @brief 0x1A offset
-    /// 
+    /// String number for the part number of this memory device
     uint8_t get_part_number_index() const;
 
     /// @brief 0x1A offset
-    /// 
+    /// Bits 7-4: reserved; Bits 3 - 0: rank; Value = 0 for unknown rank
     uint8_t get_device_rank() const;
 
     //////////////////////////////////////////////////////////////////////////
     // String values
 
-    /// @brief 0x05 offset
     /// Handle string representation
     std::string get_array_handle_string() const;
 
-    /// @brief 0x06 offset
     /// ErrorHandleValue string representation
     std::string get_error_handle_string() const;
 
-    /// @brief 0x08 offset
     /// DataWidthValue string representation
     std::string get_total_width_string() const;
 
-    /// @brief 0x0A offset
     /// DataWidthValue string representation
     std::string get_data_width_string() const;
 
-    /// @brief 0x0C offset
     /// DeviceSizeValue string representation
     std::string get_device_size_string() const;
 
-    /// @brief 0x0E offset
     /// FormFactorValue string representation
     std::string get_form_factor_string() const;
 
-    /// @brief 0x0F offset
     /// DeviceSetValue string representation
     std::string get_device_set_string() const;
 
-    /// @brief 0x10 offset
-    /// DeviceLocator string representation
+    /// String number of the string that identifies the
+    /// physically-labeled socket or board position where
+    /// the memory device is located. EXAMPLE : 'DIMM 3'
     std::string get_device_locator_string() const;
 
-    /// @brief 0x11 offset
-    /// BankLocator string representation
+    /// String number of the string that identifies the
+    /// physically labeled bank where the memory device is located
+    /// EXAMPLE: 'Bank 0' or 'A'
     std::string get_bank_locator_string() const;
 
-    /// @brief 0x12 offset
     /// DeviceType string representation
     std::string get_device_type_string() const;
 
-    /// @brief 0x13 offset
-    /// DeviceProperties string representation
+    /// DeviceProperties string representation, separated by 
     std::string get_device_detail_string() const;
 
-    /// @brief 0x15 offset
     /// Maximum capable speed string representation
     std::string get_device_speed_string() const;
 
-    /// @brief 0x17 offset
+    /// String number for the manufacturer of this memory device
     std::string get_manufacturer_string() const;
 
-    /// @brief 0x18 offset
+    /// String number for the serial number of this memory device
     std::string get_serial_number_string() const;
 
-    /// @brief 0x19 offset
+    /// @brief String number for the asset tag of this memory device
     std::string get_asset_tag_string() const;
 
-    /// @brief 0x1A offset
+    /// @brief String number for the part number of this memory device
     std::string get_part_number_string() const;
 
-    /// @brief 0x1A offset
+    /// @brief Device rank 0x1-0xFFFF
     std::string get_device_rank_string() const;
 
 private:

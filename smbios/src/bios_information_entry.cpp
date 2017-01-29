@@ -4,7 +4,6 @@
 #include <sstream>
 #include <cassert>
 
-using std::string;
 using namespace smbios;
 
 BiosInformationEntry::BiosInformationEntry(const DMIHeader& header, const SMBiosVersion& version) 
@@ -22,10 +21,12 @@ BiosInformationEntry::BiosInformationEntry(const DMIHeader& header, const SMBios
     if ((header.length < 0x12) || (version < SMBiosVersion{2, 1}))
         return;
 
+    // 2.4+
     if ((header.length >= 0x12) && (version > SMBiosVersion{ 2, 3 })) {
         bios_information24_ = reinterpret_cast<const BiosInformationV24*>(header.data);
     }
 
+    // 3.1+
     if ((header.length > 0x18) && (version > SMBiosVersion{ 3, 0 })){
         bios_information31_ = reinterpret_cast<const BiosInformationV31*>(header.data);
     }
@@ -242,7 +243,7 @@ std::string BiosInformationEntry::get_release_date_string() const
 
 std::string BiosInformationEntry::get_rom_size_string() const
 {
-    string rom_size = std::to_string(static_cast<unsigned>(get_rom_size()));
+    std::string rom_size = std::to_string(static_cast<unsigned>(get_rom_size()));
     rom_size += " kB";
     return rom_size;
 }
@@ -250,7 +251,7 @@ std::string BiosInformationEntry::get_rom_size_string() const
 std::string BiosInformationEntry::get_runtime_size_string() const
 {
     uint32_t runtime_size = get_runtime_size();
-    string runtime_size_string;
+    std::string runtime_size_string;
     if (get_runtime_size() & 0x000003FF) {
         runtime_size_string = std::to_string(runtime_size);
         runtime_size_string += " bytes";

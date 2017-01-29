@@ -11,18 +11,26 @@ namespace smbios {
 
 struct DMIHeader;
 
+/// @brief Basic functionality implementation for any SMBIOS entry
+/// Working with DMI strings, offsets, convert bitwise properties to description etc
+/// Class instance does not "own" this memory, it just provide more convenient interface
+/// and useful types and enumerations
 class AbstractSMBiosEntry : public SMBiosInterface {
 public:
 
+    /// @brief Accept a copy of own header
     AbstractSMBiosEntry(const DMIHeader& header);
 
+    // @brief Parent is abstract
     virtual ~AbstractSMBiosEntry() = default;
 
+    /// @brief Entry size without string section
     size_t get_entry_size() const override;
 
 protected:
 
-    /// Default implementation of SMBIOS string extractor
+    /// Implementation of SMBIOS string extractor
+    /// Note: First string index is 1, 0 is "Not Specified"
     std::string dmi_string(size_t string_index) const;
 
     /// Print segment-based offset
@@ -45,6 +53,10 @@ protected:
     }
 private:
 
+    /// Extract all strings from the string section
+    /// which is plain char array separated with \0 symbols
+    /// End of section is \0\0 sequence, which it followed by the next SMBIOS entry
+    /// There is no limit on the length of each individual text string
     void parse_dmi_strings();
 
 private:
@@ -52,6 +64,7 @@ private:
     /// copy of entry header
     std::unique_ptr<DMIHeader> header_;
 
+    /// Extracted DMI strings
     std::vector<std::string> dmi_strings_;
 };
 

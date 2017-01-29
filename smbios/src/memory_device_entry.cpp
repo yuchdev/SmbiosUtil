@@ -22,22 +22,27 @@ MemoryDeviceEntry::MemoryDeviceEntry(const DMIHeader& header, const SMBiosVersio
     if ((header.length < 0x15) || (version < SMBiosVersion{ 2, 1 }))
         return;
 
+    // 2.1+
     if ((header.length >= 0x15) && (version > SMBiosVersion{ 2, 0 })) {
         memory_device_v21_ = reinterpret_cast<const MemoryDeviceV21*>(header.data);
     }
 
+    // 2.3+
     if ((header.length >= 0x17) && (version > SMBiosVersion{ 2, 2 })) {
         memory_device_v23_ = reinterpret_cast<const MemoryDeviceV23*>(header.data);
     }
 
+    // 2.6+
     if ((header.length >= 0x1B) && (version > SMBiosVersion{ 2, 5 })) {
         memory_device_v26_ = reinterpret_cast<const MemoryDeviceV26*>(header.data);
     }
 
+    // 2.7+
     if((header.length >= 0x1C) && (version > SMBiosVersion{ 2, 6 })){
         memory_device_v27_ = reinterpret_cast<const MemoryDeviceV27*>(header.data);
     }
 
+    // 2.8+
     if ((header.length >= 0x22) && (version > SMBiosVersion{ 2, 7 })) {
         memory_device_v28_ = reinterpret_cast<const MemoryDeviceV28*>(header.data);
     }

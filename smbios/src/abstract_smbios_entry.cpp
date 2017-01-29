@@ -19,9 +19,9 @@ void AbstractSMBiosEntry::parse_dmi_strings()
     do {
         
         if (nullptr == string_section) {
-            assert(string_section);
-            dmi_strings_.push_back("Bad index");
-            continue;
+            // most probably we called parsing from the entry which do not contain strings
+            // it's ok, just leave only "Not Specified" entry
+            return;
         }
         dmi_strings_.push_back(std::string(reinterpret_cast<const char*>(string_section)));
         string_section += dmi_strings_.back().size() + 1;

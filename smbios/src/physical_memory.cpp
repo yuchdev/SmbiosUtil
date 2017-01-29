@@ -28,6 +28,10 @@ PhysicalMemory::~PhysicalMemory()
 
 void PhysicalMemory::map_physical_memory(size_t base, size_t length)
 {
+    if (is_mapped()) {
+        unmap_memory();
+    }
+
     native_physical_memory_->map_physical_memory(base, length);
 }
 
@@ -44,4 +48,9 @@ std::vector<uint8_t> PhysicalMemory::get_memory_dump(size_t offset, size_t lengt
 const uint8_t* PhysicalMemory::get_memory_offset(size_t offset) const
 {
     return native_physical_memory_->get_memory_offset(offset);
+}
+
+void PhysicalMemory::unmap_memory()
+{
+    native_physical_memory_->unmap_memory();
 }

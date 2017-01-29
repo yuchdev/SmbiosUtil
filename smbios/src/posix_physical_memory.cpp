@@ -62,4 +62,11 @@ const uint8_t* NativePhysicalMemory::get_memory_offset(size_t offset) const
     return reinterpret_cast<const uint8_t*>(physical_memory_map_->data() + offset);
 }
 
+void NativePhysicalMemory::unmap_memory()
+{
+    if (physical_memory_map_->is_open()) {
+        physical_memory_map_->close();
+    }
+}
+
 #endif

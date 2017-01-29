@@ -133,6 +133,7 @@ void NativePhysicalMemory::unmap_memory()
     if (virtual_address_) {
         NtUnmapViewOfSection(INVALID_HANDLE_VALUE, virtual_address_);
         virtual_address_ = nullptr;
+        physical_memory_device_.reset(nullptr);
     }
 }
 #endif // defined(_WIN32) || defined(_WIN64)

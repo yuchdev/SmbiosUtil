@@ -3,6 +3,11 @@
 #include <map>
 #include <smbios/abstract_smbios_entry.h>
 
+// BIOS Information entry
+// See http://www.dmtf.org/standards/smbios
+// Standard according to current SMBIOS version, 'BIOS Information' chapter
+// Major differences only between 2.4 and 3.1 versions
+
 namespace smbios {
 
 struct DMIHeader;
@@ -11,11 +16,7 @@ struct SMBiosVersion;
 // should be aligned to be mapped to physical memory
 #pragma pack(push, 1)
 
-// See http://www.dmtf.org/standards/smbios
-// Standard according to current SMBIOS version, 'BIOS Information' chapter
-// Major differences only between 2.4 and 3.1 versions
-
-/// @brief SMBIOS MemoryDevice entry Ver 2.4
+/// @brief SMBIOS BIOS Information entry Ver 2.4
 struct BiosInformationV24 {
     uint32_t header;
     uint8_t vendor;
@@ -32,17 +33,19 @@ struct BiosInformationV24 {
     uint8_t firmware_minor_version;
 };
 
+/// @brief SMBIOS BIOS Information entry Ver 3.1
 struct BiosInformationV31 : public BiosInformationV24 {
     uint16_t extended_rom_size;
 };
 
 #pragma pack(pop)
 
-/// @brief 
+/// @brief  BIOS Information structure
 class BiosInformationEntry : public AbstractSMBiosEntry {
 public:
 
-    // @brief 
+    // @brief BIOS Characteristics bitwise layout
+    // (*u suffix is obligatory for some compilers)
     enum BiosProperties : uint64_t {
         BiosPropertiesOutOfSpec = 0x0,
         Reserved1 = 0x1u << 0,
@@ -79,7 +82,8 @@ public:
         NECPC = 0x1u << 31
     };
 
-    // @brief 
+    // @brief  BIOS Characteristics Extension Byte 1 layout
+    // (*u suffix is obligatory for some compilers)
     enum BiosPropertiesEx1 : uint8_t {
         BiosPropertiesEx1OutOfSpec = 0x0,
         ACPISupported = 0x1u << 0,
@@ -92,7 +96,8 @@ public:
         SmartBatterySupported = 0x1u << 7
     };
 
-    // @brief 
+    // @brief  BIOS Characteristics Extension Byte 2 layout
+    // (*u suffix is obligatory for some compilers)
     enum BiosPropertiesEx2 : uint8_t {
         BiosPropertiesEx2OutOfSpec = 0x0,
         BootSpecificationSupported = 0x1u << 0,
@@ -102,9 +107,8 @@ public:
         VirtualMachine = 0x1u << 4
     };
 
-
     /// @brief Parse the header, recognize how much information do we have
-    /// in MemoryDevice SMBIOS entry
+    /// in BIOS Information SMBIOS entry depending on version and size (should be compliant)
     BiosInformationEntry(const DMIHeader& header, const SMBiosVersion& version);
 
     // @brief Parent is abstract
@@ -120,95 +124,107 @@ public:
     // Byte values
 
     /// @brief 0x04 offset
-    /// Index of vendor DMI string
+    /// Index of string number of the BIOS Vendor's Name
     uint8_t get_vendor_index() const;
 
-    /// @brief 0x04 offset
-    /// Index of version DMI string
+    /// @brief 0x05 offset
+    /// Index of string number of the BIOS Version, a free-form string
     uint8_t get_version_index() const;
 
     /// @brief 0x06 offset
-    /// 
+    /// Segment location of BIOS starting address
     uint16_t get_starting_address() const;
 
     /// @brief 0x06 offset (yeah, same as starting offset)
-    /// 
+    /// The size of the runtime BIOS image can be computed from offset 0x06 (see spec)
     uint32_t get_runtime_size() const;
 
     /// @brief 0x08 offset
-    /// Index of release date DMI string
+    /// Index of release date string
     uint8_t get_release_date_index() const;
 
     /// @brief 0x09 offset
-    /// 
+    /// size of the physical device containing the BIOS, in bytes
+    /// FFh - size is 16MB or greater, see Extended BIOS ROM Size
     uint8_t get_rom_size() const;
 
     /// @brief 0x0A offset
-    /// 
+    /// Defines which functions the BIOS supports: PCI, PCMCIA, Flash, etc
     uint64_t get_properties() const;
 
     /// @brief 0x12 offset
-    /// 
+    /// BIOS Characteristics Extension Byte 1
     uint8_t get_properties_extension1() const;
 
     /// @brief 0x13 offset
-    /// 
+    /// BIOS Characteristics Extension Byte 2
     uint8_t get_properties_extension2() const;
 
     /// @brief 0x14 offset
-    /// 
+    /// Identifies the major release of the System BIOS
     uint8_t get_bios_major_release() const;
 
     /// @brief 0x15 offset
-    /// 
+    /// Identifies the minor release of the System BIOS
     uint8_t get_bios_minor_release() const;
 
     /// @brief 0x16 offset
-    /// 
+    /// Identifies the major release of the embedded controller firmware
+    /// If the system does not have field upgradeable embedded controller firmware, 
+    /// the value is 0xFF
     uint8_t get_firmware_major_release() const;
 
     /// @brief 0x17 offset
-    /// 
+    /// Identifies the minor release of the embedded controller firmware
+    /// If the system does not have field upgradeable embedded controller firmware, 
+    /// the value is 0xFF
     uint8_t get_firmware_minor_release() const;
 
     //////////////////////////////////////////////////////////////////////////
     // String values
 
-    /// @brief Vendor DMI string
+    /// @brief BIOS vendor
     std::string get_vendor_string() const;
 
     /// @brief Version DMI string
+    /// Free-form string that may contain
+    /// Core and OEM version information
     std::string get_version_string() const;
 
-    /// @brief 
+    /// @brief Segment location of BIOS, HEX string
     std::string get_starting_address_string() const;
 
     /// @brief 
+    /// The size of the runtime BIOS image, HEX string
     std::string get_runtime_size_string() const;
 
     /// @brief Index of release date DMI string
+    /// String number of the BIOS release date
+    /// is in either MM/DD/YY or MM/DD/YYYY format
     std::string get_release_date_string() const;
 
-    /// @brief 
+    /// @brief size of the physical device containing the BIOS
+    /// Formatted with size (kb)
     std::string get_rom_size_string() const;
 
-    /// @brief 
+    /// @brief Return a \n\t-separated list on BIOS properties
     std::string get_properties_string() const;
 
-    /// @brief 
+    /// @brief Return a \n\t-separated list on BIOS extended byte 1 properties
     std::string get_properties_extension1_string() const;
 
-    /// @brief 
+    /// @brief Return a \n\t-separated list on BIOS extended byte 2 properties
     std::string get_properties_extension2_string() const;
 
-    /// @brief 
+    /// @brief BIOS Version in "major.minor" format
     std::string get_bios_version_string() const;
 
-    /// @brief 
+    /// @brief Firmware version in "major.minor" format
     std::string get_firmware_version_string() const;
 
 private:
 
+    /// Format version string
     std::string stream_to_version(uint16_t major, uint16_t minor) const;
 
     /// Map flags data to string values
@@ -216,6 +232,7 @@ private:
 
 private:
 
+    /// Initialization depends on SMBIOS version
     const BiosInformationV24* bios_information24_ = nullptr;
     const BiosInformationV31* bios_information31_ = nullptr;
 

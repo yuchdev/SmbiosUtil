@@ -3,6 +3,11 @@
 #include <map>
 #include <smbios/abstract_smbios_entry.h>
 
+// Port Connection Entry
+// See http://www.dmtf.org/standards/smbios
+// Standard according to current SMBIOS version, 'Port Connection' chapter
+// By 3.1 version fully compatible with all previous versions
+
 namespace smbios {
 
 struct DMIHeader;
@@ -10,10 +15,6 @@ struct SMBiosVersion;
 
 // should be aligned to be mapped to physical memory
 #pragma pack(push, 1)
-
-// See http://www.dmtf.org/standards/smbios
-// Standard according to current SMBIOS version, 'Port Connection' chapter
-// By 3.1 version fully compatible with all previous versions
 
 /// @brief SMBIOS PortConnection entry Ver 2.0+
 struct PortConnection {
@@ -27,11 +28,14 @@ struct PortConnection {
 
 #pragma pack(pop)
 
-/// @brief 
+/// @brief Information in this structure defines the attributes of a system port connector
+/// (for example, parallel, serial, keyboard, or mouse ports)
+/// The port's type and connector information are provided
+/// One structure is present for each port provided by the system
 class PortConnectionEntry : public AbstractSMBiosEntry {
 public:
 
-    // @brief 
+    // @brief Connector Types field
     enum ConnectorType : uint8_t {
         NoneConnector = 0x00,
         Centronics = 0x01,
@@ -76,7 +80,7 @@ public:
         OtherConnector = 0xFF
     };
 
-    // @brief 
+    // @brief Port Types field
     enum PortType : uint8_t {
         NonePort = 0x00,
         ParallelXT_AT = 0x01,
@@ -134,35 +138,31 @@ public:
     // Byte values
 
     /// @brief 0x05 offset
-    /// 
+    /// String index for Internal Reference Designator
     uint8_t get_internal_connection_type() const;
 
     /// @brief 0x07 offset
-    /// 
+    /// String index for the External Reference Designation
     uint8_t get_external_connection_type() const;
 
     /// @brief 0x08 offset
-    /// 
+    /// return PortType enum value
     uint8_t get_port_type() const;
 
 
     //////////////////////////////////////////////////////////////////////////
     // String values
 
-    /// @brief 0x05 offset
-    /// 
+    /// String for Internal Reference Designator
+    /// EXAMPLE : 'J101', 0
     std::string get_internal_connection_string() const;
 
-    /// @brief 0x07 offset
-    /// 
+    /// String for the External Reference Designation
+    /// EXAMPLE : 'COM A', 0
     std::string get_external_connection_string() const;
 
-    /// @brief 0x08 offset
-    /// 
+    /// @brief Port Type string value
     std::string get_port_string() const;
-
-    /// @brief 
-    const PortConnection* get_port_connection_struct() const { return port_connection_; }
 
 private:
 
@@ -171,6 +171,7 @@ private:
 
 private:
 
+    /// Raw structure
     const PortConnection* port_connection_;
 
     /// Bitwise to string representation

@@ -3,16 +3,19 @@
 #include <memory>
 #include <cstdint>
 
+// Main SMBIOS table implementation
+
 class PhysicalMemory;
 
 namespace smbios {
 
 class SMBiosImpl;
 
-
 // should be aligned to be mapped to the physical memory
 #pragma pack(push, 1)
 
+/// @brief SMBIOS entry point for 32-bit systems
+/// Contains 2 checksum, 2 anchors so that not to misuse
 struct SMBIOSEntryPoint32 {
     uint8_t entry_point_anchor[4];
     uint8_t entry_point_checksum;
@@ -30,6 +33,9 @@ struct SMBIOSEntryPoint32 {
     uint8_t smbios_bcd_revision;
 };
 
+/// @brief SMBIOS entry point for 64-bit systems
+/// Contains 1 checksum, 1 anchor
+/// Size is not exact unlike for 32 version but it is guaranteed enough
 struct SMBIOSEntryPoint64 {
     uint8_t entry_point_anchor[5];
     uint8_t entry_point_checksum;
@@ -41,8 +47,8 @@ struct SMBIOSEntryPoint64 {
     uint32_t max_structure_size;
     intptr_t structure_table_address;
 };
-#pragma pack(pop)
 
+/// @brief Each SMBIOS structure begins with that four-byte header
 struct DMIHeader
 {
     // Specifies the type of structure. Types 0 through 127 (7Fh) are reserved for and
@@ -67,12 +73,17 @@ struct DMIHeader
     size_t get_type() const { return static_cast<size_t>(type); }
 };
 
+#pragma pack(pop)
+
+/// @brief Easily check version so that correctly map structure fields and real memory dump
 struct SMBiosVersion
 {
     uint16_t major_version;
     uint16_t minor_version;
 };
 
+// == != does not make sense, SMBIOS is backward compatible 
+// so we may need to know whether version more or less than provided
 bool operator >(const SMBiosVersion& lhs, const SMBiosVersion& rhs);
 bool operator <(const SMBiosVersion& lhs, const SMBiosVersion& rhs);
 
@@ -241,7 +252,7 @@ private:
     /// Scan physical memory from this address
     static const size_t devmem_base_ = 0xF0000;
 
-    /// Scanned lenght (SMBIOS could not be beyond this offset)
+    /// Scanned length (SMBIOS could not be beyond this offset)
     static const size_t devmem_length_ = 0x10000;
 };
 
