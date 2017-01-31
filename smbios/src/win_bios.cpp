@@ -1,5 +1,4 @@
 #if defined(_WIN32) || defined(_WIN64)
-#include <smbios/physical_memory.h>
 #include <smbios/win_system_information.h>
 #include <smbios/win_bios.h>
 
@@ -69,9 +68,9 @@ size_t SMBiosImpl::get_table_size() const
     }        
 }
 
-void SMBiosImpl::read_from_physical_memory(const PhysicalMemory& physical_memory, size_t length)
+void SMBiosImpl::read_from_physical_memory(std::vector<uint8_t>& physical_memory_dump, size_t length)
 {
-    table_buffer_ = std::move(physical_memory.get_memory_dump(0, length));
+    table_buffer_ = std::move(physical_memory_dump);
 }
 
 bool SMBiosImpl::is_ntdll_compatible() const

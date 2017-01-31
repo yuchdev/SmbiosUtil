@@ -50,8 +50,8 @@ public:
     /// @brief Minor version (from header)
     size_t get_minor_version() const;
 
-    /// @brief 
-    void read_from_physical_memory(const PhysicalMemory& physical_memory, size_t length);
+    /// @brief Read from memory dump, it is intentionally left non-const to be moved
+    void read_from_physical_memory(std::vector<uint8_t>& physical_memory_dump, size_t length);
 
 private:
 

@@ -1,6 +1,5 @@
 #if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
 #include <smbios/unix_bios.h>
-#include <smbios/physical_memory.h>
 #include <smbios/smbios_anchor.h>
 
 #include <cassert>
@@ -34,9 +33,9 @@ const uint8_t* SMBiosImpl::get_table_base() const
 }
 
 
-void SMBiosImpl::read_from_physical_memory(const smbios::PhysicalMemory& physical_memory, size_t length)
+void SMBiosImpl::read_from_physical_memory(std::vector<uint8_t>& physical_memory_dump, size_t length)
 {
-    table_buffer_ = std::move(physical_memory.get_memory_dump(0, length));
+    table_buffer_ = std::move(physical_memory_dump);
 }
 
 size_t SMBiosImpl::get_major_version() const
