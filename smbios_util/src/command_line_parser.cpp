@@ -17,10 +17,10 @@ void CommandLineParams::read_params(int argc, char* argv[])
 {
     cmd_options_description.add_options()
         ("help,h", "Print usage")
-        ("version,V", "Print version")
+        ("version,v", "Print version")
         ("memory-scan,m", "Fallback to memory scan without trying EFI or SysFS (Linux only)")
-        ("read-file,r", po::value<string>(&_from_file), "Log to file")
-        ("dump-file,d", po::value<string>(&_to_file), "Logging severity (fatal, error, warning, info, debug, trace)")
+        ("read-file,r", po::value<string>(&_from_file), "Read SMBIOS table dump from this file")
+        ("dump-file,d", po::value<string>(&_to_file), "Dump existing SMBIOS table to this file")
         ;
 
     // command line params processing
