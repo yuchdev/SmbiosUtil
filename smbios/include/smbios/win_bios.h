@@ -51,7 +51,7 @@ public:
     size_t get_minor_version() const;
 
     /// @brief Read from memory dump, it is intentionally left non-const to be moved
-    void read_from_physical_memory(std::vector<uint8_t>& physical_memory_dump, size_t length);
+    void read_from_physical_memory(std::vector<uint8_t>& physical_memory_dump);
 
 private:
 

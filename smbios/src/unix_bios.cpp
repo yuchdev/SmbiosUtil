@@ -33,7 +33,7 @@ const uint8_t* SMBiosImpl::get_table_base() const
 }
 
 
-void SMBiosImpl::read_from_physical_memory(std::vector<uint8_t>& physical_memory_dump, size_t length)
+void SMBiosImpl::read_from_physical_memory(std::vector<uint8_t>& physical_memory_dump)
 {
     table_buffer_ = std::move(physical_memory_dump);
 }

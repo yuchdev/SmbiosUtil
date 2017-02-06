@@ -60,7 +60,7 @@ SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
         // scan for headers
         scan_physical_memory(devmem_array);
 
-        // What version do we have (with some workaround)
+        // What version do we have (TODO: with some workaround)
         extract_dmi_version();
 
         size_t smbios_base{};
@@ -78,7 +78,7 @@ SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
         smbios::PhysicalMemory smbios_physical_memory;
         smbios_physical_memory.map_physical_memory(smbios_base, smbios_table_length);
         std::vector<uint8_t> dump = smbios_physical_memory.get_memory_dump(0, smbios_table_length);
-        native_impl_->read_from_physical_memory(dump, smbios_table_length);
+        native_impl_->read_from_physical_memory(dump);
     }
     else{
         // no need to validate checksum, performed by native implementation

@@ -57,12 +57,16 @@ int main(int argc, char* argv[]){
         usage();
     }
 
-    if (!read_from_file.empty()) {
-        // TODO: read dump from file
-    }
 
     try{
         SMBios bios;
+
+        if (!read_from_file.empty()) {
+            // TODO: read dump from file
+            // create SMBios in empty state
+            // use read_physical_memory without scanning sources
+        }
+
         SMBiosVersion ver = bios.get_smbios_version();
         std::cout << "DMI version: " << ver.major_version << '.' << ver.minor_version << '\n';
         std::cout << "Table size: " << bios.get_table_size() << '\n';

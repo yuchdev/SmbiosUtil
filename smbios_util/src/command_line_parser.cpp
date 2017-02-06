@@ -6,11 +6,8 @@
 #include <algorithm>
 #include <smbios/smbios.h>
 
-
 using namespace smbios;
-
 namespace po = boost::program_options;
-
 using std::string;
 
 CommandLineParams::CommandLineParams() : cmd_options_description("SMBios utility console has the following options:")
