@@ -50,7 +50,7 @@ public:
 private:
 
     /// Show help
-    bool = false;
+    bool _help = false;
 
     /// Show version
     bool _version = false;
