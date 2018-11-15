@@ -25,6 +25,44 @@ elseif(${WIN32})
 
 endif()
 
+string(TIMESTAMP MY_BUILD_DATE "%Y%m%d" UTC)
+message("Current build date " ${MY_BUILD_DATE})
+
+file(READ "./version.txt" OLD_VERSION_FILE_STR)
+message("Version file contains: " ${OLD_VERSION_FILE_STR})
+
+string(REGEX REPLACE "[.]|\n" ";" OLD_VERSION_FILE_LIST ${OLD_VERSION_FILE_STR})
+
+message("Parse version file version.txt")
+list(GET OLD_VERSION_FILE_LIST 0 MY_OLD_VERSION)
+list(GET OLD_VERSION_FILE_LIST 1 MY_OLD_MAJOR_REVISION)
+list(GET OLD_VERSION_FILE_LIST 2 MY_OLD_MINOR_REVISION)
+list(GET OLD_VERSION_FILE_LIST 3 MY_OLD_BUILD_NUMBER)
+string(SUBSTRING ${MY_OLD_BUILD_NUMBER} 0 8 MY_OLD_BUILD_DATE)
+
+message("Old build date: " ${MY_OLD_BUILD_DATE})
+message("New build date: " ${MY_BUILD_DATE})
+
+if(${MY_OLD_BUILD_DATE} EQUAL ${MY_BUILD_DATE})
+  message("Build same date, increment build number")
+  MATH(EXPR MY_BUILD_NUMBER "${MY_OLD_BUILD_NUMBER}+1")
+else()
+  message("New build date,set build number to zero")
+  MATH(EXPR MY_BUILD_NUMBER "${MY_BUILD_DATE}*10")
+endif()
+
+message("New build number: " ${MY_BUILD_NUMBER})
+
+set(MY_VERSION 1)
+set(MY_MAJOR_REVISION 0)
+set(MY_MINOR_REVISION 1)
+set(SETTINGS_VERSION 0)
+
+message("Application version: " ${MY_VERSION})
+message("Major revision: " ${MY_MAJOR_REVISION})
+message("Minor revision: " ${MY_MINOR_REVISION})
+message("Settings version: " ${SETTINGS_VERSION})
+
 add_subdirectory(smbios)
 add_subdirectory(smbios_util)
 
