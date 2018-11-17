@@ -28,6 +28,22 @@ endif()
 string(TIMESTAMP MY_BUILD_DATE "%Y%m%d" UTC)
 message("Current build date " ${MY_BUILD_DATE})
 
+#TODO: read tag, create ulless exist
+find_package (Git)
+if (GIT_FOUND)
+    message("git found: ${GIT_EXECUTABLE} version ${GIT_VERSION_STRING}")
+else()
+    message(FATAL_ERROR "Git required, CMake will exit!" )
+endif (GIT_FOUND)
+
+execute_process(
+    COMMAND ${GIT_EXECUTABLE} tag
+    RESULT_VARIABLE RESULT
+    OUTPUT_VARIABLE OUTPUT)
+
+message("Result: " ${RESULT})
+message("Output: " ${OUTPUT})
+
 file(READ "./version.txt" OLD_VERSION_FILE_STR)
 message("Version file contains: " ${OLD_VERSION_FILE_STR})
 
