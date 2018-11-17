@@ -28,13 +28,17 @@ endif()
 string(TIMESTAMP MY_BUILD_DATE "%Y%m%d" UTC)
 message("Current build date " ${MY_BUILD_DATE})
 
-#TODO: read tag, create ulless exist
 find_package (Git)
 if (GIT_FOUND)
     message("git found: ${GIT_EXECUTABLE} version ${GIT_VERSION_STRING}")
 else()
     message(FATAL_ERROR "Git required, CMake will exit!" )
 endif (GIT_FOUND)
+
+set(MY_VERSION 1)
+set(MY_MAJOR_REVISION 0)
+set(MY_MINOR_REVISION 2)
+set(SETTINGS_VERSION 0)
 
 execute_process(
     COMMAND ${GIT_EXECUTABLE} tag
@@ -44,12 +48,34 @@ execute_process(
 message("Result: " ${RESULT})
 message("Output: " ${OUTPUT})
 
-file(READ "./version.txt" OLD_VERSION_FILE_STR)
-message("Version file contains: " ${OLD_VERSION_FILE_STR})
+string(REGEX REPLACE "\n" ";" LIGHTWEIGHT_TAGS_LIST ${OUTPUT})
 
-string(REGEX REPLACE "[.]|\n" ";" OLD_VERSION_FILE_LIST ${OLD_VERSION_FILE_STR})
+message("Tags list: " ${LIGHTWEIGHT_TAGS_LIST})
+list(REMOVE_ITEM LIGHTWEIGHT_TAGS_LIST "")
+list(LENGTH LIGHTWEIGHT_TAGS_LIST LISTCOUNT)
 
-message("Parse version file version.txt")
+
+if(LISTCOUNT EQUAL 0)
+    message("Tags list is empty, create tag with current version")
+    execute_process(COMMAND ${GIT_EXECUTABLE} tag ${MY_VERSION}.${MY_MAJOR_REVISION}.${MY_MINOR_REVISION}.${MY_BUILD_DATE}0)
+elseif(LISTCOUNT EQUAL 1)
+    list(GET LIGHTWEIGHT_TAGS_LIST -1 LAST_TAG)
+elseif(LISTCOUNT GREATER 1)
+    message("Tags list size  = " ${LISTCOUNT})
+    list(GET LIGHTWEIGHT_TAGS_LIST -1 LAST_TAG)
+    foreach(CURRENT_TAG ${LIGHTWEIGHT_TAGS_LIST})
+        if(NOT ${CURRENT_TAG} STREQUAL ${LAST_TAG})
+            message("Should be deleted " ${CURRENT_TAG})
+            execute_process(COMMAND ${GIT_EXECUTABLE} tag -d ${CURRENT_TAG})
+        endif()
+    endforeach()
+endif()
+
+message("Version file contains: " ${LAST_TAG})
+
+string(REGEX REPLACE "[.]|\n" ";" OLD_VERSION_FILE_LIST ${LAST_TAG})
+
+message("Parse version tag")
 list(GET OLD_VERSION_FILE_LIST 0 MY_OLD_VERSION)
 list(GET OLD_VERSION_FILE_LIST 1 MY_OLD_MAJOR_REVISION)
 list(GET OLD_VERSION_FILE_LIST 2 MY_OLD_MINOR_REVISION)
@@ -68,16 +94,13 @@ else()
 endif()
 
 message("New build number: " ${MY_BUILD_NUMBER})
-
-set(MY_VERSION 1)
-set(MY_MAJOR_REVISION 0)
-set(MY_MINOR_REVISION 1)
-set(SETTINGS_VERSION 0)
-
 message("Application version: " ${MY_VERSION})
 message("Major revision: " ${MY_MAJOR_REVISION})
 message("Minor revision: " ${MY_MINOR_REVISION})
 message("Settings version: " ${SETTINGS_VERSION})
+
+execute_process(COMMAND ${GIT_EXECUTABLE} tag -d ${LAST_TAG})
+execute_process(COMMAND ${GIT_EXECUTABLE} tag ${MY_VERSION}.${MY_MAJOR_REVISION}.${MY_MINOR_REVISION}.${MY_BUILD_NUMBER})
 
 add_subdirectory(smbios)
 add_subdirectory(smbios_util)
