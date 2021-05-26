@@ -6,6 +6,8 @@ set(Boost_ADDITIONAL_VERSIONS "1.61.0" "1.61")
 set(Boost_USE_STATIC_LIBS ON)
 set(BOOST_ROOT ${MY_BOOST_DIR})
 
+option("GIT_TAG" GIT_TAG OFF)
+
 find_package(Boost ${BOOST_MIN_VERSION} REQUIRED)
 
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
@@ -27,6 +29,8 @@ endif()
 
 string(TIMESTAMP MY_BUILD_DATE "%Y%m%d" UTC)
 message("Current build date " ${MY_BUILD_DATE})
+
+if(GIT_TAG)
 
 find_package (Git)
 if (GIT_FOUND)
@@ -101,6 +105,9 @@ message("Settings version: " ${SETTINGS_VERSION})
 
 execute_process(COMMAND ${GIT_EXECUTABLE} tag -d ${LAST_TAG})
 execute_process(COMMAND ${GIT_EXECUTABLE} tag ${MY_VERSION}.${MY_MAJOR_REVISION}.${MY_MINOR_REVISION}.${MY_BUILD_NUMBER})
+
+endif()
+# GIT_TAG
 
 add_subdirectory(smbios)
 add_subdirectory(smbios_util)
