@@ -1,0 +1,20 @@
+2026-10-29T19:15:57Z BLOCKED [recursive force delete (rm -rf)] :: set -e
+cd ~/Projects/SmbiosUtil/docs/roadmap
+rm -rf 0001-working-implementation
+mkdir -p 0001-portable-build-system-and-dependencies/01.0-vcpkg-dependency-migration
+mkdir -p 0001-portable-build-system-and-dependencies/02.0-cmake-presets-target-hygiene-and-ci
+mkdir -p 0002-cpp20-modernization-and-bugfixes/01.0-language-standard-raise-and-compiler-hygiene
+mkdir -p 0002-cpp20-modernization-and-bugfixes/02.0-latent-bug-remediation
+mkdir -p 0003-portable-byte-level-smbios-parsing/01.0-endian-safe-field-accessors
+mkdir -p 0003-portable-byte-level-smbios-parsing/02.0-field-table-redesign-of-versioned-entries
+mkdir -p 0003-portable-byte-level-smbios-parsing/03.0-table-and-string-walk-hardening
+mkdir -p 0004-entry-model-and-factory-modernization/01.0-self-registering-factory
+mkdir -p 0004-entry-model-and-factory-modernization/02.0-expand-structure-coverage
+mkdir -p 0005-uefi-and-native-source-abstraction/01.0-ismbiossource-strategy-interface
+mkdir -p 0005-uefi-and-native-source-abstraction/02.0-linux-sysfs-and-efi-sources
+mkdir -p 0005-uefi-and-native-source-abstraction/03.0-macos-uefi-source
+mkdir -p 0005-uefi-and-native-source-abstraction/04.0-windows-source-parity
+mkdir -p 0006-testing-hardening-and-documentation/01.0-hermetic-fixture-based-test-layer
+mkdir -p 0006-testing-hardening-and-documentation/02.0-boundary-and-malformed-table-tests
+mkdir -p 0006-testing-hardening-and-documentation/03.0-documentation-and-release-pass
+find . -maxdepth 2 -type d | sort
