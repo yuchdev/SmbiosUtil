@@ -55,9 +55,10 @@ absolute-from-repo-root Markdown link:
 
 This roadmap takes `libbios` from a two-structure, Windows/pre-UEFI-Linux
 prototype to a portable, UEFI-capable C++20 library with a modern,
-dependency-managed build, and a C ABI alongside its C++ one. The seven
-milestones below are intentionally sequential - each is the foundation the
-next one is built on:
+dependency-managed build, a C ABI alongside its C++ one, tracked upstream
+references, and machine-parsable output. The nine milestones below are
+intentionally sequential - each is the foundation the next one is built
+on:
 
 1. **0001** gives every later milestone a working, reproducible,
    vcpkg-based build before any source code changes land.
@@ -82,6 +83,17 @@ next one is built on:
    handles wrapping the finished C++ core (depends on 0004's entry model
    being settled), so this library is callable from Python/Rust/C#/Go via
    FFI, not just from other C++ code.
+8. **0008** replaces the two machine-local symlinks under `c-versions/`
+   (invisible to git, unreproducible on another checkout) with real,
+   pinned git submodules, and adds a dedicated agent that watches those
+   upstreams and Microsoft's own firmware-table documentation for changes
+   worth porting - closing the loop that an earlier mis-read of those
+   symlinks (mistaken for empty placeholders) exposed.
+9. **0009** adds a structured field model under every entry type (0004's
+   eleven) and a self-registering output-formatter registry producing
+   text/XML/JSON/YAML, plus one worked example proving a "custom format"
+   is a registration, not a fork - replacing `smbios_util`'s current
+   single free-text output path.
 
 ## Milestones
 
@@ -94,5 +106,7 @@ next one is built on:
 | 0005 | Native source abstraction and UEFI support (Linux & macOS)            | [plan.md](./0005-uefi-and-native-source-abstraction/plan.md)           | [status.md](./0005-uefi-and-native-source-abstraction/status.md)         |
 | 0006 | Hermetic testing, boundary hardening and documentation                | [plan.md](./0006-testing-hardening-and-documentation/plan.md)          | [status.md](./0006-testing-hardening-and-documentation/status.md)        |
 | 0007 | C ABI shim for cross-language interop (opaque handles over the C++ core) | [plan.md](./0007-c-abi-shim-for-cross-language-interop/plan.md)     | [status.md](./0007-c-abi-shim-for-cross-language-interop/status.md)      |
+| 0008 | Upstream reference submodules and change-monitoring agent            | [plan.md](./0008-upstream-reference-submodules-and-monitoring-agent/plan.md) | [status.md](./0008-upstream-reference-submodules-and-monitoring-agent/status.md) |
+| 0009 | Structured output formats (text, XML, JSON, YAML, custom)            | [plan.md](./0009-structured-output-formats/plan.md)                | [status.md](./0009-structured-output-formats/status.md)                  |
 
 **Legend (status.md files):** ✅ Complete · 🔶 In progress / partial · ⬜ Not started

@@ -18,6 +18,8 @@
 | [roadmap/0005-uefi-and-native-source-abstraction/plan.md](roadmap/0005-uefi-and-native-source-abstraction/plan.md) | Milestone 0005: `ISmbiosSource` strategy interface; real Linux sysfs/EFI sources; new macOS UEFI source. |
 | [roadmap/0006-testing-hardening-and-documentation/plan.md](roadmap/0006-testing-hardening-and-documentation/plan.md) | Milestone 0006: hermetic unprivileged test layer, boundary/fuzz tests, documentation pass. |
 | [roadmap/0007-c-abi-shim-for-cross-language-interop/plan.md](roadmap/0007-c-abi-shim-for-cross-language-interop/plan.md) | Milestone 0007: C ABI shim (opaque handles, exception-to-error-code boundary) over the finished C++ core, for Python/Rust/C#/Go FFI. |
+| [roadmap/0008-upstream-reference-submodules-and-monitoring-agent/plan.md](roadmap/0008-upstream-reference-submodules-and-monitoring-agent/plan.md) | Milestone 0008: real git submodules (Linux mirror, macOS Acidanthera fork) replacing the ad hoc `c-versions/` symlinks; an agent watching upstream for portable changes. |
+| [roadmap/0009-structured-output-formats/plan.md](roadmap/0009-structured-output-formats/plan.md) | Milestone 0009: a structured field model and self-registering formatter registry producing text/XML/JSON/YAML and custom formats. |
 | [reviews/README.md](reviews/README.md) | Conventions for `background-reviewer` reports (dependency audits, secret scans, performance, licenses). |
 | [reviews/example-report.md](reviews/example-report.md) | Example efficiency-audit report showing the expected shape. |
 | [security/README.md](security/README.md) | `security-auditor`'s directory conventions, security rules, and the initial libbios threat-model draft. |
