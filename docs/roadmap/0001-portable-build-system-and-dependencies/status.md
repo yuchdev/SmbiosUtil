@@ -7,7 +7,8 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                                | Status         | Tests |
 |-------|--------------------------------------|----------------|-------|
 | 01.0  | vcpkg dependency migration           | ✅ Complete (2026-11-04) | 1/3 build-verifiable on this machine - see Reconciliation note |
-| 02.0  | CMake presets, target hygiene & CI   | 🔶 In progress (2/4 tasks) | -     |
+| 02.0  | CMake presets, target hygiene & CI   | 🔶 In progress (2/4 tasks, committed not pushed) | -     |
+| 02.1  | Fix macOS build                      | ⬜ Not started | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -19,6 +20,33 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   UEFI sources (0005) that follow it. Build-system-first ordering was chosen
   so every later milestone's CI runs against the same build from day one,
   instead of retrofitting vcpkg once source changes are already underway.
+- **2026-11-04, Story 02.1 added by explicit user request.** After the
+  user asked what exactly prevents `smbios` from compiling on macOS, they
+  asked for it fixed within this milestone rather than waiting on
+  milestones 0002/0005 - a deliberate, recorded exception to this
+  milestone's own "no source changes" rule (see `plan.md`'s Story 02.1
+  section for the precise scope line drawn). Before writing the story's
+  tasks, every claim in them was verified by real local compilation
+  (`clang++ -std=gnu++14 -stdlib=libc++ -fsyntax-only`, using this
+  machine's vcpkg-installed Boost headers), not assumed:
+  - Patching only the three `#if` guards (`unix_bios.h`/`.cpp`,
+    `posix_physical_memory.h`/`.cpp`, `physical_memory.cpp`) to add
+    `__APPLE__`, plus compiling with `-std=gnu++14` instead of the
+    current (broken-on-macOS) `gnu++11`, makes **every single file** in
+    `smbios/src/*.cpp` compile cleanly - confirmed by sweeping all of
+    them through one `clang++ -fsyntax-only` invocation, not just the
+    two files the original build attempt happened to fail on first.
+  - A third instance of the same `__APPLE__`-exclusion bug was found this
+    way, beyond the one already recorded in milestone 0005's `status.md`:
+    `smbios/include/smbios/unix_bios.h` (and its `.cpp`) has the
+    identical guard gap, and it is actually the **first** one `SMBios`'s
+    constructor would hit (via `native_impl_`), before ever reaching
+    `physical_memory.cpp`'s fallback path.
+  - `gnu++11` (the Clang branch's current setting) was confirmed
+    insufficient even once the branch is made to match - libc++ gates
+    `std::make_unique` behind the active standard version, independent of
+    which `if`/`elseif` branch set it; `gnu++14` was confirmed sufficient
+    by a standalone test before being written into the task spec.
 
 ## Task details
 
@@ -136,7 +164,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   first `git add -A` after this milestone risked committing built Boost
   binaries.
 
-**Honest gap - needs your decision before this task can close for real**
+**Honest gap - still open**
 
 - **None of this has actually been exercised by GitHub Actions.** I
   authored and locally sanity-checked the YAML (`python3 -c "import
@@ -144,16 +172,18 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   via the GitHub API, but Task 03's own success criteria - "a push...
   triggers all three OS jobs," "all three jobs build... successfully,"
   "a second CI run... is measurably faster (cache hit)" - can only be
-  proven by an actual push, which I deliberately have not done: pushing
-  is a shared-state action this project's own safety rules require
-  asking before taking, and nothing in this milestone's scope asked me
-  to push on its own authority.
-- Everything described above is sitting **uncommitted** in the working
-  tree alongside Story 01.0's and Task 01/02's changes. Committing (and
-  optionally pushing, to actually see the matrix run) needs your
-  go-ahead.
+  proven by an actual push.
+- **2026-11-04:** committed in two commits per the user's explicit
+  choice ("commit now, push when you say so"): `4fe494d` (build-system +
+  CI: vcpkg, presets, target hygiene, `.github/workflows/ci.yml`,
+  `.gitignore`) and `61aa9ff` (roadmap status updates, the two defect
+  findings). **Still not pushed** - `origin` is
+  `git@github.com:yuchdev/SmbiosUtil.git`. Pushing, and therefore Task
+  03's and Task 04's real-CI verification, await a further go-ahead.
 
-✅ Story 01.0 complete with the documented exception above. Story 02.0
-(CMake presets, target hygiene & CI) is next - its CI matrix (Task 03)
-will supply the Linux/Windows full-build proof this local pass on macOS
-alone could not.
+🔶 Story 02.0 at 2/4 tasks, committed, unpushed - see the gap above.
+Story 02.1 (fix macOS build) is now queued after it, before Story 02.0
+can close for real, since Story 02.0 Task 03's CI workflow currently
+tolerates a red macOS build (`allow_build_failure: true`) specifically
+because of the defects Story 02.1 fixes - that flag flips to `false` as
+part of Story 02.1's own closeout (see its Task 03).
