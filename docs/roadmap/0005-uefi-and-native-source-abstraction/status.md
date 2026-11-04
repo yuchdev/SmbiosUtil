@@ -47,3 +47,25 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   codebase has no equivalent today. Added as **R9** and folded into Story
   01.0, Task 02 (entry-point version extraction already lives there,
   post-refactor) rather than opening a new task.
+- **New finding, confirmed 2026-11-04 by a real build attempt** (while
+  verifying milestone 0001's Story 01.0): CLAUDE.md's "Mac has no native
+  SMBIOS source" is an understatement - `smbios/src/physical_memory.cpp`'s
+  `#if defined(_WIN32)... #elif defined(__linux__) || __FreeBSD__ ||
+  __NetBSD__ || __OpenBSD__ || __sun ... #endif` (and
+  `posix_physical_memory.h`'s identical guard) **excludes `__APPLE__`
+  entirely**, so `NativePhysicalMemory` has no concrete definition at all
+  on macOS, yet `PhysicalMemory`'s constructor/destructor still
+  instantiate `std::unique_ptr<NativePhysicalMemory>`'s deleter against
+  it. Confirmed as a real compile failure (`error: allocation of
+  incomplete type 'smbios::NativePhysicalMemory'`) once milestone 0002's
+  compiler-standard defect (that milestone's defect #5) was worked around
+  locally to get far enough to reach it. **Today, `smbios` does not
+  compile on macOS at all** - not "falls back to a scan," a hard build
+  error. This sharpens, rather than changes, this milestone's own
+  rationale: Story 03.0's `MacOsUefiSource` is what finally gives macOS a
+  path that compiles and works, and Story 01.0's `LegacyMemoryScanSource`
+  extraction (Task 02) should either extend this `#if` guard to include
+  `__APPLE__` as a real (if likely SIP-restricted, low-value) fallback, or
+  explicitly document that macOS's chain has no legacy-scan fallback at
+  all and relies entirely on `MacOsUefiSource` - a decision for Story
+  01.0 Task 02's implementer to make and record, not pre-judged here.

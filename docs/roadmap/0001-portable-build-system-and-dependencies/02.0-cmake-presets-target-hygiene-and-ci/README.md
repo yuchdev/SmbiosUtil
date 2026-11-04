@@ -16,9 +16,9 @@ OSes on every push - the first time this project has had any CI at all.
 
 | #  | Document                                                    | Status         | Blocks |
 |----|----------------------------------------------------------------|----------------|--------|
-| 01 | [CMake presets](01-cmake-presets.md)                            | ⬜ Not started | 02     |
-| 02 | [Target hygiene and warnings](02-target-hygiene-and-warnings.md) | ⬜ Not started | 03     |
-| 03 | [CI workflow matrix](03-ci-workflow-matrix.md)                  | ⬜ Not started | 04     |
+| 01 | [CMake presets](01-cmake-presets.md)                            | ✅ Complete | 02     |
+| 02 | [Target hygiene and warnings](02-target-hygiene-and-warnings.md) | ✅ Complete | 03     |
+| 03 | [CI workflow matrix](03-ci-workflow-matrix.md)                  | 🔶 Authored, unpushed - see status.md | 04     |
 | 04 | [Tests](04-tests.md)                                            | ⬜ Not started | -      |
 
 ## Key constraints

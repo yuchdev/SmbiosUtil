@@ -47,6 +47,20 @@ Identified while analyzing the current prototype:
    fallback behavior an explicit, logged decision rather than a silent one.
 4. **`smbios.cpp`'s `// DEBUG` `<iostream>` include** - dead debug-only
    include with no corresponding usage worth keeping; removed.
+5. **The root `CMakeLists.txt`'s compiler-selection `if` chain never
+   matches on macOS** (confirmed 2026-11-04 while verifying milestone
+   0001's Story 01.0: `CMAKE_CXX_COMPILER_ID` on Apple's toolchain is the
+   literal string `"AppleClang"`, but the chain tests `STREQUAL "Clang"`).
+   None of the three branches (`Clang`, `CMAKE_COMPILER_IS_GNUCXX`,
+   `WIN32`) fire, so `CMAKE_CXX_FLAGS` stays empty and the compiler falls
+   back to a pre-C++14 default - `smbios/src/abstract_smbios_entry.cpp`
+   then fails to compile at all (`std::make_unique` doesn't exist before
+   C++14). This is this milestone's Story 01.0 to fix directly: once the
+   language standard is set via `CXX_STANDARD 20`/`CXX_STANDARD_REQUIRED
+   ON` (not string-matched compiler flags), the broken `if` chain's
+   *consequence* disappears regardless of whether the chain itself is
+   also tidied up.
+
 
 ## Key constraints
 

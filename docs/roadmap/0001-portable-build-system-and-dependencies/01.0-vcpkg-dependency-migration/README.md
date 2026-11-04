@@ -17,9 +17,9 @@ logic from the root `CMakeLists.txt` in favor of vcpkg's toolchain file.
 
 | #  | Document                                                        | Status         | Blocks |
 |----|------------------------------------------------------------------|----------------|--------|
-| 01 | [vcpkg manifest and toolchain](01-vcpkg-manifest-and-toolchain.md) | ⬜ Not started | 02     |
-| 02 | [Remove manual Boost paths](02-remove-manual-boost-paths.md)      | ⬜ Not started | 03     |
-| 03 | [Tests](03-tests.md)                                              | ⬜ Not started | -      |
+| 01 | [vcpkg manifest and toolchain](01-vcpkg-manifest-and-toolchain.md) | ✅ Complete | 02     |
+| 02 | [Remove manual Boost paths](02-remove-manual-boost-paths.md)      | ✅ Complete | 03     |
+| 03 | [Tests](03-tests.md)                                              | ✅ Complete (with documented exceptions - see status.md) | -      |
 
 ## Key constraints
 
