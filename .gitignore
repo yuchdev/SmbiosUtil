@@ -1,0 +1,6 @@
+# CMake out-of-source build directories (including CMakePresets.json's binaryDir)
+/build/
+build/
+
+# vcpkg manifest-mode install output (re-created by `vcpkg install` / `cmake --preset`)
+vcpkg_installed/

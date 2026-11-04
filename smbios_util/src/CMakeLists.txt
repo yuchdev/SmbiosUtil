@@ -12,6 +12,9 @@ include_directories(${Boost_INCLUDE_DIRS}
 
 add_executable(${TARGET} ${SOURCES})
 
+target_compile_options(${TARGET} PRIVATE ${SMBIOS_COMPILE_OPTIONS} ${SMBIOS_CXX_STANDARD_FLAG} ${SMBIOS_WARNING_OPTIONS})
+target_link_options(${TARGET} PRIVATE ${SMBIOS_LINK_OPTIONS})
+
 target_link_libraries(${TARGET}
     ${Boost_LIBRARIES}
     smbios)

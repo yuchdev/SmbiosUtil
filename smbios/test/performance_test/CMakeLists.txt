@@ -12,6 +12,10 @@ file(GLOB SOURCES *.cpp)
 include_directories(${Boost_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../../include)
 
 add_executable(${TARGET} ${SOURCES})
+
+target_compile_options(${TARGET} PRIVATE ${SMBIOS_COMPILE_OPTIONS} ${SMBIOS_CXX_STANDARD_FLAG})
+target_link_options(${TARGET} PRIVATE ${SMBIOS_LINK_OPTIONS})
+
 target_link_libraries(${TARGET}
     ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
     ${Boost_DATE_TIME_LIBRARY}

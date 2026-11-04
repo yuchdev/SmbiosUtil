@@ -10,17 +10,30 @@ C++ (C++11/`gnu++1y`) utility that parses the SMBIOS/DMI firmware table and repo
 
 ## Build and test
 
-Requires CMake and Boost >= 1.61 (static libs; `iostreams`, `program_options`, `unit_test_framework`, `date_time`). Out-of-source build:
+Requires CMake and Boost >= 1.61 (static libs; `iostreams`, `program_options`, `unit_test_framework`, `date_time`). Dependencies are declared in the root `vcpkg.json` manifest (pinned to a `builtin-baseline` commit, also recorded in `vcpkg-configuration.json`) and resolved via the vcpkg toolchain file instead of hand-rolled `-D*_BOOST_DIR` flags.
+
+Primary build path: `CMakePresets.json` at the repo root defines a hidden `default` configure preset (sets `binaryDir` to `build/<presetName>` and wires `CMAKE_TOOLCHAIN_FILE` to `$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake`) plus `windows`/`linux`/`macos` presets that inherit it with their respective generators (`Visual Studio 17 2022` / `Ninja` / `Ninja`), and matching build presets. With `VCPKG_ROOT` set in the environment:
+
+```
+cmake --preset linux        # or windows / macos
+cmake --build --preset linux
+```
+
+`-DGIT_TAG=ON` is not baked into any preset's `cacheVariables`; pass it explicitly on top of a preset when needed, e.g. `cmake --preset linux -DGIT_TAG=ON`.
+
+Fallback (no presets, e.g. an older CMake or a one-off toolchain path), out-of-source build:
 
 ```
 mkdir build && cd build
-cmake ..            # on Windows pass -DWINDOWS_BOOST_DIR=<path>; elsewhere -DMY_BOOST_DIR / BOOST_ROOT as needed
+cmake .. -DCMAKE_TOOLCHAIN_FILE=<vcpkg_root>/scripts/buildsystems/vcpkg.cmake
 cmake --build .
 ```
 
+This toolchain-file invocation replaces the old `-DWINDOWS_BOOST_DIR=<path>` / `-DMY_BOOST_DIR=<path>` / `-DBOOST_ROOT=<path>` flags on all platforms.
+
 - Binaries are emitted to `bin/` relative to each target's source dir (`CMAKE_RUNTIME_OUTPUT_DIRECTORY` is `../bin` / `../../bin`).
 - Tests are Boost.Test executables (`smbios_functional_test`, plus a performance test under `smbios/test/performance_test`). They read the real machine's SMBIOS, so they typically need root/admin. Run one case with `./smbios_functional_test --run_test=SmbiosFunctionalTests/SMBiosCreationTestCase --log_level=message`.
-- `-DGIT_TAG=ON` makes the root CMakeLists create/delete **git tags** (`ver.major.minor.<builddate><n>`) as a build-versioning side effect; it is OFF by default, so leave it off to avoid mutating the repo's tags.
+- `-DGIT_TAG=ON` makes the root CMakeLists create/delete **git tags** (`ver.major.minor.<builddate><n>`) as a build-versioning side effect; it is OFF by default, so leave it off to avoid mutating the repo's tags. This is unaffected by presets - see above.
 - Source lists use `file(GLOB ...)`, so re-run `cmake` after adding or removing files.
 - Compiler flags are set per compiler in the root `CMakeLists.txt` (Clang uses `-stdlib=libc++`, GCC `-pthread -fPIC`, Windows `/EHsc`).
 
