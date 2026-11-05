@@ -73,10 +73,10 @@ int main(int argc, char* argv[]){
         std::cout << bios.render_to_description();
 
         if (!dump_to_file.empty()) {
-            std::basic_ofstream<uint8_t, std::char_traits<uint8_t>> is(dump_to_file, std::ios::binary);
+            std::ofstream is(dump_to_file, std::ios::binary);
             const uint8_t* table_begin = bios.get_table_base();
             size_t table_size = bios.get_table_size();
-            is.write(table_begin, table_size);
+            is.write(reinterpret_cast<const char*>(table_begin), table_size);
             cout << "Dump SMBIOS table to file " << dump_to_file << ", size = " << table_size << '\n';
             return EXIT_SUCCESS;
         }

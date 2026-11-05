@@ -20,16 +20,12 @@ jobs:
             vcpkg_cache_path: ~\AppData\Local\vcpkg\archives
           - os: macos-latest
             preset: macos
-            # Known, pre-existing, out-of-milestone-0001-scope build failures on macOS:
-            # (1) root CMakeLists.txt's compiler-selection `if` chain never matches
-            #     AppleClang (tracked as milestone 0002's defect #5), and
-            # (2) smbios/src/physical_memory.cpp + posix_physical_memory.h exclude
-            #     __APPLE__ from their `#if` guards entirely (tracked in milestone
-            #     0005's status.md). Neither is caused by, or fixable within, this
-            #     milestone (no smbios/smbios_util source changes permitted here).
-            # Build failure on this one OS must not redden the matrix until those
-            # land; configure must still succeed and IS a hard gate.
-            allow_build_failure: true
+            # Was `true` (milestone 0002 defect #5: compiler-ID branch never
+            # matched AppleClang; milestone 0005 status.md: __APPLE__ excluded
+            # from the physical-memory #if guards). Both fixed by milestone
+            # 0001's Story 02.1 (fix-macos-build) - see that story's status.md
+            # for the real, from-scratch build/link/run/sanitizer proof.
+            allow_build_failure: false
             vcpkg_cache_path: ~/.cache/vcpkg/archives
     steps:
       - name: Checkout
@@ -57,10 +53,6 @@ jobs:
         env:
           VCPKG_ROOT: ${{ github.workspace }}/vcpkg
         continue-on-error: ${{ matrix.allow_build_failure }}
-
-      - name: Warn if a known, tracked build failure occurred
-        if: matrix.allow_build_failure && steps.build.outcome == 'failure'
-        run: echo "::warning::Build failed on ${{ matrix.os }} - this is a known, pre-existing, tracked issue (milestone 0002 defect #5 / milestone 0005 status.md), not a regression from this CI workflow or milestone 0001. See docs/roadmap/0001-portable-build-system-and-dependencies/status.md."
 
       - name: Run functional test (best-effort - needs elevated privileges to read the real SMBIOS table)
         if: steps.build.outcome == 'success'

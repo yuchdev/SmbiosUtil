@@ -1,5 +1,5 @@
 #pragma once
-#if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
+#if defined(__APPLE__) || defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
 #include <vector>
 #include <cstdint>
 #include <memory>
@@ -53,4 +53,4 @@ private:
 
 } // namespace smbios
 
-#endif // defined(_WIN32) || defined(_WIN64)
+#endif // defined(__APPLE__) || defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)

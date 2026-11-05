@@ -3,7 +3,7 @@
 #include <smbios/physical_memory.h>
 #if defined(_WIN32) || defined(_WIN64)
 #include <smbios/win_physical_memory.h>
-#elif defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
+#elif defined(__APPLE__) || defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
 #include <smbios/posix_physical_memory.h>
 #endif
 

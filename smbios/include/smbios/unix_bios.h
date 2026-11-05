@@ -4,7 +4,7 @@
 #include <vector>
 
 
-#if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
+#if defined(__APPLE__) || defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
 
 namespace smbios {
 
@@ -66,6 +66,6 @@ private:
 
 } // namespace smbios
 
-#endif //defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) or defined(__OpenBSD__) || defined(__sun)
+#endif //defined(__APPLE__) || defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) or defined(__OpenBSD__) || defined(__sun)
 
 

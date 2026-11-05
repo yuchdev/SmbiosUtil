@@ -1,4 +1,4 @@
-#if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
+#if defined(__APPLE__) || defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
 #include <smbios/unix_bios.h>
 #include <smbios/smbios_anchor.h>
 
@@ -122,4 +122,4 @@ void SMBiosImpl::reading_from_sysfs()
     // TODO: implement on Linux with sysfs-based SMBIOS
 }
 
-#endif //defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
+#endif //defined(__APPLE__) || defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)

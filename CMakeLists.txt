@@ -9,10 +9,10 @@ option("GIT_TAG" GIT_TAG OFF)
 
 find_package(Boost ${BOOST_MIN_VERSION} REQUIRED)
 
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
     message("UNIX congiguration, Clang")
     set(SMBIOS_COMPILE_OPTIONS -stdlib=libc++)
-    set(SMBIOS_CXX_STANDARD_FLAG -std=gnu++11)
+    set(SMBIOS_CXX_STANDARD_FLAG -std=gnu++14)
     set(SMBIOS_LINK_OPTIONS -stdlib=libc++)
     set(SMBIOS_WARNING_OPTIONS -Wall -Wextra)
 elseif(${CMAKE_COMPILER_IS_GNUCXX})

@@ -1,4 +1,4 @@
-#if defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
+#if defined(__APPLE__) || defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
 #include <smbios/posix_physical_memory.h>
 #include <boost/iostreams/device/mapped_file.hpp>
 
