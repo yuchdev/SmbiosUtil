@@ -8,7 +8,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 |-------|--------------------------------------|----------------|-------|
 | 01.0  | vcpkg dependency migration           | ✅ Complete (2026-11-04) | 1/3 build-verifiable on this machine - see Reconciliation note |
 | 02.0  | CMake presets, target hygiene & CI   | 🔶 In progress (2/4 tasks, committed not pushed) | -     |
-| 02.1  | Fix macOS build                      | ⬜ Not started | -     |
+| 02.1  | Fix macOS build                      | ✅ Complete (2026-11-05) | Full clean build + link + run + ASan/UBSan, see below |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -181,9 +181,95 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   `git@github.com:yuchdev/SmbiosUtil.git`. Pushing, and therefore Task
   03's and Task 04's real-CI verification, await a further go-ahead.
 
+### Story 02.1 - Fix macOS Build (✅ 2026-11-05)
+
+**Delivered**
+
+- **Task 01:** root `CMakeLists.txt`'s Clang branch condition changed
+  `STREQUAL "Clang"` → `MATCHES "Clang"` (matches `"AppleClang"` as a
+  substring); that branch's `SMBIOS_CXX_STANDARD_FLAG` bumped
+  `-std=gnu++11` → `-std=gnu++14` (confirmed independently necessary -
+  the branch-match fix alone does not provide `std::make_unique`, since
+  libc++ gates it behind the active standard regardless of which branch
+  set it). GCC/WIN32 branches untouched.
+- **Task 02:** `defined(__APPLE__) || ` added to the `#if`/`#elif` guard
+  in five places: `unix_bios.h`, `unix_bios.cpp`, `posix_physical_memory.h`
+  (also fixed that file's stale `#endif` comment, which didn't match its
+  own `#if` condition even before this change), `posix_physical_memory.cpp`,
+  `physical_memory.cpp`. No logic changed in any of the five files.
+- **Task 03, a fourth defect found and fixed mid-verification (not in
+  the original two-task spec):** the real `cmake --build --preset macos`
+  got past Tasks 01/02's fixes and into `smbios` itself, but failed in
+  `smbios_util/src/main.cpp:76` - `std::basic_ofstream<uint8_t,
+  std::char_traits<uint8_t>>` instantiates `std::codecvt<unsigned char,
+  char, mbstate_t>`, a facet libc++ (correctly, per the standard) never
+  defines for a non-`char`/`wchar_t` character type. This was never a
+  guaranteed-portable construct - it likely only "worked" on GCC/libstdc++
+  by implementation permissiveness, not a portability any standard
+  promises. Fixed by switching to a plain `std::ofstream` opened in
+  binary mode and writing via `reinterpret_cast<const char*>(table_begin)`
+  - the standard, idiomatic way to write raw bytes to a file; behavior is
+  unchanged (identical bytes written), and the fix is not
+  platform-conditional, so it carries no regression risk for GCC/MSVC.
+  This was within Story 02.1's own stated mandate ("upgrading... source
+  code to successfully compile") even though not anticipated when the
+  story's tasks were written - fixed directly rather than deferred,
+  unlike the earlier macOS findings in Story 01.0/02.0 which were
+  deferred because fixing them was explicitly outside *that* milestone's
+  scope.
+- `.github/workflows/ci.yml`: the macOS matrix entry's
+  `allow_build_failure` flipped `true` → `false`, with the stale
+  rationale comment replaced by a pointer to this section - the tracked
+  reason for tolerating a red macOS build no longer exists.
+
+**Tests / gate**
+
+- `cmake --preset macos && cmake --build --preset macos` (the existing
+  preset build directory, incremental): full build succeeded,
+  `[2/2] Linking CXX executable smbios_util/bin/smbios_util`.
+- **Independent, from-scratch verification** (a brand-new build
+  directory, not reusing any cached object files): `cmake -S . -B
+  <fresh-dir> -DCMAKE_TOOLCHAIN_FILE=... -G Ninja && cmake --build
+  <fresh-dir>` - **`[20/20]` targets built and linked**, exit code 0.
+  Only pre-existing, unrelated cosmetic warnings remain (`-Wmismatched-tags`
+  on `DMIHeader`/`SMBiosVersion` forward-declared as `class` vs. defined
+  as `struct`; `-Wpessimizing-move`; a linker weak-symbol-visibility
+  warning from Boost.Test) - none are errors, none are new.
+- Ran both `smbios_util` and `smbios_functional_test` from the clean
+  build, unprivileged: both produced the **predicted, correct** outcome
+  per this story's own Key constraints - a cleanly caught exception
+  ("failed opening file: No such file or directory" - `/dev/mem` does not
+  exist as a device node on this modern macOS, stricter even than a SIP
+  permission denial) and, for the test binary, two reported (not
+  crashed) Boost.Test failures. No crash, no hang, no corruption.
+- Sanitizer check: a separate `-fsanitize=address,undefined` build of
+  `smbios_util` ran the same unprivileged path with
+  `ASAN_OPTIONS=detect_leaks=0` (LeakSanitizer is unsupported on
+  Darwin - a known platform limitation, not a finding) and reported
+  **zero ASan/UBSan findings**, exit code 0.
+- Confirmed by code review: no change in this story touches the
+  `elseif(${CMAKE_COMPILER_IS_GNUCXX})`/`elseif(${WIN32})` branches, any
+  `win_*` file, or anything platform-conditional in `main.cpp`'s fix -
+  Linux/Windows carry no regression risk from this story. (Still
+  unverified by an actual Linux/Windows CI run, same as the rest of this
+  milestone - see Story 02.0's own open gap below.)
+
+**Reconciliation note**
+
+- Tasks 01 and 02 consumed exactly as written, verified independently
+  (not just by trusting the implementing agent's report) via direct
+  `grep`/file reads and a repeated `clang++ -fsyntax-only` sweep.
+- Task 03 ("Tests") expanded beyond its original spec - which assumed
+  only Tasks 01/02's two fixes stood between the build and success - to
+  include finding and fixing the `basic_ofstream<uint8_t>` defect
+  described above. The task's original success-criteria checklist
+  (clean build+link, non-crashing run, sanitizer-clean, Linux/Windows
+  unaffected, CI flag flip) is otherwise satisfied exactly as written.
+
+### Story 02.0 - still open
+
 🔶 Story 02.0 at 2/4 tasks, committed, unpushed - see the gap above.
-Story 02.1 (fix macOS build) is now queued after it, before Story 02.0
-can close for real, since Story 02.0 Task 03's CI workflow currently
-tolerates a red macOS build (`allow_build_failure: true`) specifically
-because of the defects Story 02.1 fixes - that flag flips to `false` as
-part of Story 02.1's own closeout (see its Task 03).
+Story 02.1 (fix macOS build) is now complete; Story 02.0's Task 03
+(the CI workflow) and Task 04 (its own closeout) still need an actual
+push to verify for real, on real Linux/Windows images this local
+machine cannot provide.

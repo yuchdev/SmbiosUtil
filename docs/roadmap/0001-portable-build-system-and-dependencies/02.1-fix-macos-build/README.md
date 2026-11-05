@@ -1,7 +1,7 @@
 # Story 02.1 - Fix macOS Build
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-05)
 **Depends on:** Story 02.0 (its CI matrix surfaced this; its `SMBIOS_*` CMake variables are what Task 01 edits)
 
 ## Scope
@@ -27,9 +27,9 @@ Non-goals/Constraints below for the precise line each one draws.
 
 | #  | Document                                                        | Status         | Blocks |
 |----|------------------------------------------------------------------|----------------|--------|
-| 01 | [Fix compiler-ID branch and standard](01-fix-compiler-id-branch-and-standard.md) | ⬜ Not started | 02     |
-| 02 | [Extend physical-memory guards to __APPLE__](02-extend-physical-memory-guards-to-apple.md) | ⬜ Not started | 03     |
-| 03 | [Tests](03-tests.md)                                              | ⬜ Not started | -      |
+| 01 | [Fix compiler-ID branch and standard](01-fix-compiler-id-branch-and-standard.md) | ✅ Complete | 02     |
+| 02 | [Extend physical-memory guards to __APPLE__](02-extend-physical-memory-guards-to-apple.md) | ✅ Complete | 03     |
+| 03 | [Tests](03-tests.md)                                              | ✅ Complete | -      |
 
 ## Key constraints
 
