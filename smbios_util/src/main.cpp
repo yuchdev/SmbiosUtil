@@ -1,3 +1,5 @@
+#include <cstdlib>
+#include <clocale>
 #include <iostream>
 #include <string>
 #include <fstream>

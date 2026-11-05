@@ -3,6 +3,7 @@
 #include <smbios/smbios_anchor.h>
 
 #include <cassert>
+#include <limits>
 #include <string>
 #include <vector>
 #include <algorithm>

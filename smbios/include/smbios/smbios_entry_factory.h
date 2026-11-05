@@ -11,8 +11,8 @@
 namespace smbios {
 
 class AbstractSMBiosEntry;
-class DMIHeader;
-class SMBiosVersion;
+struct DMIHeader;
+struct SMBiosVersion;
 
 /// @brief Abstract factory class. Generates SMBIOS headers according to header and version provided
 /// Header represent type, version usually helps to know the amount of useful information in the structure

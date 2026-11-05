@@ -1,5 +1,6 @@
 #if defined(__APPLE__) || defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
 #include <smbios/posix_physical_memory.h>
+#include <unistd.h>
 #include <boost/iostreams/device/mapped_file.hpp>
 
 namespace boost_io = boost::iostreams;

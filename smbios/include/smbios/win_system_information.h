@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <map>
+#include <string>
 #if defined(_WIN32) || defined(_WIN64)
 
 namespace smbios {
