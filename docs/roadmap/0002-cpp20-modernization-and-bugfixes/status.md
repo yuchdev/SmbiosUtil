@@ -58,3 +58,14 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   `-Werror`, sanitizer CI) and of Story 02.0 the other three defects
   (#2 missing `return`, #3 dishonest stubs, #4 dead `// DEBUG` include),
   none of which are touched by either fix above.
+- **2026-11-05: both fixes confirmed by a real, green, three-OS CI run**
+  (`https://github.com/yuchdev/SmbiosUtil/actions/runs/41996903863`), not
+  just local AppleClang testing - see milestone 0001's `status.md` for
+  the full push-by-push account. That same CI run also surfaced several
+  *additional* portability defects neither this milestone's plan nor the
+  original macOS investigation had found (missing `<cstdint>`/`<limits>`/
+  `<cstdlib>`/`<clocale>`/`<unistd.h>`/`<string>`/`<Windows.h>` includes,
+  a `class`/`struct` forward-declaration mismatch, a hardcoded CMake
+  generator version) - all fixed directly in milestone 0001 rather than
+  deferred here, since none of them are specific to the C++20/compiler-
+  flag scope this milestone's own Story 01.0 owns.

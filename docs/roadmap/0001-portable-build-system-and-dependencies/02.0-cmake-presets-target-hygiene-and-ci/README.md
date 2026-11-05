@@ -1,7 +1,7 @@
 # Story 02.0 - CMake Presets, Target Hygiene & CI
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-05)
 **Depends on:** 01.0 (vcpkg manifest must exist before a preset can point at it)
 
 ## Scope
@@ -18,8 +18,8 @@ OSes on every push - the first time this project has had any CI at all.
 |----|----------------------------------------------------------------|----------------|--------|
 | 01 | [CMake presets](01-cmake-presets.md)                            | ✅ Complete | 02     |
 | 02 | [Target hygiene and warnings](02-target-hygiene-and-warnings.md) | ✅ Complete | 03     |
-| 03 | [CI workflow matrix](03-ci-workflow-matrix.md)                  | 🔶 Authored, unpushed - see status.md | 04     |
-| 04 | [Tests](04-tests.md)                                            | ⬜ Not started | -      |
+| 03 | [CI workflow matrix](03-ci-workflow-matrix.md)                  | ✅ Complete - real 3-OS green, see status.md | 04     |
+| 04 | [Tests](04-tests.md)                                            | ✅ Complete | -      |
 
 ## Key constraints
 

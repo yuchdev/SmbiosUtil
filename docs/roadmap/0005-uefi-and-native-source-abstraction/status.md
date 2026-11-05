@@ -69,3 +69,13 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   explicitly document that macOS's chain has no legacy-scan fallback at
   all and relies entirely on `MacOsUefiSource` - a decision for Story
   01.0 Task 02's implementer to make and record, not pre-judged here.
+- **2026-11-05: the `__APPLE__`-exclusion defect itself is now fixed**
+  (milestone 0001's Story 02.1, confirmed by a real green 3-OS CI run -
+  see that milestone's `status.md`), ahead of this milestone's own
+  execution. `smbios` now compiles and links on macOS; it still has no
+  *real* native source there - the legacy scan's `/dev/mem` path fails
+  cleanly at runtime on modern macOS (confirmed by an actual unprivileged
+  run: no such device node exists at all). This milestone's
+  `MacOsUefiSource` (Story 03.0) is still what macOS actually needs to
+  produce real data; the fix above only removed the "doesn't even
+  compile" floor.
