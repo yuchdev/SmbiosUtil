@@ -48,6 +48,6 @@ std::string smbios::AbstractSMBiosEntry::address_string(uint16_t string_address)
     address_stream << std::hex << std::showbase
         << string_address
         << std::dec << std::noshowbase;
-    return std::move(address_stream.str());
+    return address_stream.str();
 }
 

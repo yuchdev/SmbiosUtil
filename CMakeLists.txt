@@ -11,23 +11,30 @@ option("GIT_TAG" GIT_TAG OFF)
 
 find_package(Boost ${BOOST_MIN_VERSION} REQUIRED)
 
+# Language standard: C++20, strictly (no GNU/MS extensions), uniformly for
+# every target configured below (smbios, smbios_util, and the tests/*
+# executables). Setting these as directory-scope variables before the
+# add_subdirectory() calls below makes them the default CXX_STANDARD /
+# CXX_STANDARD_REQUIRED / CXX_EXTENSIONS target properties for every target
+# created in this directory and its subdirectories.
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
     message("UNIX congiguration, Clang")
     set(SMBIOS_COMPILE_OPTIONS -stdlib=libc++)
-    set(SMBIOS_CXX_STANDARD_FLAG -std=gnu++14)
     set(SMBIOS_LINK_OPTIONS -stdlib=libc++)
-    set(SMBIOS_WARNING_OPTIONS -Wall -Wextra)
+    set(SMBIOS_WARNING_OPTIONS -Wall -Wextra -Werror)
 elseif(${CMAKE_COMPILER_IS_GNUCXX})
     message("UNIX congiguration, GCC")
-    # NOTE! gnu++1y is GCC 4.9 compiler option, in 5 it is deprectaed
     set(SMBIOS_COMPILE_OPTIONS -pthread -fPIC)
-    set(SMBIOS_CXX_STANDARD_FLAG -std=c++11 -std=gnu++1y)
     set(SMBIOS_LINK_OPTIONS -pthread)
-    set(SMBIOS_WARNING_OPTIONS -Wall -Wextra)
+    set(SMBIOS_WARNING_OPTIONS -Wall -Wextra -Werror)
 elseif(${WIN32})
     message("Windows configuraion")
     set(SMBIOS_COMPILE_OPTIONS /EHsc)
-    set(SMBIOS_WARNING_OPTIONS /W4)
+    set(SMBIOS_WARNING_OPTIONS /W4 /WX)
     add_definitions(-D_SCL_SECURE_NO_WARNINGS)
 
 endif()

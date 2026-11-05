@@ -13,7 +13,7 @@ include_directories(${Boost_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../../smbi
 
 add_executable(${TARGET} ${SOURCES})
 
-target_compile_options(${TARGET} PRIVATE ${SMBIOS_COMPILE_OPTIONS} ${SMBIOS_CXX_STANDARD_FLAG})
+target_compile_options(${TARGET} PRIVATE ${SMBIOS_COMPILE_OPTIONS})
 target_link_options(${TARGET} PRIVATE ${SMBIOS_LINK_OPTIONS})
 
 target_link_libraries(${TARGET}

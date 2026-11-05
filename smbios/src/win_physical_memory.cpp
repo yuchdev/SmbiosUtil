@@ -92,7 +92,7 @@ std::vector<uint8_t> NativePhysicalMemory::get_memory_dump(size_t offset, size_t
     uint8_t* aligned_begin = virtual_address_ - page_offset_;
     uint8_t* aligned_end = aligned_begin + length;
     memory_dump.assign(aligned_begin, aligned_end);
-    return std::move(memory_dump);
+    return memory_dump;
 }
 
 uint8_t* NativePhysicalMemory::get_memory_offset(size_t offset) const

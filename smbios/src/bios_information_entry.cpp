@@ -53,7 +53,7 @@ std::string BiosInformationEntry::render_to_description() const
     decsription << "BIOS Revision: " << get_bios_version_string() << '\n';
     decsription << "Firmware Revision: " << get_firmware_version_string() << '\n';
 
-    return std::move(decsription.str());
+    return decsription.str();
 }
 
 uint8_t BiosInformationEntry::get_vendor_index() const
@@ -298,6 +298,6 @@ std::string BiosInformationEntry::stream_to_version(uint16_t major, uint16_t min
 {
     std::stringstream version_stream;
     version_stream << major << '.' << minor;
-    return std::move(version_stream.str());
+    return version_stream.str();
 }
 

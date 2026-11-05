@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-C++ (C++11/`gnu++1y`) utility that parses the SMBIOS/DMI firmware table and reports BIOS, motherboard, CPU, RAM, etc. Two CMake targets: `smbios` (static library, all system calls) and `smbios_util` (command-line front end, uses Boost.Program_options). Work in progress; Windows/Linux are the real targets. Mac has no native SMBIOS source (README asks for a UEFI implementation).
+C++ (C++20) utility that parses the SMBIOS/DMI firmware table and reports BIOS, motherboard, CPU, RAM, etc. Two CMake targets: `smbios` (static library, all system calls) and `smbios_util` (command-line front end, uses Boost.Program_options). Work in progress; Windows/Linux are the real targets. Mac has no native SMBIOS source (README asks for a UEFI implementation).
 
 `c-versions/` is untracked reference material: upstream `dmidecode` C sources for Linux and macOS. It is not part of the build; use it only as a reference for SMBIOS parsing behaviour.
 

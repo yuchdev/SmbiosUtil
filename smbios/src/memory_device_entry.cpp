@@ -326,7 +326,7 @@ std::string MemoryDeviceEntry::render_to_description() const
     decsription << "Asset Tag: " << get_asset_tag_string() << '\n';
     decsription << "Part Number: " << get_part_number_string() << '\n';
 
-    return std::move(decsription.str());
+    return decsription.str();
 }
 
 std::string MemoryDeviceEntry::get_array_handle_string() const
@@ -348,7 +348,7 @@ std::string MemoryDeviceEntry::get_error_handle_string() const
     // just value in hex
     std::stringstream err_handle_stream;
     err_handle_stream << std::hex << error_handle << std::dec;
-    return std::move(err_handle_stream.str());
+    return err_handle_stream.str();
 }
 
 std::string MemoryDeviceEntry::get_total_width_string() const

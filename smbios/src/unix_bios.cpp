@@ -52,7 +52,7 @@ size_t SMBiosImpl::get_minor_version() const
 size_t SMBiosImpl::get_table_size() const
 {
     // do not contain system-specific table information
-    table_buffer_.size();
+    return table_buffer_.size();
 }
 
 void SMBiosImpl::compose_native_smbios_table()

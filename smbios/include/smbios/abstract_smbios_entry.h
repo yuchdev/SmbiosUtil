@@ -50,7 +50,7 @@ protected:
                 properties_stream << '\t' << (*it).second << '\n';
             }
         }
-        return std::move(properties_stream.str());
+        return properties_stream.str();
     }
 private:
 

@@ -55,7 +55,7 @@ std::vector<uint8_t> NativePhysicalMemory::get_memory_dump(size_t offset, size_t
     const uint8_t* dump_start = reinterpret_cast<const uint8_t*>(physical_memory_map_->data()) + offset;
     const uint8_t* dump_end = dump_start + length;
     memory_dump.assign(dump_start, dump_end);
-    return std::move(memory_dump);
+    return memory_dump;
 }
 
 const uint8_t* NativePhysicalMemory::get_memory_offset(size_t offset) const

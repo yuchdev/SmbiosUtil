@@ -300,7 +300,7 @@ std::string SMBios::render_to_description() const
         decsription << "Table address: " << std::hex << smbios_entry32_->structure_table_address << std::dec << '\n';
         decsription << "SMBIOS structures count: " << smbios_entry32_->smbios_structures_number << '\n';
         decsription << "SMBIOS BCD revision: " << static_cast<size_t>(smbios_entry32_->smbios_bcd_revision) << '\n';
-        return std::move(decsription.str());
+        return decsription.str();
     }
 
     if(smbios_entry64_ && checksum_validated_) {
@@ -314,7 +314,7 @@ std::string SMBios::render_to_description() const
         decsription << "Reserved byte: " <<  static_cast<size_t>(smbios_entry64_->reserved) << '\n';
         decsription << "Maximum structure size: " << smbios_entry64_->max_structure_size << '\n';
         decsription << "Table address: " << std::hex << smbios_entry64_->structure_table_address << std::dec << '\n';
-        return std::move(decsription.str());
+        return decsription.str();
     }
     return std::string{};
 }

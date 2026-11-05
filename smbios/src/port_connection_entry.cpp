@@ -7,7 +7,7 @@
 using std::string;
 using namespace smbios;
 
-PortConnectionEntry::PortConnectionEntry(const DMIHeader& header, const SMBiosVersion& version) 
+PortConnectionEntry::PortConnectionEntry(const DMIHeader& header, [[maybe_unused]] const SMBiosVersion& version)
     : AbstractSMBiosEntry(header) {
 
     if (header.type != SMBios::PortConnection) {
@@ -124,7 +124,7 @@ std::string PortConnectionEntry::render_to_description() const
     decsription << "External Connection Type: " << get_external_connection_string() << '\n';
     decsription << "Port Type: " << get_port_string() << '\n';
 
-    return std::move(decsription.str());
+    return decsription.str();
 }
 
 
