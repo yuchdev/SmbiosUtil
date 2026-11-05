@@ -2,10 +2,22 @@
 #include <smbios/win_system_information.h>
 #include <Windows.h>
 #include <tchar.h>
+#include <winternl.h>
 
 using namespace smbios;
 
 typedef BOOL(WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
+
+namespace {
+
+// RtlGetVersion is the modern, non-deprecated replacement for GetVersionEx.
+// It is resolved dynamically (ntdll.dll is always loaded in-process) rather
+// than linked statically, matching this codebase's existing convention for
+// calling undocumented/native NTDLL entry points (see win_bios.cpp and
+// win_physical_memory.cpp).
+typedef NTSTATUS(WINAPI *RtlGetVersionPtr)(PRTL_OSVERSIONINFOEXW);
+
+}
 
 std::map<unsigned short, std::string> NativeSystemInformation::cpu_architectures_ = {
     { PROCESSOR_ARCHITECTURE_AMD64, "AMD64"},
@@ -53,9 +65,16 @@ NativeSystemInformation::~NativeSystemInformation()
 
 void NativeSystemInformation::get_system_version()
 {
-    OSVERSIONINFOEX info = {};
-    info.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-    if (!GetVersionEx(reinterpret_cast<OSVERSIONINFO*>(&info))) {
+    RTL_OSVERSIONINFOEXW info = {};
+    info.dwOSVersionInfoSize = sizeof(info);
+
+    HMODULE ntdll_module = GetModuleHandleA("ntdll.dll");
+    RtlGetVersionPtr rtl_get_version = ntdll_module
+        ? reinterpret_cast<RtlGetVersionPtr>(GetProcAddress(ntdll_module, "RtlGetVersion"))
+        : nullptr;
+
+    // RtlGetVersion returns an NTSTATUS; 0 is STATUS_SUCCESS.
+    if (!rtl_get_version || rtl_get_version(&info) != 0) {
         retrived_successfully_ = false;
         os_name_ = "Unknown";
         cpu_architecture_ = "Unknown";

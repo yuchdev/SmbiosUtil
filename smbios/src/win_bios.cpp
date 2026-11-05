@@ -94,7 +94,7 @@ void SMBiosImpl::compose_native_smbios_table()
         }
         table_buffer_.resize(smbios_table_size);
 
-        GetSystemFirmwareTable('RSMB', 0, &table_buffer_[0], smbios_table_size);
+        GetSystemFirmwareTable('RSMB', 0, &table_buffer_[0], static_cast<DWORD>(smbios_table_size));
         smbios_data_ = reinterpret_cast<RawSMBIOSData*>(&table_buffer_[0]);
     }
 }

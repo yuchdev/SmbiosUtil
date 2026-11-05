@@ -94,13 +94,13 @@ SMBiosVersion SMBios::get_smbios_version() const
 
     // native implementation provides version
     if (numeric_limits<size_t>::max() != major_version && numeric_limits<size_t>::max() != minor_version) {
-        ver.major_version = major_version;
-        ver.minor_version = minor_version;
+        ver.major_version = static_cast<uint16_t>(major_version);
+        ver.minor_version = static_cast<uint16_t>(minor_version);
     }
     // Low-level table provides version
     else {
-        ver.major_version = major_version_;
-        ver.minor_version = minor_version_;
+        ver.major_version = static_cast<uint16_t>(major_version_);
+        ver.minor_version = static_cast<uint16_t>(minor_version_);
     }
 
     return ver;

@@ -69,7 +69,7 @@ void NativePhysicalMemory::map_physical_memory(size_t base, size_t length)
         INVALID_HANDLE_VALUE,                   // Process handle
         reinterpret_cast<PVOID*>(&virtual_address_), // BaseAddress (place the beginning of view here)
         0L,                                     // ZeroBits
-        length,                                 // CommitSize
+        static_cast<ULONG>(length),             // CommitSize
         &physical_base,                         // SectionOffset
         reinterpret_cast<PULONG>(&length),      // ViewSize
         ViewShare,                              // InheritDisposition
@@ -86,7 +86,7 @@ bool NativePhysicalMemory::is_mapped() const
     return virtual_address_ && physical_memory_device_;
 }
 
-std::vector<uint8_t> NativePhysicalMemory::get_memory_dump(size_t offset, size_t length) const
+std::vector<uint8_t> NativePhysicalMemory::get_memory_dump([[maybe_unused]] size_t offset, size_t length) const
 {
     std::vector<uint8_t> memory_dump(length);
     uint8_t* aligned_begin = virtual_address_ - page_offset_;

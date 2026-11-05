@@ -20,8 +20,8 @@ constexpr bool is_x64_application()
 /// @brief x32 application on x64 system
 bool is_x32_application_on_x64();
 
-/// @brief Collect system-dependent OS and architecture information 
-/// from WinAPI calls GetSystemInfo() and GetVersionEx()
+/// @brief Collect system-dependent OS and architecture information
+/// from WinAPI call GetSystemInfo() and NTDLL's RtlGetVersion()
 class NativeSystemInformation{
 public:
 
