@@ -17,8 +17,8 @@ not just by a human reviewer.
 
 | #  | Document                                                          | Status         | Blocks |
 |----|----------------------------------------------------------------------|----------------|--------|
-| 01 | [Raise to C++20](01-raise-to-cpp20.md)                                 | ⬜ Not started | 02     |
-| 02 | [Warnings-as-errors and sanitizers](02-warnings-as-errors-and-sanitizers.md) | ⬜ Not started | 03     |
+| 01 | [Raise to C++20](01-raise-to-cpp20.md)                                 | ✅ Complete | 02     |
+| 02 | [Warnings-as-errors and sanitizers](02-warnings-as-errors-and-sanitizers.md) | ✅ Complete - -Werror clean on AppleClang locally; sanitizer CI job added, not yet confirmed green in GitHub Actions | 03     |
 | 03 | [Tests](03-tests.md)                                                   | ⬜ Not started | -      |
 
 ## Key constraints
