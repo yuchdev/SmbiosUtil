@@ -19,24 +19,18 @@ using namespace smbios;
 
 bool smbios::operator>(const SMBiosVersion& lhs, const SMBiosVersion& rhs)
 {
-    if (lhs.major_version > rhs.major_version) {
-        return true;
+    if (lhs.major_version != rhs.major_version) {
+        return lhs.major_version > rhs.major_version;
     }
-    if (lhs.minor_version > rhs.minor_version) {
-        return true;
-    }
-    return false;
+    return lhs.minor_version > rhs.minor_version;
 }
 
 bool smbios::operator<(const SMBiosVersion& lhs, const SMBiosVersion& rhs)
 {
-    if (lhs.major_version < rhs.major_version) {
-        return true;
+    if (lhs.major_version != rhs.major_version) {
+        return lhs.major_version < rhs.major_version;
     }
-    if (lhs.minor_version < rhs.minor_version) {
-        return true;
-    }
-    return false;
+    return lhs.minor_version < rhs.minor_version;
 }
 
 

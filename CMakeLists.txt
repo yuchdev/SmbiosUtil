@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.13) # target_link_options requires 3.13+
 project(smbios_utility CXX)
 
+enable_testing()
+
 set(BOOST_MIN_VERSION "1.61.0")
 set(Boost_ADDITIONAL_VERSIONS "1.61.0" "1.61")
 set(Boost_USE_STATIC_LIBS ON)
@@ -114,5 +116,6 @@ endif()
 
 add_subdirectory(smbios)
 add_subdirectory(smbios_util)
+add_subdirectory(tests)
 
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)

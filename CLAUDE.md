@@ -31,8 +31,14 @@ cmake --build .
 
 This toolchain-file invocation replaces the old `-DWINDOWS_BOOST_DIR=<path>` / `-DMY_BOOST_DIR=<path>` / `-DBOOST_ROOT=<path>` flags on all platforms.
 
-- Binaries are emitted to `bin/` relative to each target's source dir (`CMAKE_RUNTIME_OUTPUT_DIRECTORY` is `../bin` / `../../bin`).
-- Tests are Boost.Test executables (`smbios_functional_test`, plus a performance test under `smbios/test/performance_test`). They read the real machine's SMBIOS, so they typically need root/admin. Run one case with `./smbios_functional_test --run_test=SmbiosFunctionalTests/SMBiosCreationTestCase --log_level=message`.
+- Binaries are emitted to `smbios/bin/` (library/CLI) or `smbios_util/bin/` (CLI) relative to the build tree; test binaries land in `smbios/bin/` too (`CMAKE_RUNTIME_OUTPUT_DIRECTORY` resolves there from each target's own directory).
+- Tests are Boost.Test executables under the top-level `tests/` tree, classified into four categories (`tests/<category>/`, each its own executable, each wired into `ctest` via `enable_testing()` in the root `CMakeLists.txt`):
+  - `tests/unit/` → `smbios_unit_test` - deterministic, no hardware/privileges needed (hand-built `DMIHeader`/raw buffers, pure-function tests like `SMBiosVersion` comparison). Always expected to pass.
+  - `tests/mock/` → `smbios_mock_test` - test doubles at a real injectable seam. Currently an intentionally empty placeholder (see the file's own header comment): no such seam exists yet pre-milestone-0005 (`ISmbiosSource`).
+  - `tests/perf/` → `smbios_perf_test` - times real-hardware SMBIOS enumeration.
+  - `tests/integration/` → `smbios_integration_test` - constructs a real `SMBios` against the live machine.
+  - The latter two read the real machine's SMBIOS, so they typically need root/admin and fail cleanly (not crash) without it. Run one unit case with `./smbios_unit_test --run_test=SmbiosUnitTests/SMBiosVersionGreaterMajorWinsOverMinorTestCase --log_level=message`, or the whole suite via `ctest --test-dir build/<preset> --output-on-failure`.
+  - See `docs/dev/cpp_coding_standard.md`'s Testing section for the classification scheme itself.
 - `-DGIT_TAG=ON` makes the root CMakeLists create/delete **git tags** (`ver.major.minor.<builddate><n>`) as a build-versioning side effect; it is OFF by default, so leave it off to avoid mutating the repo's tags. This is unaffected by presets - see above.
 - Source lists use `file(GLOB ...)`, so re-run `cmake` after adding or removing files.
 - Compiler flags are set per compiler in the root `CMakeLists.txt` (Clang uses `-stdlib=libc++`, GCC `-pthread -fPIC`, Windows `/EHsc`).
@@ -48,4 +54,4 @@ Data flow in `SMBios` (`smbios/src/smbios.cpp`):
 
 Typed entries: `AbstractSMBiosEntry` subclasses (`BiosInformationEntry`, `PortConnectionEntry`, `MemoryDeviceEntry`) are built from a `DMIHeader` + `SMBiosVersion` by `SMBiosEntryFactory`, which maps the SMBIOS structure type (`SMBios::SMBiosHandler` enum) to a Boost.Factory generator. The factory returns `nullptr` for unregistered types. To support a new structure type: add an entry class, include it in `smbios_entry_factory.h`, and register it in the factory constructor. The version is passed in because SMBIOS fields appear in later spec revisions and the parser must only read fields valid for the table's version.
 
-Known rough edges: the `SMBiosVersion` `operator>` / `operator<` in `smbios.cpp` compare major and minor independently (not lexicographically), so they are wrong for e.g. 3.0 vs 2.8. `smbios.cpp` still has a `// DEBUG` `<iostream>` include. `smbios_util/src/command_line_parser.cpp` and `main.cpp` hold the CLI.
+Known rough edges: `smbios.cpp` still has a `// DEBUG` `<iostream>` include. `smbios_util/src/command_line_parser.cpp` and `main.cpp` hold the CLI. (The `SMBiosVersion` `operator>`/`operator<` lexicographic-comparison bug this section used to describe is fixed - see `tests/unit/unit_tests.cpp`'s `SMBiosVersionGreater*`/`SMBiosVersionLess*` cases.)
