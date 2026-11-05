@@ -15,9 +15,16 @@ rules below before relying on it.
   non-owning raw pointer/reference; when (if ever) raw `new`/`delete` is
   permitted.
 - **Testing** - the test classification scheme `testing-expert` uses when it
-  reports coverage/risk deltas (unit vs. mock vs. integration vs. e2e), and
-  which test framework (GoogleTest/Catch2) and build system (CMake/CTest)
-  the project uses.
+  reports coverage/risk deltas: **unit, mock, perf, integration** (this
+  project's actual four categories - no `e2e`; a hardware-inventory CLI has
+  no end-to-end user journey distinct from "integration," and "perf" is a
+  first-class category here because the project already ships a
+  performance-timing suite). Framework: **Boost.Test** (`BOOST_AUTO_TEST_SUITE`/
+  `BOOST_AUTO_TEST_CASE`), not GoogleTest/Catch2 - this project's two original
+  suites were already Boost.Test, and the vcpkg manifest declares `boost-test`
+  specifically for it. Build system: CMake + CTest (`enable_testing()` in the
+  root `CMakeLists.txt`; each category is its own executable registered via
+  `add_test(...)`).
 - **Build conventions** - any clang-tidy/cppcheck/sanitizer gates CI enforces,
   and the minimum supported compiler/platform matrix.
 
@@ -27,3 +34,22 @@ Add this project's mandatory rules here: concrete, enforced-by-a-hook-or-CI-gate
 rules, not general advice. Each entry should name what enforces it (a CMake
 target, a clang-tidy check, a CI gate, a review checklist item) so the rule is
 auditable rather than aspirational.
+
+### Test classification and layout (enforced by `tests/CMakeLists.txt`)
+
+Four categories, one top-level directory and one Boost.Test executable each,
+all discovered by `ctest` (root `CMakeLists.txt` calls `enable_testing()`):
+
+| Category      | Directory           | Target                 | Needs root/admin? | Always expected green? |
+|---------------|----------------------|-------------------------|--------------------|--------------------------|
+| Unit          | `tests/unit/`        | `smbios_unit_test`      | No                 | Yes                      |
+| Mock          | `tests/mock/`        | `smbios_mock_test`      | No                 | Yes (currently a documented placeholder - no injectable seam exists until milestone 0005's `ISmbiosSource`) |
+| Perf          | `tests/perf/`        | `smbios_perf_test`      | Yes (real hardware) | No - fails cleanly without privileges, not a regression |
+| Integration   | `tests/integration/` | `smbios_integration_test` | Yes (real hardware) | No - same as Perf |
+
+A new structure/entry type/parsing rule gets a **unit** test first (a
+hand-built `DMIHeader`/raw buffer, no real `SMBios`/hardware) - see
+`tests/unit/unit_tests.cpp`'s `build_port_connection_buffer()` helper for the
+pattern. Escalate a bug a unit test surfaces to `cpp-expert` for a fix in the
+same pass, per `testing-expert`'s own rule - never leave a known-wrong
+behavior as a permanently-red test.

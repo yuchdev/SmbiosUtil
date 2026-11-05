@@ -39,3 +39,22 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   written, so this specific defect is believed macOS-only - not yet
   confirmed on Linux/Windows (no CI exists yet; milestone 0001 Story 02.0
   adds it).
+- **2026-11-05: defects #5 and #1 are both already fixed**, ahead of this
+  milestone's own execution. Defect #5 (compiler-ID branch never matching
+  `AppleClang`) was fixed by milestone 0001's Story 02.1
+  (`fix-macos-build`), user-ratified as an explicit exception to that
+  milestone's own scope - `STREQUAL "Clang"` → `MATCHES "Clang"`, plus the
+  Clang branch's standard bumped to `gnu++14` (confirmed necessary even
+  once matched). Defect #1 (`SMBiosVersion` comparison) was fixed and
+  given regression coverage (`tests/unit/unit_tests.cpp`'s
+  `SMBiosVersionGreater*`/`SMBiosVersionLess*` cases) as part of an
+  ad hoc test-coverage improvement pass (also 2026-11-05, outside this
+  roadmap's own sequencing - see milestone 0006's `status.md` for the
+  fuller account). **Reconciliation for this milestone's Story 01.0 Task
+  01 and Story 02.0 Task 01:** both specs are *consumed* already - verify
+  the as-built fix matches each spec's stated approach exactly (it does,
+  by direct comparison) rather than re-implementing; what remains of
+  Story 01.0 is the broader C++20 raise (`CXX_STANDARD 20` everywhere,
+  `-Werror`, sanitizer CI) and of Story 02.0 the other three defects
+  (#2 missing `return`, #3 dishonest stubs, #4 dead `// DEBUG` include),
+  none of which are touched by either fix above.
