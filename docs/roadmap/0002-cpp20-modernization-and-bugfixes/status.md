@@ -6,8 +6,8 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 | Story | Name                                          | Status         | Tests |
 |-------|-------------------------------------------------|----------------|-------|
-| 01.0  | Language standard raise and compiler hygiene   | 🔶 In progress (2/3 tasks) | smbios_unit_test, smbios_mock_test pass |
-| 02.0  | Latent bug remediation                          | ⬜ Not started | -     |
+| 01.0  | Language standard raise and compiler hygiene   | ✅ Complete | real 5-job green CI (3 builds + 2 sanitizer jobs) |
+| 02.0  | Latent bug remediation                          | 🔶 In progress (1/4 tasks) | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -115,3 +115,27 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   the option and observing the test pass. GCC/MSVC branches and the
   sanitizer job itself are not yet confirmed green - only AppleClang was
   locally verifiable; real confirmation needs a CI push.
+- **2026-11-05: Story 01.0 closed - real, green, 5-job CI run**
+  (`https://github.com/yuchdev/SmbiosUtil/actions/runs/42032334597`).
+  The first push (`bd70622`/`28a377f`,
+  [run 42010524116](https://github.com/yuchdev/SmbiosUtil/actions/runs/42010524116))
+  landed both sanitizer jobs green on the first try plus Ubuntu/macOS
+  builds green, but surfaced genuine, first-ever MSVC `/WX` failures on
+  Windows-only source never previously compiled under warnings-as-errors:
+  four `size_t`→`uint16_t` narrowings in `smbios.cpp` (SMBIOS version
+  fields, provably single-byte per spec), one `size_t`→`DWORD` in
+  `win_bios.cpp` (`GetSystemFirmwareTable` buffer size), one
+  `size_t`→`ULONG` in `win_physical_memory.cpp`
+  (`NtMapViewOfSection`'s `CommitSize`), one unreferenced-parameter
+  warning (`get_memory_dump()`'s `offset`, kept and marked
+  `[[maybe_unused]]` to stay signature-symmetric with the Posix
+  counterpart rather than removed), and one real deprecated-API warning
+  (`win_system_information.cpp`'s `GetVersionEx`, replaced with a
+  dynamically-resolved `RtlGetVersion` from `ntdll.dll` - not suppressed,
+  since this project's own convention reserves pragma-suppression for
+  third-party headers, never first-party API usage). Fixed in `496e78c`;
+  [run 42032334597](https://github.com/yuchdev/SmbiosUtil/actions/runs/42032334597)
+  came back green on all 5 jobs (`build` × ubuntu/macos/windows,
+  `sanitizers` × ubuntu/macos). Story 01.0's own exit gate - "full suite
+  passes on GCC, Clang and MSVC under C++20/`-Werror`; sanitizer CI job
+  green" - is met for real, not assumed.

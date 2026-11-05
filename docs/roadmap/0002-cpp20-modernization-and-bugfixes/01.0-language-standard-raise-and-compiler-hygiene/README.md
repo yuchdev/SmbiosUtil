@@ -1,7 +1,7 @@
 # Story 01.0 - Language Standard Raise and Compiler Hygiene
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-05)
 **Depends on:** Milestone 0001 (build must already be portable before raising the standard across three toolchains)
 
 ## Scope
@@ -19,7 +19,7 @@ not just by a human reviewer.
 |----|----------------------------------------------------------------------|----------------|--------|
 | 01 | [Raise to C++20](01-raise-to-cpp20.md)                                 | ✅ Complete | 02     |
 | 02 | [Warnings-as-errors and sanitizers](02-warnings-as-errors-and-sanitizers.md) | ✅ Complete - -Werror clean on AppleClang locally; sanitizer CI job added, not yet confirmed green in GitHub Actions | 03     |
-| 03 | [Tests](03-tests.md)                                                   | ⬜ Not started | -      |
+| 03 | [Tests](03-tests.md)                                                   | ✅ Complete - real 3-OS green, see status.md | -      |
 
 ## Key constraints
 
