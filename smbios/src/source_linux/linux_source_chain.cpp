@@ -4,6 +4,7 @@
 
 #include <smbios/source_interface/smbios_source_chain.h>
 #include <smbios/source_legacy/legacy_memory_scan_source.h>
+#include <smbios/source_linux/linux_sysfs_source.h>
 #include <smbios/source_linux/unix_bios.h>
 
 using namespace smbios;
@@ -77,6 +78,7 @@ public:
 std::vector<std::unique_ptr<ISmbiosSource>> smbios::make_default_source_chain()
 {
     std::vector<std::unique_ptr<ISmbiosSource>> chain;
+    chain.push_back(std::make_unique<LinuxSysfsSource>());
     chain.push_back(std::make_unique<UnixNativeOrLegacyScanSource>());
     return chain;
 }
