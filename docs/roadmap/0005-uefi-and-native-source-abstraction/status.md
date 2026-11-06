@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                               | Status         | Tests |
 |-------|---------------------------------------|----------------|-------|
 | 01.0  | `ISmbiosSource` strategy interface   | ✅ Complete | smbios_unit_test pass (150 cases); real CI green incl. Windows |
-| 01.1  | Per-OS source libraries                | 🔶 In progress (2/3 tasks) | smbios_unit_test pass (149 cases) |
+| 01.1  | Per-OS source libraries                | ✅ Complete | smbios_unit_test pass (152 cases); local macOS build/test green, Windows/Linux CI confirmation pending next push |
 | 02.0  | Linux sysfs & EFI sources             | ⬜ Not started | -     |
 | 03.0  | macOS UEFI source                     | ⬜ Not started | -     |
 | 04.0  | Windows source parity                 | ⬜ Not started | -     |
@@ -366,3 +366,69 @@ actually cares about.
   (`https://github.com/yuchdev/SmbiosUtil/actions/runs/42295605341`:
   all 5 jobs green, `build (windows-latest)` and `build (ubuntu-latest)`
   included).
+- **2026-11-07: Story 01.1 Task 03 complete, closing this story.** Two new
+  `tests/unit/` cases prove the link-seam itself, not just behavior already
+  covered elsewhere: `smbios_source_legacy_link_test.cpp` (2 cases:
+  `is_available()`/`source_name()` against `LegacyMemoryScanSource`, the
+  same contract `legacy_memory_scan_source_test.cpp` already asserts,
+  re-stated here as the DD2/DD3 link-graph proof from
+  [ADR 0001](/docs/adr/0001-per-os-smbios-source-libraries.md) rather than
+  new behavior coverage) and `smbios_source_chain_link_seam_test.cpp` (1
+  case: `BOOST_CHECK(!make_default_source_chain().empty())`, confirming
+  `smbios` core's link graph resolves the symbol with no unresolved
+  reference on whatever per-OS library this platform's CMake branch
+  selected).
+
+  `LegacyMemoryScanSource::source_name()` confirmed by direct file read
+  (`smbios/src/source_legacy/legacy_memory_scan_source.cpp`) to return the
+  exact literal `"legacy-scan"`, and `is_available()` to unconditionally
+  `return true` - both already asserted by the pre-existing
+  `legacy_memory_scan_source_test.cpp`, re-verified rather than assumed
+  before writing the new test's assertions.
+
+  **CMake wiring: no change needed.** The spec's own suggested
+  `target_link_libraries(smbios_unit_test PRIVATE smbios_source_legacy)`
+  addition was tried first by omission, per this task's own instruction to
+  check before adding it: a real local build of `smbios_unit_test` with
+  only the two new `.cpp` files added (picked up automatically by
+  `tests/unit/CMakeLists.txt`'s existing `file(GLOB SOURCES *.cpp)`) linked
+  and ran cleanly with no unresolved symbol. `smbios_unit_test`'s existing
+  `target_link_libraries(... smbios)` already pulls in
+  `LegacyMemoryScanSource`'s symbols transitively, because
+  `smbios/src/CMakeLists.txt` links `smbios_source_legacy` into `smbios`
+  core as `PUBLIC`, not `PRIVATE` - so no extra `target_link_libraries`
+  entry was added. The one real CMake-adjacent change this task makes is
+  therefore zero lines in any `CMakeLists.txt`; both new test files are
+  picked up by the existing glob alone.
+
+  `tests/mock/mock_tests.cpp`'s `NoMockableSeamYetTestCase` comment is
+  updated (not removed - no concrete fake `ISmbiosSource` substitution test
+  exists yet, which is Stories 02.0/03.0/04.0's job) to state that the
+  `ISmbiosSource` seam and its library boundary (this story) both now
+  exist, and the suite's remaining blocker is a concrete fake source, not a
+  missing architectural seam.
+  [docs/test/test-subsystem.md](/docs/test/test-subsystem.md)'s own
+  pointer to this story's two link-seam tests was already added when Story
+  01.1's commit landed (`30e16c7`, ahead of this task) and needed no
+  further edit - re-verified here by direct read rather than assumed
+  already correct.
+
+  `render_to_description()` is untouched by this task, per its own
+  constraint - it is not part of this task's scope and the already-ratified
+  simplified format (Story 01.0, Task 01) remains the current, stable
+  contract.
+
+  Verified independently: direct file read of
+  `LegacyMemoryScanSource::is_available()`/`source_name()`'s real bodies
+  before asserting against them in the new test; a real local macOS
+  rebuild (`cmake --preset macos && cmake --build --preset macos`)
+  confirming the build is warning-clean and links without the spec's
+  suggested extra `target_link_libraries` entry; a full `ctest` run
+  (`smbios_unit_test` 152/152 cases - 149 plus the 3 new cases across both
+  new files; `smbios_perf_test`/`smbios_mock_test` passing exactly as the
+  established baseline; `smbios_integration_test` failing cleanly with
+  assertion failures, not a crash, on this unprivileged, no-native-source
+  macOS sandbox - the same established baseline every prior task in this
+  milestone has recorded, not a regression). Windows/Linux CI confirmation
+  is, as throughout this milestone, deferred to the next real CI push - not
+  verifiable locally.
