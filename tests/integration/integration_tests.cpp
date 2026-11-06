@@ -3,6 +3,7 @@
 #include <memory>
 #include <smbios/smbios.h>
 #include <smbios/smbios_entry_factory.h>
+#include <smbios/abstract_smbios_entry.h>
 
 #define BOOST_AUTO_TEST_MAIN
 #include <boost/test/unit_test.hpp>

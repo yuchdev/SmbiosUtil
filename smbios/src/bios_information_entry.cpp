@@ -1,11 +1,17 @@
 #include <smbios/bios_information_entry.h>
 #include <smbios/smbios.h>
 #include <smbios/byte_reader.h>
+#include <smbios/smbios_entry_factory.h>
 
 #include <sstream>
 #include <cassert>
 
 using namespace smbios;
+
+// Self-register against SMBios::BIOSInformation at static-init time; see
+// REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.h) for why this
+// lives here rather than in the header.
+REGISTER_SMBIOS_ENTRY(SMBios::BIOSInformation, BiosInformationEntry)
 
 BiosInformationEntry::BiosInformationEntry(const DMIHeader& header, const SMBiosVersion& /*version*/, const uint8_t* table_end)
     : AbstractSMBiosEntry(header, table_end)

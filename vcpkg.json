@@ -6,8 +6,6 @@
     "boost-iostreams",
     "boost-program-options",
     "boost-test",
-    "boost-date-time",
-    "boost-functional",
-    "boost-bind"
+    "boost-date-time"
   ]
 }

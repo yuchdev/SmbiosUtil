@@ -1,25 +1,53 @@
 #include <smbios/smbios_entry_factory.h>
+#include <smbios/abstract_smbios_entry.h>
 #include <smbios/smbios.h>
-#include <boost/functional/factory.hpp>
-#include <boost/bind.hpp>
+
+#include <map>
+#include <sstream>
+#include <stdexcept>
 
 using namespace smbios;
 
-SMBiosEntryFactory::SMBiosEntryFactory()
+namespace {
+
+/// @brief Module-scope registry of entry creators, keyed by SMBiosHandler
+/// value. A function-local static (Meyers-singleton style) rather than a
+/// namespace-scope global: static-init order across translation units is
+/// unspecified in C++, but a function-local static is guaranteed
+/// initialized on first use regardless of which TU's dynamic initializers
+/// (i.e. which REGISTER_SMBIOS_ENTRY invocations) run first.
+std::map<uint8_t, EntryCreator>& entry_registry()
 {
-    entries_factory_[SMBios::BIOSInformation] = boost::bind(boost::factory<BiosInformationEntry*>(), _1, _2, _3);
-    entries_factory_[SMBios::PortConnection] = boost::bind(boost::factory<PortConnectionEntry*>(), _1, _2, _3);
-    entries_factory_[SMBios::MemoryDevice] = boost::bind(boost::factory<MemoryDeviceEntry*>(), _1, _2, _3);
+    static std::map<uint8_t, EntryCreator> registry;
+    return registry;
+}
+
+} // namespace
+
+void smbios::register_smbios_entry(uint8_t handler_value, EntryCreator creator)
+{
+    auto& registry = entry_registry();
+    if (registry.find(handler_value) != registry.end()) {
+        // Programming error: two entry classes (or two REGISTER_SMBIOS_ENTRY
+        // invocations) both claim the same SMBiosHandler value. Fail fast at
+        // static-init time rather than silently overwriting the first
+        // registration via operator[].
+        std::stringstream err;
+        err << "SMBIOS entry handler value " << static_cast<unsigned>(handler_value)
+            << " is already registered";
+        throw std::logic_error(err.str());
+    }
+    registry.emplace(handler_value, std::move(creator));
 }
 
 std::unique_ptr<AbstractSMBiosEntry> smbios::SMBiosEntryFactory::create(const DMIHeader& header,
     const SMBiosVersion& version, const uint8_t* table_end)
 {
-    if (entries_factory_.find(header.type) != entries_factory_.end()) {
-        return std::unique_ptr<AbstractSMBiosEntry>(entries_factory_.at(header.type)(header, version, table_end));
+    auto& registry = entry_registry();
+    auto it = registry.find(header.type);
+    if (it != registry.end()) {
+        return it->second(header, version, table_end);
     }
-    else{
-        // no such index, just proceed
-        return nullptr;
-    }
+    // no such index, just proceed
+    return nullptr;
 }
