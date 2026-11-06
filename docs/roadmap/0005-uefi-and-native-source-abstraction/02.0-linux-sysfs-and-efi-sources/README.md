@@ -1,7 +1,7 @@
 # Story 02.0 - Linux sysfs & EFI Sources
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** 🔶 In progress (1/3 tasks)
 **Depends on:** Story 01.0 (`ISmbiosSource`); Story 01.1 (the
 `smbios_source_linux` library skeleton this story's files land inside -
 see [01.1's README](../01.1-per-os-source-libraries/README.md))
@@ -27,7 +27,7 @@ line format (`address_from_efi()`'s `SMBIOS=`/`SMBIOS3=` parsing) - see
 
 | #  | Document                                      | Status         | Blocks |
 |----|--------------------------------------------------|----------------|--------|
-| 01 | [sysfs source](01-sysfs-source.md)                 | ⬜ Not started | 03     |
+| 01 | [sysfs source](01-sysfs-source.md)                 | ✅ Complete | 03     |
 | 02 | [EFI systab source](02-efi-systab-source.md)       | ⬜ Not started | 03     |
 | 03 | [Tests](03-tests.md)                               | ⬜ Not started | -      |
 

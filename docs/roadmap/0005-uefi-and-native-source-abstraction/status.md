@@ -8,7 +8,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 |-------|---------------------------------------|----------------|-------|
 | 01.0  | `ISmbiosSource` strategy interface   | ✅ Complete | smbios_unit_test pass (150 cases); real CI green incl. Windows |
 | 01.1  | Per-OS source libraries                | ✅ Complete | smbios_unit_test pass (152 cases); local macOS build/test green, Windows/Linux CI confirmation pending next push |
-| 02.0  | Linux sysfs & EFI sources             | ⬜ Not started | -     |
+| 02.0  | Linux sysfs & EFI sources             | 🔶 In progress (1/3 tasks) | smbios_unit_test pass (152 cases, Linux-only new tests compile as no-op on macOS); Linux CI confirmation pending next push |
 | 03.0  | macOS UEFI source                     | ⬜ Not started | -     |
 | 04.0  | Windows source parity                 | ⬜ Not started | -     |
 
@@ -250,6 +250,37 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   `smbios_integration_test`/`smbios_perf_test` unchanged from baseline);
   and a live `smbios_util` CLI run confirming the same `Source: none`
   diagnostic output as before this task.
+- **2026-11-07, Story 02.0 Task 01 (`LinuxSysfsSource`).** Mechanics
+  cross-checked directly against `c-versions/dmidecode_linux/dmidecode.c`
+  before implementation, not derived from memory: `smbios_decode()`/
+  `smbios3_decode()`'s exact field offsets (major/minor at 0x06/0x07 for
+  `_SM_`, 0x07/0x08 for `_SM3_`), and - the one genuinely non-obvious
+  mechanic - `dmi_table_get()`'s `FLAG_NO_FILE_OFFSET` path
+  (`read_file(0, &size, devmem)`): the sysfs `DMI` file is read **whole,
+  from its own offset 0**, with the entry point's `structure_table_address`
+  field completely unused (that field only matters for `/dev/mem`-style
+  physical addressing; the kernel has already extracted the table into
+  its own file). A shorter-than-announced file is expected (SMBIOS v3
+  only announces a maximum size) and tolerated, not an error.
+  `LinuxSysfsSource` registered as a new front-of-chain entry in
+  `linux_source_chain.cpp`'s `make_default_source_chain()`, ahead of the
+  existing `UnixNativeOrLegacyScanSource` - deliberately **not** retiring
+  `unix_bios.cpp`/`SMBiosImpl` yet, per the story README's own stated
+  sequencing (retirement happens once Task 02's EFI source also lands).
+  **Self-caught briefing error, fixed post-agent:** my own task brief told
+  the implementing agent to treat a bare `_DMI_` anchor (no `_SM_`/`_SM3_`
+  wrapper) the same as the `_SM_` offset path. Independent verification
+  against `legacy_decode()` (`dmidecode.c:6049`) showed this is wrong -
+  the bare-legacy layout is a different structure entirely (packed-BCD
+  version byte at 0x0E, length at 0x06, count at 0x0C), not a smaller
+  case of `smbios_decode()`'s layout. Fixed in `linux_sysfs_source.cpp`
+  to report that anchor as unrecognized instead (no real-world sysfs case
+  exists for it - pre-SMBIOS legacy-DMI-only systems predate the
+  `/sys/firmware/dmi/tables/` sysfs feature entirely); no test exercised
+  the wrong path, no regression. `smbios_unit_test` 152/152 still passing
+  locally on macOS after the fix (the new Linux-only test file compiles
+  as a no-op here, per its own guard); real Linux-side verification is
+  CI's job at story close.
 
 ### Story 01.0 - ISmbiosSource Strategy Interface (✅ 2026-11-07)
 
