@@ -29,6 +29,18 @@ bool SMBiosImpl::smbios_read_success() const
 
 const uint8_t* SMBiosImpl::get_table_base() const
 {
+    // table_buffer_ is empty whenever neither sysfs, EFI, nor the
+    // physical-memory fallback has populated it yet (e.g. unprivileged
+    // host, no root access to /dev/mem). `table_buffer_[0]` on an empty
+    // vector is a precondition violation (operator[] requires
+    // pos < size()); on toolchains that assert this precondition (seen in
+    // CI: GCC 15/libstdc++ hardened mode) it aborts the process outright,
+    // and even where it doesn't assert it is still undefined behavior.
+    // Mirror SMBios::get_table_base()'s own nullptr contract (see
+    // smbios.cpp) so callers can detect "no table" instead of crashing.
+    if (table_buffer_.empty()) {
+        return nullptr;
+    }
     // do not contain system-specific table information
     return &table_buffer_[0];
 }
