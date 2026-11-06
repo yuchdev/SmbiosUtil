@@ -157,6 +157,30 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   environment available here) - see the next entry for the outcome.
   Next push is deliberately held back until this is resolved, so as not
   to add further red CI runs on top of an already-diagnosed issue.
+- **2026-11-06: resolved - a real bug, not a sanitizer false positive.**
+  Pulling the *actual* raw CI log (not just the leak summary) showed all
+  three test cases actually `SIGABRT`ed before the leak check ever ran:
+  `std::vector<uint8_t>::operator[](0)`'s precondition (`__n <
+  this->size()`) is enforced on this CI image (GCC 15/libstdc++ hardened
+  mode), and `SMBiosImpl::get_table_base()` (`unix_bios.cpp`) called
+  `&table_buffer_[0]` unconditionally - a real precondition violation
+  whenever `table_buffer_` is empty, which it always is on an
+  unprivileged host where sysfs/EFI/legacy-scan all fail (every CI
+  runner, by definition). Boost.Test's signal handler intercepts the
+  abort and reports it as a test failure via a path that skips normal
+  C++ stack unwinding - which is *why* the leaks were reported at all:
+  `native_impl_` and the test's own local `buffer` genuinely never got
+  destructed, because the abort happened before either destructor could
+  run. Fixed with a one-line nullptr guard, mirroring the exact contract
+  `SMBios::get_table_base()` and Windows's own `SMBiosImpl::
+  get_table_base()` (`win_bios.cpp`) already implement - Windows never
+  had this bug. Two alternate hypotheses (a Boost.Iostreams leak on the
+  exception path; a Pimpl-destructor issue) were checked directly against
+  the real vcpkg-fetched Boost sources and ruled out with evidence, not
+  assumed away. Verified locally (macOS build/test pass, plus a local
+  ASan/UBSan build with no new diagnostics) - full confirmation awaits
+  the next CI push, since LeakSanitizer and the GCC-hardened assertion
+  that triggered the abort are both Linux-only and unreproducible here.
 - **2026-11-06: Story 03.0 Task 02 complete.** `AbstractSMBiosEntry::
   parse_dmi_strings()` rebuilt with a `table_end` bound per contract C3
   (now requires `std::find(string_section, table_end, 0)` to find a
