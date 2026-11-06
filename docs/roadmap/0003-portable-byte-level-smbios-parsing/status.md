@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                                           | Status         | Tests |
 |-------|---------------------------------------------------|----------------|-------|
 | 01.0  | Endian-safe field accessors                        | ✅ Complete | smbios_unit_test pass (ByteReaderUnitTests: 5 cases); CI confirmation pending |
-| 02.0  | Field-table redesign of versioned entries         | ⬜ Not started | -     |
+| 02.0  | Field-table redesign of versioned entries         | 🔶 In progress (1/4 tasks) | smbios_unit_test pass (BiosInformationEntryUnitTests: 3 cases) |
 | 03.0  | Table and string walk hardening                    | ⬜ Not started | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
@@ -48,3 +48,23 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   lack of root, the established baseline). Real-hardware/GCC/MSVC
   confirmation via CI is still pending as of this entry - tracked for the
   next push.
+- **2026-11-06: Story 02.0 Task 01 complete.** `BiosInformationEntry`
+  rebuilt on the new accessors; `BiosInformationV24`/`V31` and both
+  pointer members deleted entirely (confirmed by grep across `smbios/`,
+  `tests/`, `smbios_util/`). Added `AbstractSMBiosEntry::raw_data()` as a
+  new protected accessor (declared in `abstract_smbios_entry.h`, defined
+  in the `.cpp` since `DMIHeader` is only forward-declared in the header
+  and `header_->data` needs the complete type). Added a previously-
+  missing public getter, `get_extended_rom_size()` (offset `0x18`), for
+  the field the deleted `BiosInformationV31` struct alone carried but
+  never exposed - no functionality silently dropped. Every offset
+  independently cross-checked against `c-versions/dmidecode_linux`'s own
+  `dmi_decode()` type-0 case and confirmed exact (`0x04` vendor through
+  `0x18` extended ROM size). No genuine R3 (version-only-gated) field
+  found - dmidecode itself gates every BIOS Information field purely on
+  `h->length`, confirming the constructor needed no version branching.
+  `get_rom_size()`'s `0xFF` sentinel and `get_runtime_size()`'s formula
+  preserved exactly (R8, access technique only changed, not behavior).
+  Verified independently by direct file read, a real local macOS rebuild,
+  and running the new `BiosInformationEntryUnitTests` suite directly (3
+  cases, all passing).
