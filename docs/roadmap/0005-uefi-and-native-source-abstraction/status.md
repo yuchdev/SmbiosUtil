@@ -362,5 +362,7 @@ actually cares about.
   narrowing, not a loss). Windows (`smbios_source_windows`) and Linux
   (`smbios_source_linux`) library compilation remain unverified by a
   real compile on this macOS sandbox, same as every per-OS-specific
-  claim throughout this milestone - the next CI push is the real
-  confirmation.
+  claim throughout this milestone - **confirmed by real CI**
+  (`https://github.com/yuchdev/SmbiosUtil/actions/runs/42295605341`:
+  all 5 jobs green, `build (windows-latest)` and `build (ubuntu-latest)`
+  included).
