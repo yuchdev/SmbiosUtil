@@ -7,8 +7,8 @@
 
 using namespace smbios;
 
-BiosInformationEntry::BiosInformationEntry(const DMIHeader& header, const SMBiosVersion& /*version*/)
-    : AbstractSMBiosEntry(header)
+BiosInformationEntry::BiosInformationEntry(const DMIHeader& header, const SMBiosVersion& /*version*/, const uint8_t* table_end)
+    : AbstractSMBiosEntry(header, table_end)
 {
     if (header.type != SMBios::BIOSInformation) {
         std::stringstream err;

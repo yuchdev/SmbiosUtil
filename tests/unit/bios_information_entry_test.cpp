@@ -178,7 +178,7 @@ BOOST_AUTO_TEST_CASE(BiosInformationEntryTruncatedBelow0x12DefaultsAllFieldsTest
     std::vector<uint8_t> buffer = build_tier1_buffer();
     DMIHeader header = make_header(buffer);
 
-    BiosInformationEntry entry(header, SMBiosVersion{2, 0});
+    BiosInformationEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
 
     BOOST_CHECK_EQUAL(entry.get_vendor_index(), static_cast<uint8_t>(0));
     BOOST_CHECK_EQUAL(entry.get_version_index(), static_cast<uint8_t>(0));
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(BiosInformationEntryMidTierDecodesThroughFirmwareReleaseTes
     std::vector<uint8_t> buffer = build_tier2_buffer();
     DMIHeader header = make_header(buffer);
 
-    BiosInformationEntry entry(header, SMBiosVersion{2, 4});
+    BiosInformationEntry entry(header, SMBiosVersion{2, 4}, buffer.data() + buffer.size());
 
     BOOST_CHECK_EQUAL(entry.get_vendor_index(), static_cast<uint8_t>(0x02));
     BOOST_CHECK_EQUAL(entry.get_version_index(), static_cast<uint8_t>(0x03));
@@ -242,7 +242,7 @@ BOOST_AUTO_TEST_CASE(BiosInformationEntryAboveTierDecodesExtendedRomSizeTestCase
     std::vector<uint8_t> buffer = build_tier3_buffer();
     DMIHeader header = make_header(buffer);
 
-    BiosInformationEntry entry(header, SMBiosVersion{3, 1});
+    BiosInformationEntry entry(header, SMBiosVersion{3, 1}, buffer.data() + buffer.size());
 
     BOOST_CHECK_EQUAL(entry.get_vendor_index(), static_cast<uint8_t>(0x0B));
     BOOST_CHECK_EQUAL(entry.get_version_index(), static_cast<uint8_t>(0x0C));

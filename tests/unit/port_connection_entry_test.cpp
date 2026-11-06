@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE(PortConnectionEntryMinimumValidLengthDecodesTestCase)
     std::vector<uint8_t> buffer = build_buffer(0x09);
     DMIHeader header = make_header(buffer);
 
-    PortConnectionEntry entry(header, SMBiosVersion{2, 0});
+    PortConnectionEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
 
     BOOST_CHECK_EQUAL(entry.get_internal_connection_type(), static_cast<uint8_t>(PortConnectionEntry::PS2));
     BOOST_CHECK_EQUAL(entry.get_external_connection_type(), static_cast<uint8_t>(PortConnectionEntry::RJ45));
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(PortConnectionEntryOneByteBelowMinimumDefaultsPortTypeOnlyT
     std::vector<uint8_t> buffer = build_buffer(0x08);
     DMIHeader header = make_header(buffer);
 
-    PortConnectionEntry entry(header, SMBiosVersion{2, 0});
+    PortConnectionEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
 
     BOOST_CHECK_EQUAL(entry.get_internal_connection_type(), static_cast<uint8_t>(PortConnectionEntry::PS2));
     BOOST_CHECK_EQUAL(entry.get_external_connection_type(), static_cast<uint8_t>(PortConnectionEntry::RJ45));
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(PortConnectionEntryTruncatedBelowMinimumDefaultsAllFieldsTe
     std::vector<uint8_t> buffer = build_buffer(0x04);
     DMIHeader header = make_header(buffer);
 
-    PortConnectionEntry entry(header, SMBiosVersion{2, 0});
+    PortConnectionEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
 
     BOOST_CHECK_EQUAL(entry.get_internal_connection_type(), static_cast<uint8_t>(PortConnectionEntry::NoneConnector));
     BOOST_CHECK_EQUAL(entry.get_external_connection_type(), static_cast<uint8_t>(PortConnectionEntry::NoneConnector));

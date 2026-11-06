@@ -108,7 +108,10 @@ public:
 
     /// @brief Parse the header, recognize how much information do we have
     /// in MemoryDevice SMBIOS entry
-    PortConnectionEntry(const DMIHeader& header, const SMBiosVersion& version);
+    /// @param table_end one-past-the-end pointer of the mapped SMBIOS
+    /// structure table, forwarded to AbstractSMBiosEntry for bounds-checked
+    /// string parsing.
+    PortConnectionEntry(const DMIHeader& header, const SMBiosVersion& version, const uint8_t* table_end);
 
     // @brief Parent is abstract
     virtual ~PortConnectionEntry() = default;

@@ -129,7 +129,10 @@ public:
 
     /// @brief Parse the header, recognize SMBIOS version and how much information
     /// do we have in MemoryDevice SMBIOS entry
-    MemoryDeviceEntry(const DMIHeader& header, const SMBiosVersion& version);
+    /// @param table_end one-past-the-end pointer of the mapped SMBIOS
+    /// structure table, forwarded to AbstractSMBiosEntry for bounds-checked
+    /// string parsing.
+    MemoryDeviceEntry(const DMIHeader& header, const SMBiosVersion& version, const uint8_t* table_end);
 
     // @brief Parent is abstract
     virtual ~MemoryDeviceEntry() = default;

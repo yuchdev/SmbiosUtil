@@ -7,17 +7,17 @@ using namespace smbios;
 
 SMBiosEntryFactory::SMBiosEntryFactory()
 {
-    entries_factory_[SMBios::BIOSInformation] = boost::bind(boost::factory<BiosInformationEntry*>(), _1, _2);
-    entries_factory_[SMBios::PortConnection] = boost::bind(boost::factory<PortConnectionEntry*>(), _1, _2);
-    entries_factory_[SMBios::MemoryDevice] = boost::bind(boost::factory<MemoryDeviceEntry*>(), _1, _2);
+    entries_factory_[SMBios::BIOSInformation] = boost::bind(boost::factory<BiosInformationEntry*>(), _1, _2, _3);
+    entries_factory_[SMBios::PortConnection] = boost::bind(boost::factory<PortConnectionEntry*>(), _1, _2, _3);
+    entries_factory_[SMBios::MemoryDevice] = boost::bind(boost::factory<MemoryDeviceEntry*>(), _1, _2, _3);
 }
 
-std::unique_ptr<AbstractSMBiosEntry> smbios::SMBiosEntryFactory::create(const DMIHeader& header, 
-    const SMBiosVersion& version)
+std::unique_ptr<AbstractSMBiosEntry> smbios::SMBiosEntryFactory::create(const DMIHeader& header,
+    const SMBiosVersion& version, const uint8_t* table_end)
 {
     if (entries_factory_.find(header.type) != entries_factory_.end()) {
-        return std::unique_ptr<AbstractSMBiosEntry>(entries_factory_.at(header.type)(header, version));
-    } 
+        return std::unique_ptr<AbstractSMBiosEntry>(entries_factory_.at(header.type)(header, version, table_end));
+    }
     else{
         // no such index, just proceed
         return nullptr;

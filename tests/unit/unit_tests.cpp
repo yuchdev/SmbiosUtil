@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE(PortConnectionEntryParsesPS2KeyboardTestCase)
         1, PortConnectionEntry::PS2, 2, PortConnectionEntry::RJ45, PortConnectionEntry::Keyboard);
     DMIHeader header = make_header(buffer);
 
-    PortConnectionEntry entry(header, SMBiosVersion{2, 0});
+    PortConnectionEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
 
     BOOST_CHECK_EQUAL(entry.get_internal_connection_type(), static_cast<uint8_t>(PortConnectionEntry::PS2));
     BOOST_CHECK_EQUAL(entry.get_internal_connection_string(), "PS/2");
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(PortConnectionEntryParsesUSBMouseTestCase)
         1, PortConnectionEntry::DB9PinMale, 2, PortConnectionEntry::AccessBusUSB, PortConnectionEntry::Mouse);
     DMIHeader header = make_header(buffer);
 
-    PortConnectionEntry entry(header, SMBiosVersion{2, 0});
+    PortConnectionEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
 
     BOOST_CHECK_EQUAL(entry.get_internal_connection_type(), static_cast<uint8_t>(PortConnectionEntry::DB9PinMale));
     BOOST_CHECK_EQUAL(entry.get_internal_connection_string(), "DB-9 Pin Male");
@@ -211,7 +211,7 @@ BOOST_AUTO_TEST_CASE(SMBiosEntryFactoryReturnsNullForUnregisteredTypeTestCase)
     header.data = nullptr;
 
     SMBiosEntryFactory factory;
-    std::unique_ptr<AbstractSMBiosEntry> entry = factory.create(header, SMBiosVersion{2, 0});
+    std::unique_ptr<AbstractSMBiosEntry> entry = factory.create(header, SMBiosVersion{2, 0}, nullptr);
 
     BOOST_CHECK(entry == nullptr);
 }
@@ -224,7 +224,7 @@ BOOST_AUTO_TEST_CASE(SMBiosEntryFactoryCreatesPortConnectionEntryTestCase)
     DMIHeader header = make_header(buffer);
 
     SMBiosEntryFactory factory;
-    std::unique_ptr<AbstractSMBiosEntry> entry = factory.create(header, SMBiosVersion{2, 0});
+    std::unique_ptr<AbstractSMBiosEntry> entry = factory.create(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK_EQUAL(entry->get_type(), "Port Connection");

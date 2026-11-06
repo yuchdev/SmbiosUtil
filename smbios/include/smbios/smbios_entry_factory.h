@@ -24,12 +24,15 @@ public:
     SMBiosEntryFactory();
 
     /// @brief Create concrete instance of the SMBIOS entry
-    std::unique_ptr<AbstractSMBiosEntry> create(const DMIHeader&, const SMBiosVersion&);
+    /// @param table_end one-past-the-end pointer of the mapped SMBIOS
+    /// structure table; forwarded to the concrete entry's constructor so its
+    /// string-section parsing never reads past the buffer.
+    std::unique_ptr<AbstractSMBiosEntry> create(const DMIHeader&, const SMBiosVersion&, const uint8_t* table_end);
 
 private:
 
     /// Map SMBIOS header types to class instance generators
-    std::map<uint8_t, boost::function<AbstractSMBiosEntry*(const DMIHeader&, const SMBiosVersion&)>> entries_factory_;
+    std::map<uint8_t, boost::function<AbstractSMBiosEntry*(const DMIHeader&, const SMBiosVersion&, const uint8_t*)>> entries_factory_;
 };
 
 } // namespace smbios

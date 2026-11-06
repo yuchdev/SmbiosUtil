@@ -36,10 +36,11 @@ BOOST_AUTO_TEST_CASE(PerformanceTestsCase)
         SMBios smbios;
         SMBiosVersion ver = smbios.get_smbios_version();
         SMBiosEntryFactory smbios_factory;
+        const uint8_t* table_end = smbios.get_table_base() + smbios.get_table_size();
         for (const DMIHeader& header : smbios) {
             BOOST_TEST_MESSAGE("Header ID = " << header.get_type());
 
-            std::unique_ptr<AbstractSMBiosEntry> entry = smbios_factory.create(header, ver);
+            std::unique_ptr<AbstractSMBiosEntry> entry = smbios_factory.create(header, ver, table_end);
             if (entry) {
                 BOOST_TEST_MESSAGE("Crete entry type: " << entry->get_type());
             }

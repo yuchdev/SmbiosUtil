@@ -84,10 +84,11 @@ int main(int argc, char* argv[]){
         }
 
         SMBiosEntryFactory smbios_factory;
+        const uint8_t* table_end = bios.get_table_base() + bios.get_table_size();
         for (const DMIHeader& header : bios) {
 
             std::cout << "Header ID = " << header.get_type() << '\n';
-            std::unique_ptr<AbstractSMBiosEntry> entry = smbios_factory.create(header, ver);
+            std::unique_ptr<AbstractSMBiosEntry> entry = smbios_factory.create(header, ver, table_end);
             if (entry) {
                 std::cout << entry->render_to_description() << '\n';
             }

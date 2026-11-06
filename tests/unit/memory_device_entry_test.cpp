@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(MemoryDeviceEntryTruncatedBelow0x15DefaultsAllFieldsTestCas
     std::vector<uint8_t> buffer = build_buffer(0x04);
     DMIHeader header = make_header(buffer);
 
-    MemoryDeviceEntry entry(header, SMBiosVersion{2, 1});
+    MemoryDeviceEntry entry(header, SMBiosVersion{2, 1}, buffer.data() + buffer.size());
 
     BOOST_CHECK_EQUAL(entry.get_array_handle(), static_cast<uint16_t>(0));
     BOOST_CHECK_EQUAL(entry.get_error_handle(), static_cast<uint16_t>(MemoryDeviceEntry::ErrorHandleNotProvided));
@@ -175,7 +175,7 @@ BOOST_AUTO_TEST_CASE(MemoryDeviceEntryTier0x15DecodesThroughTypeDetailTestCase)
     std::vector<uint8_t> buffer = build_buffer(0x15);
     DMIHeader header = make_header(buffer);
 
-    MemoryDeviceEntry entry(header, SMBiosVersion{2, 1});
+    MemoryDeviceEntry entry(header, SMBiosVersion{2, 1}, buffer.data() + buffer.size());
 
     BOOST_CHECK_EQUAL(entry.get_array_handle(), static_cast<uint16_t>(0x0001));
     BOOST_CHECK_EQUAL(entry.get_error_handle(), static_cast<uint16_t>(MemoryDeviceEntry::ErrorHandleNoError));
@@ -208,7 +208,7 @@ BOOST_AUTO_TEST_CASE(MemoryDeviceEntryTier0x17DecodesSpeedNotManufacturerTestCas
     std::vector<uint8_t> buffer = build_buffer(0x17);
     DMIHeader header = make_header(buffer);
 
-    MemoryDeviceEntry entry(header, SMBiosVersion{2, 3});
+    MemoryDeviceEntry entry(header, SMBiosVersion{2, 3}, buffer.data() + buffer.size());
 
     BOOST_CHECK_EQUAL(entry.get_device_speed(), static_cast<uint16_t>(2400));
 
@@ -226,7 +226,7 @@ BOOST_AUTO_TEST_CASE(MemoryDeviceEntryTier0x1ADecodesThroughAssetTagTestCase)
     std::vector<uint8_t> buffer = build_buffer(0x1A);
     DMIHeader header = make_header(buffer);
 
-    MemoryDeviceEntry entry(header, SMBiosVersion{2, 3});
+    MemoryDeviceEntry entry(header, SMBiosVersion{2, 3}, buffer.data() + buffer.size());
 
     BOOST_CHECK_EQUAL(entry.get_manufacturer_index(), static_cast<uint8_t>(0x03));
     BOOST_CHECK_EQUAL(entry.get_serial_number_index(), static_cast<uint8_t>(0x04));
@@ -244,7 +244,7 @@ BOOST_AUTO_TEST_CASE(MemoryDeviceEntryTier0x1BDecodesPartNumberTestCase)
     std::vector<uint8_t> buffer = build_buffer(0x1B);
     DMIHeader header = make_header(buffer);
 
-    MemoryDeviceEntry entry(header, SMBiosVersion{2, 6});
+    MemoryDeviceEntry entry(header, SMBiosVersion{2, 6}, buffer.data() + buffer.size());
 
     BOOST_CHECK_EQUAL(entry.get_part_number_index(), static_cast<uint8_t>(0x06));
 
@@ -260,7 +260,7 @@ BOOST_AUTO_TEST_CASE(MemoryDeviceEntryTier0x1CDecodesDeviceRankTestCase)
     std::vector<uint8_t> buffer = build_buffer(0x1C);
     DMIHeader header = make_header(buffer);
 
-    MemoryDeviceEntry entry(header, SMBiosVersion{2, 7});
+    MemoryDeviceEntry entry(header, SMBiosVersion{2, 7}, buffer.data() + buffer.size());
 
     BOOST_CHECK_EQUAL(entry.get_device_rank(), static_cast<uint8_t>(0x04));
 
@@ -276,7 +276,7 @@ BOOST_AUTO_TEST_CASE(MemoryDeviceEntryTier0x20DecodesExtendedSizeTestCase)
     std::vector<uint8_t> buffer = build_buffer(0x20);
     DMIHeader header = make_header(buffer);
 
-    MemoryDeviceEntry entry(header, SMBiosVersion{2, 7});
+    MemoryDeviceEntry entry(header, SMBiosVersion{2, 7}, buffer.data() + buffer.size());
 
     BOOST_CHECK_EQUAL(entry.get_extended_size(), static_cast<uint32_t>(0x00020000));
 
@@ -293,7 +293,7 @@ BOOST_AUTO_TEST_CASE(MemoryDeviceEntryFullBufferDecodesAllFieldsTestCase)
     std::vector<uint8_t> buffer = build_buffer(0x28);
     DMIHeader header = make_header(buffer);
 
-    MemoryDeviceEntry entry(header, SMBiosVersion{2, 8});
+    MemoryDeviceEntry entry(header, SMBiosVersion{2, 8}, buffer.data() + buffer.size());
 
     BOOST_CHECK_EQUAL(entry.get_array_handle(), static_cast<uint16_t>(0x0001));
     BOOST_CHECK_EQUAL(entry.get_error_handle(), static_cast<uint16_t>(MemoryDeviceEntry::ErrorHandleNoError));

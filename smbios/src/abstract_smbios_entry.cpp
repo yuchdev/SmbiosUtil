@@ -1,32 +1,35 @@
 #include <smbios/abstract_smbios_entry.h>
 #include <smbios/smbios.h>
 
+#include <algorithm>
 #include <cassert>
 #include <string>
 #include <sstream>
 
 using namespace smbios;
 
-AbstractSMBiosEntry::AbstractSMBiosEntry(const DMIHeader& header)
+AbstractSMBiosEntry::AbstractSMBiosEntry(const DMIHeader& header, const uint8_t* table_end)
     : header_(std::make_unique<smbios::DMIHeader>(header)), dmi_strings_({"Not Specified"})
 {
-    parse_dmi_strings();
+    parse_dmi_strings(table_end);
 }
 
-void AbstractSMBiosEntry::parse_dmi_strings()
+void AbstractSMBiosEntry::parse_dmi_strings(const uint8_t* table_end)
 {
-    const uint8_t* string_section = header_->data + header_->length;    
-    do {
-        
-        if (nullptr == string_section) {
-            // most probably we called parsing from the entry which do not contain strings
-            // it's ok, just leave only "Not Specified" entry
-            return;
-        }
-        dmi_strings_.push_back(std::string(reinterpret_cast<const char*>(string_section)));
-        string_section += dmi_strings_.back().size() + 1;
-        
-    } while (string_section[0] != 0 && string_section[1] != 0);
+    if (nullptr == header_->data) {
+        // most probably we called parsing from the entry which do not contain strings
+        // it's ok, just leave only "Not Specified" entry
+        return;
+    }
+
+    const uint8_t* string_section = header_->data + header_->length;
+    while (string_section < table_end && string_section[0] != 0) {
+        const char* start = reinterpret_cast<const char*>(string_section);
+        const uint8_t* terminator = std::find(string_section, table_end, 0);
+        if (terminator == table_end) break; // unterminated - stop, don't read past the buffer
+        dmi_strings_.push_back(std::string(start, reinterpret_cast<const char*>(terminator)));
+        string_section = terminator + 1;
+    }
 }
 
 std::string AbstractSMBiosEntry::dmi_string(size_t string_index) const

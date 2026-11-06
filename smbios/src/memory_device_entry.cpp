@@ -8,8 +8,8 @@
 using std::string;
 using namespace smbios;
 
-MemoryDeviceEntry::MemoryDeviceEntry(const DMIHeader& header, const SMBiosVersion& /*version*/)
-    : AbstractSMBiosEntry(header){
+MemoryDeviceEntry::MemoryDeviceEntry(const DMIHeader& header, const SMBiosVersion& /*version*/, const uint8_t* table_end)
+    : AbstractSMBiosEntry(header, table_end){
 
     if (header.type != SMBios::MemoryDevice) {
         std::stringstream err;

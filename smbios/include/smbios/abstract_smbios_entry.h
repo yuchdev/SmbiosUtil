@@ -20,7 +20,12 @@ class AbstractSMBiosEntry : public SMBiosInterface {
 public:
 
     /// @brief Accept a copy of own header
-    AbstractSMBiosEntry(const DMIHeader& header);
+    /// @param header copy of the entry's own DMI header
+    /// @param table_end one-past-the-end pointer of the mapped SMBIOS
+    /// structure table; required so string-section parsing never reads past
+    /// the buffer, even for a truncated/corrupted structure. Pass nullptr
+    /// only when header.data is itself nullptr (no backing buffer at all).
+    AbstractSMBiosEntry(const DMIHeader& header, const uint8_t* table_end);
 
     // @brief Parent is abstract
     virtual ~AbstractSMBiosEntry() = default;
@@ -65,8 +70,10 @@ private:
     /// Extract all strings from the string section
     /// which is plain char array separated with \0 symbols
     /// End of section is \0\0 sequence, which it followed by the next SMBIOS entry
-    /// There is no limit on the length of each individual text string
-    void parse_dmi_strings();
+    /// Bounds-checked against table_end: an unterminated/truncated string
+    /// section stops parsing cleanly at the buffer boundary instead of
+    /// reading past it.
+    void parse_dmi_strings(const uint8_t* table_end);
 
 private:
     
