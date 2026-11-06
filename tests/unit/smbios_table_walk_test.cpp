@@ -2,9 +2,6 @@
 #include <vector>
 
 #include <smbios/smbios.h>
-#if defined(__APPLE__) || defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
-#include <smbios/unix_bios.h>
-#endif
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -18,27 +15,15 @@ using namespace smbios;
 //
 // Test seam: SMBios has no public hook to feed it a synthetic raw table -
 // read_smbios_table()/count_smbios_structures() are private, and they derive
-// table_base/table_size from the private native_impl_ (or the legacy
-// physical-memory entry points). The one *real*, non-mocked seam that
-// reaches this path is the same one Story 01.0's regression test used at
-// the SMBiosImpl layer (SMBiosImpl::read_from_physical_memory(), see
-// unit_tests.cpp's SMBiosImplGetTableSizeReflectsPhysicalMemoryDumpTestCase):
-// it just std::move()s a caller-supplied buffer into SMBiosImpl's own
-// table_buffer_, after which SMBiosImpl::get_table_base()/get_table_size()
-// (and therefore SMBios::get_table_base()/get_table_size()) reflect it
-// exactly. Constructing SMBiosImpl performs a real (sysfs/EFI) discovery
-// attempt that fails cleanly without root/real hardware (harmless here,
-// since we overwrite table_buffer_ immediately after).
-//
-// To drive SMBios's own private read_smbios_table()/count_smbios_structures()
-// against that injected buffer (rather than re-testing SMBiosImpl in
-// isolation), smbios.h declares a narrowly-scoped
-// `friend class SmbiosTableWalkTestAccess;` for exactly this test file.
-// SmbiosTableWalkTestAccess (below) injects the synthetic buffer into the
-// already-constructed SMBios's native_impl_, resets the cached parse state,
-// and re-invokes the private walk - no new production API, no mock.
-
-#if defined(__APPLE__) || defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
+// table_base/table_size from the private table_buffer_ (populated by
+// whichever ISmbiosSource in make_default_source_chain() succeeded - see
+// milestone 0005, Story 01.0). To drive SMBios's own private
+// read_smbios_table()/count_smbios_structures() against an injected buffer,
+// smbios.h declares a narrowly-scoped `friend class SmbiosTableWalkTestAccess;`
+// for exactly this test file. SmbiosTableWalkTestAccess (below) overwrites
+// the already-constructed SMBios's table_buffer_ directly, resets the
+// cached parse state, and re-invokes the private walk - no new production
+// API, no mock.
 
 namespace smbios {
 
@@ -49,13 +34,13 @@ class SmbiosTableWalkTestAccess
 {
 public:
     /// @brief Inject a synthetic raw structure-table buffer into an
-    /// already-constructed SMBios instance (via its native_impl_), discard
+    /// already-constructed SMBios instance (via its table_buffer_), discard
     /// any state from the instance's own constructor-time real-hardware
     /// attempt, and re-run the private table walk against the synthetic
     /// buffer only.
     static void parse_synthetic_table(SMBios& instance, std::vector<uint8_t> synthetic_buffer)
     {
-        instance.native_impl_->read_from_physical_memory(synthetic_buffer);
+        instance.table_buffer_ = std::move(synthetic_buffer);
         instance.headers_list_.clear();
         instance.structures_count_ = 0;
         instance.read_smbios_table();
@@ -171,5 +156,3 @@ BOOST_AUTO_TEST_CASE(ReadSmbiosTableHandlesEmptyBufferTestCase)
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
-#endif //defined(__APPLE__) || defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)

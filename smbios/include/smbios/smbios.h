@@ -1,16 +1,11 @@
 #pragma once
 #include <vector>
-#include <memory>
 #include <cstdint>
 #include <string>
 
 // Main SMBIOS table implementation
 
-class PhysicalMemory;
-
 namespace smbios {
-
-class SMBiosImpl;
 
 // should be aligned to be mapped to the physical memory
 #pragma pack(push, 1)
@@ -199,9 +194,9 @@ private:
 
     /// Friend-only access for the Story 03.0 bounds-checked table walk unit
     /// test (tests/unit/smbios_table_walk_test.cpp): lets the test inject a
-    /// synthetic buffer via the already-real `native_impl_->read_from_physical_memory()`
-    /// seam and re-invoke the private walk (`read_smbios_table()`) against it,
-    /// without needing root/real hardware.
+    /// synthetic buffer directly into `table_buffer_` and re-invoke the
+    /// private walk (`read_smbios_table()`) against it, without needing
+    /// root/real hardware.
     friend class SmbiosTableWalkTestAccess;
 
     /// Friend-only access for iterator class
@@ -214,26 +209,7 @@ private:
     /// Do it once at start
     void count_smbios_structures();
 
-    /// Fallback to physical memory scan if no one of system-specific interfaces
-    /// was available
-    void scan_physical_memory(const std::vector<uint8_t>& devmem_array);
-
-    /// Get DMI version major.minor
-    void extract_dmi_version();
-
-    /// Check correctness of 32-bit header checksum (see SMBIOS spec for details)
-    bool checksum32() const;
-
-    /// Check correctness of 64-bit header checksum (see SMBIOS spec for details)
-    bool checksum64() const;
-
-    /// checksum from start offset to offset+length should be zero
-    uint8_t smbios_crc(uint8_t start_offset, uint8_t length) const;
-
 private:
-
-    /// Raw SMBIOS table system-specific implementation
-    std::unique_ptr<SMBiosImpl> native_impl_;
 
     /// Cached SMBIOS structures count
     size_t structures_count_ = 0;
@@ -241,27 +217,25 @@ private:
     /// Cached major SMBIOS version
     size_t major_version_ = 0;
 
-    /// Cached major SMBIOS version
+    /// Cached minor SMBIOS version
     size_t minor_version_ = 0;
 
-    /// Save SMBIOS entry point here
-    std::vector<uint8_t> entry_point_buffer_;
+    /// Raw SMBIOS structure-table bytes (header excluded), populated
+    /// directly by whichever `ISmbiosSource::try_read()` in the chain
+    /// (see `make_default_source_chain()`) succeeded first. `get_table_base()`/
+    /// `get_table_size()` read from this exclusively - milestone 0005,
+    /// Story 01.0 replaces the old three-branch `native_impl_`/
+    /// `smbios_entry32_`/`smbios_entry64_` logic with this single buffer.
+    std::vector<uint8_t> table_buffer_;
 
     /// Cached SMBIOS headers
     std::vector<DMIHeader> headers_list_;
 
-    /// Entry points, mapped to memory dump
-    const SMBIOSEntryPoint32* smbios_entry32_ = nullptr;
-    const SMBIOSEntryPoint64* smbios_entry64_ = nullptr;
-
-    /// Set this flag if SMBIOS entry point checksum is valid
-    bool checksum_validated_ = true;
-
-    /// Scan physical memory from this address
-    static const size_t devmem_base_ = 0xF0000;
-
-    /// Scanned length (SMBIOS could not be beyond this offset)
-    static const size_t devmem_length_ = 0x10000;
+    /// `ISmbiosSource::source_name()` of whichever source in the chain
+    /// succeeded, or empty if none did. Surfaced by `render_to_description()`
+    /// for diagnostics (plan.md R3: so a consumer can tell which path
+    /// actually produced the data).
+    std::string source_name_;
 };
 
 } // namespace smbios
