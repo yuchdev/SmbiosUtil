@@ -5,8 +5,8 @@
 // Milestone 0005, Story 02.0, Task 01 (ADR 0001): LinuxSysfsSource lives in
 // the Linux-only smbios_source_linux library, so this entire file is a
 // no-op translation unit on every other platform - matching how
-// tests/unit/unit_tests.cpp narrows its own SMBiosImpl coverage to
-// __linux__ for the identical reason.
+// tests/unit/linux_efi_source_test.cpp (Task 02) guards its own coverage
+// for the identical reason.
 #if defined(__linux__)
 
 #include <fstream>
