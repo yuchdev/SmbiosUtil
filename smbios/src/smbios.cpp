@@ -10,6 +10,7 @@
 #include <smbios/smbios.h>
 #include <smbios/smbios_anchor.h>
 #include <smbios/physical_memory.h>
+#include <smbios/byte_reader.h>
 
 using std::numeric_limits;
 using namespace smbios;
@@ -155,8 +156,11 @@ void SMBios::read_smbios_table()
 
     for (size_t i = 0; i < number_of_structures && current_structure_begin <= table_end; ++i) {
 
-        DMIHeader header = *reinterpret_cast<const DMIHeader*>(current_structure_begin);
-        header.data = current_structure_begin;
+        DMIHeader header;
+        header.type   = read_u8(current_structure_begin, 0);
+        header.length = read_u8(current_structure_begin, 1);
+        header.handle = read_u16(current_structure_begin, 2);
+        header.data   = current_structure_begin;
 
         if (header.length < 4) {
             // Invalid entry length. DMI table is broken
