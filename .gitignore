@@ -1,6 +1,154 @@
-# CMake out-of-source build directories (including CMakePresets.json's binaryDir)
-/build/
+# Build directories
+.vs/
+.vscode/
 build/
+build_test/
+!tests/integration/build/
+cmake/open-cpp-coverage.cmake
+cmake-build/
+cmake-build-*/
+__cmake_systeminformation/
+prefix/
 
 # vcpkg manifest-mode install output (re-created by `vcpkg install` / `cmake --preset`)
 vcpkg_installed/
+
+# User-specific
+CMakeLists.txt.user
+CMakeUserPresets.json
+
+# Runtime generated data
+uri.txt
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# E2E runtime artifacts
+qa_failures/
+tests/e2e/failures/*
+!tests/e2e/failures/.gitkeep
+tests/e2e/tmp/
+
+# C++ / CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
+compile_commands.json
+install_manifest.txt
+_deps/
+.cache/
+.clangd/
+*.ilk
+*.pdb
+*.exp
+*.dSYM/
+*.gcda
+*.gcno
+*.gcov
+*.profraw
+*.profdata
+/core
+vgcore.*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.yarn/cache/
+.pnpm-store/
+.eslintcache
+.parcel-cache/
+.next/
+.nuxt/
+.vite/
+.turbo/
+*.tsbuildinfo
+
+# Tauri
+src-tauri/target/
+src-tauri/gen/
+**/src-tauri/WixTools/
+
+# IDEs / editors
+.idea/
+*.swp
+*.swo
+*~
+.fleet/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and temporary files
+*.log
+.claude/logs/
+.claude/state/
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+.tmp/
+tmp/
+temp/
+
+# Environment / local secrets
+.env
+.env.*
+!.env.example
