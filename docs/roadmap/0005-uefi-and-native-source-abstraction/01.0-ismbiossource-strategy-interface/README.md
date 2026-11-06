@@ -21,7 +21,7 @@ story's source to reuse when decoding a raw entry point's version bytes.
 
 | #  | Document                                                                | Status         | Blocks |
 |----|------------------------------------------------------------------------------|----------------|--------|
-| 01 | [Define interface and chain](01-define-interface-and-chain.md)              | ⬜ Not started | 02     |
+| 01 | [Define interface and chain](01-define-interface-and-chain.md)              | ✅ Complete - render_to_description() simplification ratified first, see status.md | 02     |
 | 02 | [Fallback policy and legacy-scan isolation](02-fallback-policy-and-legacy-scan-isolation.md) | ⬜ Not started | 03     |
 | 03 | [Tests](03-tests.md)                                                        | ⬜ Not started | -      |
 

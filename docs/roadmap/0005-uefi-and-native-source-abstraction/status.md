@@ -6,7 +6,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 | Story | Name                               | Status         | Tests |
 |-------|---------------------------------------|----------------|-------|
-| 01.0  | `ISmbiosSource` strategy interface   | ⬜ Not started | -     |
+| 01.0  | `ISmbiosSource` strategy interface   | 🔶 In progress (1/3 tasks) | smbios_unit_test pass (142 cases) |
 | 01.1  | Per-OS source libraries                | ⬜ Not started | -     |
 | 02.0  | Linux sysfs & EFI sources             | ⬜ Not started | -     |
 | 03.0  | macOS UEFI source                     | ⬜ Not started | -     |
@@ -157,3 +157,54 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   `get_table_size()`/`get_smbios_version()`/the parsed `headers_list_`
   contents - the actual data a caller consumes - not to this one
   diagnostic method's prose.
+- **2026-11-07: Story 01.0 Task 01 complete.** `ISmbiosSource` (C1) and
+  `make_default_source_chain()` (C2) implemented in
+  `smbios/include/smbios/ismbios_source.h` /
+  `smbios/include/smbios/smbios_source_chain.h` /
+  `smbios/src/smbios_source_chain.cpp`. `SMBios::SMBios()`'s constructor
+  is now entirely `#if`-free, walking the chain generically - the one
+  remaining `#if defined(_WIN32)` in the whole native-read path lives
+  inside `make_default_source_chain()` itself, selecting which
+  `ISmbiosSource` exists on this platform (R8's resolution, ahead of
+  Story 01.1's own further resolution into a CMake-level link-seam).
+  Per this task's own stated constraint, every platform's chain today
+  has exactly one element (`WindowsNativeSource`/
+  `UnixNativeOrLegacyScanSource`), internally reproducing today's exact
+  native-then-legacy-scan behavior - splitting that into separate
+  sources is Task 02's job, not done here.
+
+  All three previously-landed bug fixes (milestone 0003's two exception-
+  safety `try`/`catch` blocks around `PhysicalMemory` access, and the
+  null-pointer-arithmetic UB guard in `read_smbios_table()`/
+  `count_smbios_structures()`) are preserved byte-for-byte - independently
+  re-verified here by direct file read, not just trusted from the
+  implementer's own report. `SMBios` gained one new member
+  (`table_buffer_`, populated directly by whichever source's
+  `try_read()` succeeds) and lost five (`native_impl_`,
+  `entry_point_buffer_`, `smbios_entry32_`/`smbios_entry64_`,
+  `checksum_validated_`, `devmem_base_`/`devmem_length_`) - all genuinely
+  removed, not hidden; the old `scan_physical_memory()`/
+  `extract_dmi_version()`/`checksum32()`/`checksum64()`/`smbios_crc()`
+  private methods moved into `smbios_source_chain.cpp` as free
+  functions, confirmed line-by-line identical to the pre-refactor logic.
+  `render_to_description()` now prints SMBIOS version, table size,
+  structure count, and the succeeding source's name (or "none") per the
+  ratified simplification - confirmed live via a real `smbios_util` run
+  on this unprivileged Mac (`Source: none`, matching the expected
+  no-native-source-available state).
+
+  `WindowsNativeSource` is unverified - written by reading `win_bios.h`'s
+  real interface, but this session has no Windows toolchain; it reuses
+  the shared `legacy_physical_memory_scan()` helper for its own fallback
+  stage, which is itself already platform-neutral (not new
+  Windows-specific code), matching R6's "adapt, don't rewrite" mandate.
+  Real confirmation awaits a CI push.
+
+  Verified independently: direct file read of both exception-safety
+  fixes, the null-pointer-arithmetic guard, the checksum/scan logic
+  (confirmed identical to the pre-refactor version), a real local macOS
+  rebuild, a full `ctest` run (`smbios_unit_test` 142/142 cases,
+  `smbios_integration_test`/`smbios_perf_test` behaving exactly as the
+  pre-existing baseline - no new crash or uncaught exception), and a
+  live `smbios_util` CLI run confirming the new `render_to_description()`
+  output format.
