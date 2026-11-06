@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                        | Status         | Tests |
 |-------|-------------------------------|----------------|-------|
 | 01.0  | Self-registering factory      | ✅ Complete | smbios_unit_test pass (41 cases incl. SMBiosEntryFactoryUnitTests: 5) |
-| 02.0  | Expand structure coverage      | 🔶 In progress (2/4 tasks) | smbios_unit_test pass (104 cases) |
+| 02.0  | Expand structure coverage      | 🔶 In progress (3/4 tasks) | smbios_unit_test pass (138 cases) |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -149,3 +149,27 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   file read of all four sentinel paths and both encoding decodes, a real
   local macOS rebuild under `-Wall -Wextra -Werror`, and a full `ctest`
   run (`smbios_unit_test` 104/104 cases).
+- **2026-11-07: Story 02.0 Task 03 complete - all eight new structure
+  types now implemented.** `SystemSlotsEntry` (type 9, scoped through
+  segment/bus/device-function number per this task's own objective -
+  the later 3.2+ peer-device array at a second layer of computed
+  offset is deliberately out of scope, documented), `PhysicalMemoryArrayEntry`
+  (type 16, `0x80000000` capacity sentinel), `MemoryArrayMappedAddressEntry`
+  (type 19, `0xFFFFFFFF` address sentinel - a genuinely different
+  sentinel value than every other case this milestone implemented,
+  confirmed not conflated with `0x80000000` by direct code read), and
+  `SystemBootInformationEntry` (type 32, a variable-length trailing
+  payload exposed as a raw byte range, exempt from the usual fixed-
+  offset `read_uN` treatment per this task's own stated exception).
+  **The implementing agent caught and corrected a real error in this
+  task's own briefing**: the boot-status enum table given in the brief
+  (21 entries) does not exist in either `c-versions/dmidecode_linux` or
+  `dmidecode_macos` - independently re-verified here by direct read of
+  `dmi_system_boot_status()`, confirming the real table has only 9
+  named codes (0-8) plus OEM-specific (128-191) and Product-specific
+  (192+) ranges, exactly matching DMTF 7.33.1. The real 9-entry table
+  is what's implemented. Verified independently: direct file read of
+  both sentinel implementations (confirming the two distinct sentinel
+  values aren't conflated) and the corrected boot-status table, a real
+  local macOS rebuild, and a full `ctest` run (`smbios_unit_test`
+  138/138 cases).
