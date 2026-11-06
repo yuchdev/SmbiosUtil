@@ -1,7 +1,7 @@
 # Story 01.0 - Endian-Safe Field Accessors
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-06)
 
 ## Scope
 
@@ -17,9 +17,9 @@ three concrete entry classes.
 
 | #  | Document                                                      | Status         | Blocks |
 |----|--------------------------------------------------------------------|----------------|--------|
-| 01 | [Byte reader utility](01-byte-reader-utility.md)                     | ⬜ Not started | 02     |
-| 02 | [Replace DMIHeader reinterpret_cast](02-replace-dmiheader-reinterpret-cast.md) | ⬜ Not started | 03     |
-| 03 | [Tests](03-tests.md)                                                 | ⬜ Not started | -      |
+| 01 | [Byte reader utility](01-byte-reader-utility.md)                     | ✅ Complete | 02     |
+| 02 | [Replace DMIHeader reinterpret_cast](02-replace-dmiheader-reinterpret-cast.md) | ✅ Complete | 03     |
+| 03 | [Tests](03-tests.md)                                                 | ✅ Complete - local verification; real-hardware confirmation pending next CI push | -      |
 
 ## Key constraints
 
