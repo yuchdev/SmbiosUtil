@@ -13,6 +13,11 @@ prefix/
 # vcpkg manifest-mode install output (re-created by `vcpkg install` / `cmake --preset`)
 vcpkg_installed/
 
+# Machine-local symlinks to upstream dmidecode reference checkouts (see
+# CLAUDE.md) - meaningless on another checkout; milestone 0008 replaces
+# these with pinned git submodules.
+/c-versions/
+
 # User-specific
 CMakeLists.txt.user
 CMakeUserPresets.json
