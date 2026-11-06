@@ -1,7 +1,7 @@
 # Story 02.0 - Field-Table Redesign of Versioned Entries
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-06)
 **Depends on:** Story 01.0 (`byte_reader.h`)
 
 ## Scope
@@ -21,7 +21,7 @@ currently carry.
 | 01 | [BIOS Information field table](01-bios-information-field-table.md)  | ✅ Complete - offsets cross-checked against c-versions/dmidecode_linux | 04     |
 | 02 | [Memory Device field table](02-memory-device-field-table.md)        | ✅ Complete - offsets cross-checked against c-versions/dmidecode_linux; closed a real latent OOB-read | 04     |
 | 03 | [Port Connection field table](03-port-connection-field-table.md)     | ✅ Complete | 04     |
-| 04 | [Tests](04-tests.md)                                                | ⬜ Not started | -      |
+| 04 | [Tests](04-tests.md)                                                | ✅ Complete - zero pragma pack remaining, real CI confirmed green | -      |
 
 ## Key constraints
 

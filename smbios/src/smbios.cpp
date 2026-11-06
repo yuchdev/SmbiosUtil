@@ -182,8 +182,16 @@ void SMBios::read_smbios_table()
     count_smbios_structures();
 
     const uint8_t* table_base = get_table_base();
+    if (nullptr == table_base) {
+        // No table at all (no native source, no legacy physical-memory scan
+        // success): nothing to walk. Applying any non-zero offset to a null
+        // pointer below would itself be undefined behavior, independent of
+        // whether the result is ever dereferenced - bail out before any
+        // pointer arithmetic is attempted.
+        return;
+    }
     const uint8_t* table_end = table_base + get_table_size();
-    
+
     size_t number_of_structures = get_structures_count();
     const uint8_t* current_structure_begin = table_base;
 
@@ -233,6 +241,13 @@ void SMBios::count_smbios_structures()
 {
     // start and end of the BIOS table
     const uint8_t* start_table = get_table_base();
+    if (nullptr == start_table) {
+        // No table at all: nothing to count. See read_smbios_table()'s own
+        // identical guard for why this must come before any pointer
+        // arithmetic, not just before any dereference.
+        structures_count_ = 0;
+        return;
+    }
     const uint8_t* end_table = start_table + get_table_size();
 
     //points to the actual address in the buff that's been checked

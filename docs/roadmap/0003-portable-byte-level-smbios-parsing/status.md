@@ -6,9 +6,9 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 | Story | Name                                           | Status         | Tests |
 |-------|---------------------------------------------------|----------------|-------|
-| 01.0  | Endian-safe field accessors                        | ✅ Complete | smbios_unit_test pass (ByteReaderUnitTests: 5 cases); CI confirmation pending |
-| 02.0  | Field-table redesign of versioned entries         | 🔶 In progress (3/4 tasks) | smbios_unit_test pass (33 cases incl. Bios+MemoryDevice+PortConnection entry suites) |
-| 03.0  | Table and string walk hardening                    | 🔶 In progress (2/3 tasks) | smbios_unit_test pass (36 cases); a real LeakSanitizer finding from Task 01 under investigation (see Notes) |
+| 01.0  | Endian-safe field accessors                        | ✅ Complete | real 5-job green CI |
+| 02.0  | Field-table redesign of versioned entries         | ✅ Complete | smbios_unit_test pass (36 cases); real 5-job green CI |
+| 03.0  | Table and string walk hardening                    | ✅ Complete | smbios_unit_test pass (36 cases); real 5-job green CI (incl. sanitizers on both ubuntu/macos) |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -206,3 +206,86 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   exception-safety fix - `smbios_perf_test` all pass;
   `smbios_integration_test` fails cleanly on real assertions, the
   unchanged baseline).
+- **2026-11-06: Story 03.0 Task 03 complete, Story 02.0 Task 04 complete,
+  milestone exit gate confirmed by a real, green, 5-job CI run**
+  (`https://github.com/yuchdev/SmbiosUtil/actions/runs/42254866437`:
+  `build` × ubuntu/macos/windows, `sanitizers` × ubuntu/macos, including
+  the sanitizer job that originally caught the real SIGABRT/leak bug
+  above). R9 (big-endian-safety proof) is satisfied by existing tests,
+  not a new file - `byte_reader_test.cpp`'s `ReadU16DecodesLittleEndianPairTestCase`
+  already proves the raw-primitive claim (Story 01.0), and
+  `bios_information_entry_test.cpp`'s two full-field tests
+  (`BiosInformationEntryMidTierDecodesThroughFirmwareReleaseTestCase`/
+  `...AboveTierDecodesExtendedRomSizeTestCase`) already decode
+  deliberately non-palindromic byte sequences
+  (`{0x10,0x32,0x54,0x76,0x98,0xBA,0xDC,0xFE}` → `0xFEDCBA9876543210`)
+  through the real `get_properties()` accessor chain - a byte-reversed
+  host-order read of the same bytes would yield a different,
+  provably-wrong value, which is exactly R9's conceptual byte-swap proof,
+  exercised end-to-end rather than at the raw-primitive level alone.
+  Adding the spec's literally-named `byte_reader_endianness_test.cpp`
+  would have duplicated this; it was deliberately not added.
+  **A second real bug was found and fixed during this gate** (found via
+  a local ASan+UBSan build, not CI): `read_smbios_table()`/
+  `count_smbios_structures()` applied a non-zero pointer offset
+  (`kDmiHeaderWireSize`) to `table_base`/`start_table` unconditionally,
+  even when `get_table_base()` returns `nullptr` (the normal state on
+  every CI runner, with no native source and no legacy-scan success) -
+  undefined behavior per the standard independent of whether the result
+  is ever dereferenced. Fixed with a null guard in both functions before
+  any pointer arithmetic, confirmed clean under a local ASan/UBSan
+  rebuild and the real CI sanitizer jobs above. `grep -rn "pragma pack"`
+  across all three entry headers returns zero matches (Story 02.0 Task
+  04's own gate). Story 02.0 Task 04's success criteria are satisfied
+  by this same CI run - no separate action needed.
+
+## Milestone 0003 - closing summary
+
+All three stories are complete, and the milestone's exit condition - R1
+through R9 - is met, confirmed by real CI, not assumed:
+
+- **R1** (no `reinterpret_cast` onto a packed SMBIOS field) - zero
+  matches across `smbios/src/` and `smbios/include/smbios/`, confirmed
+  by grep after every task.
+- **R2** (per-field length guards, not constructor-level gating) - every
+  rebuilt getter in `BiosInformationEntry`/`MemoryDeviceEntry`/
+  `PortConnectionEntry` carries its own `get_entry_size() < offset +
+  width` check; this closed a real latent out-of-bounds read in
+  `MemoryDeviceEntry` that the old per-struct gating missed.
+- **R3** (`SMBiosVersion` may still gate a genuinely version-only field)
+  - none was found in any of the three entry types, confirmed against
+  `c-versions/dmidecode_linux`'s own type-0/type-17 parsing for both.
+- **R4** (`*V2x`/`*V3x` structs deleted entirely, not kept as fallback) -
+  confirmed by grep: zero matches for any of the eight deleted struct
+  names across the whole codebase.
+- **R5** (`PortConnectionEntry` converted to the same pattern) - done;
+  confirmed as the simplest conversion (no version chain), matching the
+  milestone's own earlier finding.
+- **R6** (table/string walk never reads past `table_end`) - bounds
+  checks added to `read_smbios_table()`, `count_smbios_structures()`,
+  and `parse_dmi_strings()`; proven by the sanitizer CI job, which also
+  caught two real bugs along the way (the SIGABRT/leak root cause in
+  `SMBiosImpl::get_table_base()`, and the null-pointer-arithmetic UB in
+  the table walk) that no amount of local testing on this macOS sandbox
+  could have confirmed - exactly the value of a real multi-OS sanitizer
+  CI job.
+- **R7** (every offset re-verified against the DMTF spec, not just
+  copied forward) - done; found and fixed two real doc-comment bugs in
+  `MemoryDeviceEntry` (`get_array_handle()`, `get_device_rank()`) by
+  cross-checking every offset against `c-versions/dmidecode_linux`.
+- **R8** (no change to any already-passing test's output) - every
+  pre-existing test (the two `PortConnectionEntry` PS2/USB cases, the
+  `SMBiosVersion` comparison suite, the factory lookup tests) was
+  re-run and confirmed unmodified throughout.
+- **R9** (synthetic big-endian-encoded-table proof) - satisfied by
+  existing tests at both the raw-primitive and full-entry-accessor-chain
+  levels, as detailed above.
+
+Along the way, this milestone found and fixed five real, previously-
+undiscovered bugs beyond its own named scope: two doc-comment offset
+errors, one latent out-of-bounds read (`MemoryDeviceEntry`'s old
+length-gating), one uncaught-exception bug in `SMBios`'s constructor,
+and one SIGABRT/leak-causing precondition violation in
+`SMBiosImpl::get_table_base()` - the last two found only because this
+milestone's own new tests, run under real CI sanitizers, exercised code
+paths no prior milestone's tests had ever reached.

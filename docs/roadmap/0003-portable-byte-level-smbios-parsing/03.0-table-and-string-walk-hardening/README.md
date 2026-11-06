@@ -1,7 +1,7 @@
 # Story 03.0 - Table and String Walk Hardening
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-06)
 **Depends on:** Story 01.0 (`byte_reader.h`, for the already-converted `DMIHeader` extraction this story builds bounds checks around)
 
 ## Scope
@@ -20,7 +20,7 @@ instead of reading past the mapped buffer.
 |----|--------------------------------------------------------------------|----------------|--------|
 | 01 | [Bounds-checked table walk](01-bounds-checked-table-walk.md)         | ✅ Complete - also fixed a real uncaught-exception bug in SMBios's constructor | 03     |
 | 02 | [Bounds-checked string parsing](02-bounds-checked-string-parsing.md) | ✅ Complete - cascaded through every entry constructor, factory, and call site | 03     |
-| 03 | [Tests](03-tests.md)                                                | ⬜ Not started | -      |
+| 03 | [Tests](03-tests.md)                                                | ✅ Complete - R9 already satisfied by existing tests; found and fixed a real null-pointer-arithmetic UB | -      |
 
 ## Key constraints
 
