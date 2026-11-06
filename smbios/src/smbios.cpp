@@ -11,9 +11,6 @@
 #include <smbios/smbios_anchor.h>
 #include <smbios/physical_memory.h>
 
-// DEBUG
-#include <iostream>
-
 using std::numeric_limits;
 using namespace smbios;
 

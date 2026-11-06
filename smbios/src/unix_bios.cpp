@@ -69,22 +69,8 @@ void SMBiosImpl::compose_native_smbios_table()
 
 bool SMBiosImpl::sysfs_table_exists() const
 {
-#if 1
+    // Not yet implemented - sysfs-based SMBIOS discovery is milestone 0005's Story 02.0.
     return false;
-#else
-    // TODO: implement on Linux with sysfs-based SMBIOS
-    std::string smbios_filename("/sys/firmware/dmi/tables/smbios_entry_point");
-
-    std::cout << "Read SMBIOS entry point\n";
-    std::ifstream smbios_file(smbios_filename, std::ios::binary);
-    if(!smbios_file.is_open()){
-        return false;
-    }
-
-    std::istream_iterator<uint8_t> start(smbios_file), end;
-    std::vector<uint8_t> smbios_anchor(start, end);
-    std::cout << "Read " << smbios_anchor.size() << " bytes" << std::endl;
-#endif
 }
 
 bool SMBiosImpl::efi_table_exists() const
