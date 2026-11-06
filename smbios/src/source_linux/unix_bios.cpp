@@ -1,6 +1,6 @@
 #if defined(__APPLE__) || defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
-#include <smbios/unix_bios.h>
-#include <smbios/smbios_anchor.h>
+#include <smbios/source_linux/unix_bios.h>
+#include <smbios/source_interface/smbios_anchor.h>
 
 #include <cassert>
 #include <limits>

@@ -7,8 +7,14 @@
 #include <smbios/smbios.h>
 #include <smbios/smbios_entry_factory.h>
 #include <smbios/port_connection_entry.h>
-#if defined(__APPLE__) || defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
-#include <smbios/unix_bios.h>
+// `SMBiosImpl`/`unix_bios.h` moved into the Linux-only `smbios_source_linux`
+// library (milestone 0005, Story 01.1, ADR 0001) - it is no longer part of
+// core `smbios` on macOS/BSD/Solaris, so this guard narrows from "any
+// unix-like platform" to Linux specifically, matching where the header (and
+// the library `smbios` now transitively links on Linux to provide it) still
+// actually exists.
+#if defined(__linux__)
+#include <smbios/source_linux/unix_bios.h>
 #endif
 
 #define BOOST_AUTO_TEST_MAIN
@@ -236,15 +242,20 @@ BOOST_AUTO_TEST_CASE(SMBiosEntryFactoryCreatesPortConnectionEntryTestCase)
 // Regression for a missing-`return` bug in get_table_size(): the buggy
 // version fell through without returning table_buffer_.size(), so this
 // test fails against that old code and passes against the fix at
-// smbios/src/unix_bios.cpp.
+// smbios/src/source_linux/unix_bios.cpp.
 //
 // read_from_physical_memory() is a real, non-mocked seam: it just
 // std::move()s the supplied buffer into table_buffer_. Constructing
 // SMBiosImpl performs a real (sysfs/EFI) discovery attempt that fails
 // cleanly without root/real hardware - that failure is expected and
 // harmless here, since we overwrite table_buffer_ immediately after.
+//
+// Milestone 0005, Story 01.1 (ADR 0001) narrows this guard to Linux only:
+// `SMBiosImpl` (`unix_bios.h`) now lives in the Linux-only
+// `smbios_source_linux` library, not core `smbios`, so it is simply not
+// available to this test target on macOS/BSD/Solaris any more.
 
-#if defined(__APPLE__) || defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
+#if defined(__linux__)
 
 /// Normal case: get_table_size() reflects the exact size of the buffer
 /// most recently handed to read_from_physical_memory()
@@ -259,6 +270,6 @@ BOOST_AUTO_TEST_CASE(SMBiosImplGetTableSizeReflectsPhysicalMemoryDumpTestCase)
     BOOST_CHECK_EQUAL(impl.get_table_size(), static_cast<size_t>(42));
 }
 
-#endif //defined(__APPLE__) || defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
+#endif //defined(__linux__)
 
 BOOST_AUTO_TEST_SUITE_END()

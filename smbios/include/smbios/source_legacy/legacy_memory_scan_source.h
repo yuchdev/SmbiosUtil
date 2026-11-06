@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <vector>
 
-#include <smbios/ismbios_source.h>
+#include <smbios/source_interface/ismbios_source.h>
 
 namespace smbios {
 

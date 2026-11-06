@@ -1,6 +1,6 @@
 #include <smbios/physical_memory_array_entry.h>
 #include <smbios/smbios.h>
-#include <smbios/byte_reader.h>
+#include <smbios/source_interface/byte_reader.h>
 #include <smbios/smbios_entry_factory.h>
 
 #include <sstream>

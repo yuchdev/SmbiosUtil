@@ -1,7 +1,7 @@
 #include <sstream>
 #include <smbios/smbios.h>
-#include <smbios/smbios_source_chain.h>
-#include <smbios/byte_reader.h>
+#include <smbios/source_interface/smbios_source_chain.h>
+#include <smbios/source_interface/byte_reader.h>
 
 using namespace smbios;
 
@@ -42,12 +42,17 @@ SMBios::SMBios()
     static_assert(sizeof(uint32_t) == 4, "Very strange uint32_t size");
 
     // Try every source in this platform's chain (make_default_source_chain(),
-    // smbios/src/smbios_source_chain.cpp), in priority order, stopping at the
-    // first one that is both available and successfully reads a table. This
-    // loop itself is entirely platform-neutral C++ - see plan.md's R8: the
-    // only remaining `#if defined(_WIN32)` lives inside
-    // make_default_source_chain(), selecting which ISmbiosSource types exist
-    // on this platform, never how this constructor walks the chain.
+    // declared in smbios/include/smbios/source_interface/smbios_source_chain.h),
+    // in priority order, stopping at the first one that is both available
+    // and successfully reads a table. This loop itself is entirely
+    // platform-neutral C++ - see plan.md's R8: milestone 0005, Story 01.1
+    // (ADR 0001) resolves R8 completely by moving the platform selection out
+    // of C++ entirely. make_default_source_chain() is defined exactly once
+    // per build, inside whichever per-OS library smbios/src/CMakeLists.txt's
+    // CMake-time `if(WIN32)/elseif(APPLE)/elseif(...Linux)` branch actually
+    // links (smbios_source_windows/_macos/_linux), or a trivial fallback
+    // compiled into this library directly on BSD/Solaris - never behind a
+    // C++ `#if defined(_WIN32)` anywhere in this call chain.
     for (auto& source : make_default_source_chain()) {
         if (source->is_available() && source->try_read(table_buffer_, major_version_, minor_version_)) {
             source_name_ = source->source_name();
