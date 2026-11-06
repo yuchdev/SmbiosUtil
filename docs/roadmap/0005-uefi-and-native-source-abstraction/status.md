@@ -8,7 +8,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 |-------|---------------------------------------|----------------|-------|
 | 01.0  | `ISmbiosSource` strategy interface   | ✅ Complete | smbios_unit_test pass (150 cases); real CI green incl. Windows |
 | 01.1  | Per-OS source libraries                | ✅ Complete | smbios_unit_test pass (152 cases); local macOS build/test green, Windows/Linux CI confirmation pending next push |
-| 02.0  | Linux sysfs & EFI sources             | 🔶 In progress (1/3 tasks) | smbios_unit_test pass (152 cases, Linux-only new tests compile as no-op on macOS); Linux CI confirmation pending next push |
+| 02.0  | Linux sysfs & EFI sources             | 🔶 In progress (2/3 tasks) | smbios_unit_test pass (152 cases, Linux-only new tests compile as no-op on macOS); Linux CI confirmation pending next push |
 | 03.0  | macOS UEFI source                     | ⬜ Not started | -     |
 | 04.0  | Windows source parity                 | ⬜ Not started | -     |
 
@@ -281,6 +281,49 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   locally on macOS after the fix (the new Linux-only test file compiles
   as a no-op here, per its own guard); real Linux-side verification is
   CI's job at story close.
+- **2026-11-07, Story 02.0 Task 02 (`LinuxEfiSource`).** Ported
+  `address_from_efi()` (`dmidecode.c:6095-6138`) directly: reads
+  `/sys/firmware/efi/systab` (falling back to `/proc/efi/systab`) for a
+  `SMBIOS=`/`SMBIOS3=` line, parses the physical address, then - the
+  mechanic opposite of Task 01's sysfs source - maps that address via
+  `PhysicalMemory` over real `/dev/mem`, using the entry point's own
+  `structure_table_address`/`max_structure_size` fields this time
+  (confirmed real offsets: 32-bit `read_u32`@0x18, 64-bit `read_u64`@0x10)
+  since there is no kernel-pre-extracted file to trust the bounds of, the
+  same reasoning `LegacyMemoryScanSource` already relies on. Registered
+  between `LinuxSysfsSource` and the legacy scan in
+  `make_default_source_chain()` (sysfs → EFI → legacy, matching the
+  reference's own dispatch order in `main()`). With both real Linux
+  sources now registered, `unix_bios.cpp`/`unix_bios.h`/`SMBiosImpl` and
+  its one dependent regression test (`unit_tests.cpp`'s
+  `SMBiosImplGetTableSizeReflectsPhysicalMemoryDumpTestCase`) were
+  retired per the story's own stated sequencing - verified safe by
+  grepping the whole repo for remaining `unix_bios`/`SMBiosImpl`
+  references (only unrelated Windows `SMBiosImpl` and historical
+  comments remain) and by confirming the retired regression test's bug
+  class (a stored-buffer size getter that could silently diverge from
+  the actual buffer) cannot recur in the new design, since `ISmbiosSource`
+  returns the table directly via `try_read()`'s out-parameter with no
+  separate stored-size accessor to drift. `smbios_unit_test` 152/152
+  passing locally on macOS (unchanged count - the retired test and the
+  new Linux-only test files were never counted on macOS either way).
+  Fixed one stale comment, caught during this verification pass, in
+  `linux_sysfs_source_test.cpp` pointing at the now-deleted
+  `unit_tests.cpp` test case as a sibling example.
+- **2026-11-07, Story 02.0 Task 03 (Tests/exit gate) - disposition.**
+  The task spec itself scopes this as a manual, non-CI-automatable check
+  across three distinct hand-provisioned Linux configurations (sysfs
+  readable / EFI-only / neither-available-forcing-legacy-scan) needing
+  root and real `/sys`/`/dev/mem` access - this environment has no access
+  to three such distinct machines. Disposition: treat the real GitHub
+  Actions Ubuntu runner as the one configuration this project can
+  actually exercise (whichever of sysfs/EFI/legacy-scan it genuinely
+  produces is real data, not fabricated), confirmed via `source_name()`
+  and a full build/test run on the next push; the other two
+  hand-provisioned configurations remain an explicitly-deferred manual
+  check, not claimed as done. Same category of "needs root/real hardware,
+  fails cleanly without it" already established by CLAUDE.md for
+  `tests/integration`/`tests/perf`.
 
 ### Story 01.0 - ISmbiosSource Strategy Interface (✅ 2026-11-07)
 

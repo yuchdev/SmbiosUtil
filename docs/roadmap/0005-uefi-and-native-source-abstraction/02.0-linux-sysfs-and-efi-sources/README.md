@@ -28,7 +28,7 @@ line format (`address_from_efi()`'s `SMBIOS=`/`SMBIOS3=` parsing) - see
 | #  | Document                                      | Status         | Blocks |
 |----|--------------------------------------------------|----------------|--------|
 | 01 | [sysfs source](01-sysfs-source.md)                 | ✅ Complete | 03     |
-| 02 | [EFI systab source](02-efi-systab-source.md)       | ⬜ Not started | 03     |
+| 02 | [EFI systab source](02-efi-systab-source.md)       | ✅ Complete - also retired unix_bios.cpp/.h per this story's sequencing | 03     |
 | 03 | [Tests](03-tests.md)                               | ⬜ Not started | -      |
 
 ## Key constraints

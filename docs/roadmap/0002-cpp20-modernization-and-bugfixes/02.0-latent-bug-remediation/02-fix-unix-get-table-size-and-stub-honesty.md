@@ -5,10 +5,12 @@
 
 ## Objective
 
-Add the missing `return` in `SMBiosImpl::get_table_size()`
-([unix_bios.cpp:51-55](/smbios/src/source_linux/unix_bios.cpp) - relocated
-there by milestone 0005's Story 01.1; this task ran against the original
-`smbios/src/unix_bios.cpp` path), and correct the doc
+Add the missing `return` in `SMBiosImpl::get_table_size()` (at the time,
+`smbios/src/unix_bios.cpp:51-55`; milestone 0005's Story 01.1 later
+relocated it to `smbios/src/source_linux/unix_bios.cpp`, and Story 02.0
+Task 02 retired the file entirely once `LinuxSysfsSource`/`LinuxEfiSource`
+fully superseded it - this link is historical, the file no longer exists),
+and correct the doc
 comments in `unix_bios.h`/`unix_bios.cpp` that currently claim broader
 `*nix` support than the implementation provides, so the gap between
 "documented" and "actual" behavior is zero going into milestone 0005 (which
