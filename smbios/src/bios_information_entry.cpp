@@ -1,13 +1,14 @@
 #include <smbios/bios_information_entry.h>
 #include <smbios/smbios.h>
+#include <smbios/byte_reader.h>
 
 #include <sstream>
 #include <cassert>
 
 using namespace smbios;
 
-BiosInformationEntry::BiosInformationEntry(const DMIHeader& header, const SMBiosVersion& version) 
-    : AbstractSMBiosEntry(header) 
+BiosInformationEntry::BiosInformationEntry(const DMIHeader& header, const SMBiosVersion& /*version*/)
+    : AbstractSMBiosEntry(header)
 {
     if (header.type != SMBios::BIOSInformation) {
         std::stringstream err;
@@ -15,21 +16,11 @@ BiosInformationEntry::BiosInformationEntry(const DMIHeader& header, const SMBios
         throw std::runtime_error(err.str().c_str());
     }
 
+    // Every field below is distinguished by header.length alone (R2); no
+    // SMBiosVersion-only field exists in the BIOS Information structure
+    // through spec 3.x (confirmed against c-versions/dmidecode_linux's own
+    // dmi_decode() for type 0, which gates purely on h->length as well).
     init_string_values();
-
-    // check empty entry
-    if ((header.length < 0x12) || (version < SMBiosVersion{2, 1}))
-        return;
-
-    // 2.4+
-    if ((header.length >= 0x12) && (version > SMBiosVersion{ 2, 3 })) {
-        bios_information24_ = reinterpret_cast<const BiosInformationV24*>(header.data);
-    }
-
-    // 3.1+
-    if ((header.length > 0x18) && (version > SMBiosVersion{ 3, 0 })){
-        bios_information31_ = reinterpret_cast<const BiosInformationV31*>(header.data);
-    }
 }
 
 std::string BiosInformationEntry::get_type() const
@@ -58,112 +49,109 @@ std::string BiosInformationEntry::render_to_description() const
 
 uint8_t BiosInformationEntry::get_vendor_index() const
 {
-    if (nullptr == bios_information24_) {
-        return 0;
-    }
-    return bios_information24_->vendor;
+    constexpr size_t offset = 0x04;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
 }
 
 uint8_t BiosInformationEntry::get_version_index() const
 {
-    if (nullptr == bios_information24_) {
-        return 0;
-    }
-    return bios_information24_->bios_version;
+    constexpr size_t offset = 0x05;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
 }
 
 uint16_t BiosInformationEntry::get_starting_address() const
 {
-    if (nullptr == bios_information24_) {
-        return 0;
-    }
-    return bios_information24_->starting_segment;
+    constexpr size_t offset = 0x06;
+    if (get_entry_size() < offset + sizeof(uint16_t)) return 0;
+    return read_u16(raw_data(), offset);
 }
 
 uint32_t BiosInformationEntry::get_runtime_size() const
 {
-    if (nullptr == bios_information24_) {
-        return 0;
-    }
-    return static_cast<uint32_t>((0x10000 - bios_information24_->starting_segment) << 4);
+    constexpr size_t offset = 0x06; // starting_segment, same offset as get_starting_address
+    if (get_entry_size() < offset + sizeof(uint16_t)) return 0;
+    const uint16_t starting_segment = read_u16(raw_data(), offset);
+    return static_cast<uint32_t>((0x10000 - starting_segment) << 4); // unchanged formula
 }
 
 uint8_t BiosInformationEntry::get_release_date_index() const
 {
-    if (nullptr == bios_information24_) {
-        return 0;
-    }
-    return bios_information24_->release_date;
+    constexpr size_t offset = 0x08;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
 }
 
 uint8_t BiosInformationEntry::get_rom_size() const
 {
-    if (nullptr == bios_information24_) {
+    constexpr size_t offset = 0x09;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+
+    const uint8_t rom_size = read_u8(raw_data(), offset);
+
+    // see get_extended_rom_size() then
+    if (0xFF == rom_size) {
         return 0;
     }
 
-    // see extended_rom_size then
-    if (0xFF == bios_information24_->rom_size) {
-        return 0;
-    }
-
-    return (bios_information24_->rom_size + 1) << 6;
+    return (rom_size + 1) << 6;
 }
 
 uint64_t BiosInformationEntry::get_properties() const
 {
-    if (nullptr == bios_information24_) {
-        return 0;
-    }
-    return bios_information24_->bios_properties;
+    constexpr size_t offset = 0x0A;
+    if (get_entry_size() < offset + sizeof(uint64_t)) return 0;
+    return read_u64(raw_data(), offset);
 }
 
 uint8_t BiosInformationEntry::get_properties_extension1() const
 {
-    if (nullptr == bios_information24_) {
-        return 0;
-    }
-    return bios_information24_->properties_extension1;
+    constexpr size_t offset = 0x12;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
 }
 
 uint8_t BiosInformationEntry::get_properties_extension2() const
 {
-    if (nullptr == bios_information24_) {
-        return 0;
-    }
-    return bios_information24_->properties_extension2;
+    constexpr size_t offset = 0x13;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
 }
 
 uint8_t BiosInformationEntry::get_bios_major_release() const
 {
-    if (nullptr == bios_information24_) {
-        return 0;
-    }
-    return bios_information24_->bios_major_version;
+    constexpr size_t offset = 0x14;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
 }
 
 uint8_t BiosInformationEntry::get_bios_minor_release() const
 {
-    if (nullptr == bios_information24_) {
-        return 0;
-    }
-    return bios_information24_->bios_minor_version;
+    constexpr size_t offset = 0x15;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
 }
 
 uint8_t BiosInformationEntry::get_firmware_major_release() const
 {
-    if (nullptr == bios_information24_) {
-        return 0;
-    }
-    return bios_information24_->firmware_major_version;
+    constexpr size_t offset = 0x16;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
 }
 
 uint8_t BiosInformationEntry::get_firmware_minor_release() const
 {
-    if (nullptr == bios_information24_) {
-        return 0;
-    }
-    return bios_information24_->firmware_minor_version;
+    constexpr size_t offset = 0x17;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
+}
+
+uint16_t BiosInformationEntry::get_extended_rom_size() const
+{
+    constexpr size_t offset = 0x18;
+    if (get_entry_size() < offset + sizeof(uint16_t)) return 0;
+    return read_u16(raw_data(), offset);
 }
 
 void BiosInformationEntry::init_string_values()

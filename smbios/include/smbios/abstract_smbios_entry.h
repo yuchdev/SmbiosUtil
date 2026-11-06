@@ -52,6 +52,14 @@ protected:
         }
         return properties_stream.str();
     }
+
+    /// @brief Raw pointer to the entry's own formatted-area bytes (header.data)
+    /// Used by concrete entry classes together with the little-endian
+    /// read_u8/read_u16/read_u32/read_u64 helpers (smbios/byte_reader.h) and a
+    /// get_entry_size()-based length guard, instead of reinterpret_cast onto a
+    /// #pragma pack struct. Non-owning: lifetime tied to the owning SMBios buffer.
+    const uint8_t* raw_data() const;
+
 private:
 
     /// Extract all strings from the string section

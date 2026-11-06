@@ -13,33 +13,6 @@ namespace smbios {
 struct DMIHeader;
 struct SMBiosVersion;
 
-// should be aligned to be mapped to physical memory
-#pragma pack(push, 1)
-
-/// @brief SMBIOS BIOS Information entry Ver 2.4
-struct BiosInformationV24 {
-    uint32_t header;
-    uint8_t vendor;
-    uint8_t bios_version;
-    uint16_t starting_segment;
-    uint8_t release_date;
-    uint8_t rom_size;
-    uint64_t bios_properties;
-    uint8_t properties_extension1;
-    uint8_t properties_extension2;
-    uint8_t bios_major_version;
-    uint8_t bios_minor_version;
-    uint8_t firmware_major_version;
-    uint8_t firmware_minor_version;
-};
-
-/// @brief SMBIOS BIOS Information entry Ver 3.1
-struct BiosInformationV31 : public BiosInformationV24 {
-    uint16_t extended_rom_size;
-};
-
-#pragma pack(pop)
-
 /// @brief  BIOS Information structure
 class BiosInformationEntry : public AbstractSMBiosEntry {
 public:
@@ -176,9 +149,14 @@ public:
 
     /// @brief 0x17 offset
     /// Identifies the minor release of the embedded controller firmware
-    /// If the system does not have field upgradeable embedded controller firmware, 
+    /// If the system does not have field upgradeable embedded controller firmware,
     /// the value is 0xFF
     uint8_t get_firmware_minor_release() const;
+
+    /// @brief 0x18 offset
+    /// Extended size of the physical device(s) containing the BIOS, in MB,
+    /// when 0x09's rom_size is 0xFF
+    uint16_t get_extended_rom_size() const;
 
     //////////////////////////////////////////////////////////////////////////
     // String values
@@ -231,10 +209,6 @@ private:
     void init_string_values();
 
 private:
-
-    /// Initialization depends on SMBIOS version
-    const BiosInformationV24* bios_information24_ = nullptr;
-    const BiosInformationV31* bios_information31_ = nullptr;
 
     /// Bitwise to string representation
     std::map<uint64_t, std::string> properties_map_;
