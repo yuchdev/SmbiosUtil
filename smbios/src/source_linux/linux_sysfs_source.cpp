@@ -73,16 +73,24 @@ SMBiosAnchorType decode_entry_point(const std::vector<uint8_t>& entry_point, siz
         return SMBiosAnchorType::SMBios64;
 
     case SMBiosAnchorType::SMBios32:
-    case SMBiosAnchorType::SMBiosLegacy:
-        // Sysfs skips straight to the (legacy, `_DMI_`-rooted) structure
-        // table layout - no intermediate anchor to walk through - so both
-        // anchor types share the same field offsets here.
         if (entry_point.size() < kMinEntryPoint32Size) {
             return SMBiosAnchorType::NoHeader;
         }
         major = static_cast<size_t>(read_u8(data, 0x06));
         minor = static_cast<size_t>(read_u8(data, 0x07));
         return anchor;
+
+    case SMBiosAnchorType::SMBiosLegacy:
+        // A bare `_DMI_` anchor (no `_SM_`/`_SM3_` wrapping it) is
+        // dmidecode's distinct legacy_decode() path: version is a packed
+        // BCD byte at offset 0x0E, not two bytes at 0x06/0x07 - a
+        // completely different layout from smbios_decode(), not a
+        // smaller/degenerate case of it. Pre-SMBIOS legacy-DMI-only
+        // systems predate the /sys/firmware/dmi/tables/ sysfs feature
+        // entirely, so this source has no real-world case to serve here;
+        // report unrecognized rather than misreading smbios_decode()'s
+        // offsets against legacy_decode()'s layout.
+        return SMBiosAnchorType::NoHeader;
 
     default:
         return SMBiosAnchorType::NoHeader;
