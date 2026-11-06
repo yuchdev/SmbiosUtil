@@ -12,8 +12,9 @@ class PhysicalMemory;
 
 /// @brief Class that owns memory allocated for SMBIOS table, offsets for table beginning
 /// (without header) and table size. Falls through to the legacy physical-memory scan
-/// (`legacy_physical_memory_scan()`, `smbios/src/smbios_source_chain.cpp`) on every `*nix`
-/// platform until milestone 0005 implements a native source.
+/// (`LegacyMemoryScanSource`, `smbios/src/legacy_memory_scan_source.cpp`, invoked from
+/// `smbios/src/smbios_source_chain.cpp`) on every `*nix` platform until milestone 0005
+/// implements a native source.
 class SMBiosImpl
 {
 public:
