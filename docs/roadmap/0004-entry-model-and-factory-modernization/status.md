@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                        | Status         | Tests |
 |-------|-------------------------------|----------------|-------|
 | 01.0  | Self-registering factory      | ✅ Complete | smbios_unit_test pass (41 cases incl. SMBiosEntryFactoryUnitTests: 5) |
-| 02.0  | Expand structure coverage      | ⬜ Not started | -     |
+| 02.0  | Expand structure coverage      | 🔶 In progress (1/4 tasks) | smbios_unit_test pass (60 cases) |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -87,3 +87,34 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   `smbios_mock_test` pass; `smbios_integration_test` fails cleanly on
   real assertions (no root/hardware), the unchanged baseline. Real
   3-OS/sanitizer CI confirmation awaits the next push.
+- **2026-11-07: milestone 0004 Story 01.0 confirmed by real, green,
+  5-job CI** (`https://github.com/yuchdev/SmbiosUtil/actions/runs/42274156013`:
+  `build` × ubuntu/macos/windows, `sanitizers` × ubuntu/macos).
+- **2026-11-07: Story 02.0 Task 01 complete** - `SystemInformationEntry`
+  (type 1) and `SystemEnclosureEntry` (type 3) implemented, every offset
+  cross-checked against `c-versions/dmidecode_linux`'s own `case 1`/
+  `case 3` parsing and confirmed exact, no corrections needed. The
+  UUID field's well-known mixed-endian quirk (first 3 fields
+  little-endian, swapped to print in big-endian hex; last 2 fields
+  printed as-is; the swap itself only applied at SMBIOS version >= 2.6,
+  confirmed via `dmi_system_uuid()` in the reference) is implemented
+  and tested against four cases: a normal UUID at >= 2.6 (swap
+  applied), the identical raw bytes at < 2.6 (NOT swapped - the
+  regression a copy-paste-without-the-version-check would produce),
+  and both sentinel values (all-`0xFF` → "Not Present", all-`0x00` →
+  "Not Settable"). `SystemEnclosureEntry`'s SKU number field sits at a
+  genuinely variable, runtime-computed offset
+  (`0x15 + contained_element_count * record_length`) - implemented and
+  tested with a non-zero count/record-length fixture proving the
+  offset is actually computed, not assumed fixed, plus a one-byte-short
+  truncation case proving it still defaults safely rather than reading
+  out of bounds. Contained-elements array itself: only the raw
+  count/record-length accessors implemented, not a per-element
+  type/minimum/maximum decode - a deliberate, documented scope
+  narrowing (not named as a hard requirement in this task's own
+  objective). `smbios_util`'s CLI needed no changes - `main.cpp`
+  already dispatches `render_to_description()` polymorphically through
+  the factory-returned base pointer, confirmed by direct read rather
+  than assumed. Verified independently: direct file read of the UUID
+  formatter and the variable-offset SKU logic, a real local macOS
+  rebuild, and a full `ctest` run (`smbios_unit_test` 60/60 cases).

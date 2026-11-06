@@ -16,7 +16,7 @@ struct, from the first line of each new class.
 
 | #  | Document                                                              | Status         | Blocks |
 |----|----------------------------------------------------------------------------|----------------|--------|
-| 01 | [System Information and Enclosure](01-system-information-and-enclosure.md)  | ⬜ Not started | 04     |
+| 01 | [System Information and Enclosure](01-system-information-and-enclosure.md)  | ✅ Complete - offsets and UUID byte-order cross-checked against c-versions/dmidecode_linux | 04     |
 | 02 | [Processor and Cache Information](02-processor-and-cache-information.md)    | ⬜ Not started | 04     |
 | 03 | [System Slots and Memory Array](03-system-slots-and-memory-array.md)        | ⬜ Not started | 04     |
 | 04 | [Tests](04-tests.md)                                                        | ⬜ Not started | -      |
