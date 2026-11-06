@@ -1,7 +1,7 @@
 # Story 01.0 - ISmbiosSource Strategy Interface
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-07)
 
 ## Scope
 
@@ -23,7 +23,7 @@ story's source to reuse when decoding a raw entry point's version bytes.
 |----|------------------------------------------------------------------------------|----------------|--------|
 | 01 | [Define interface and chain](01-define-interface-and-chain.md)              | ✅ Complete - render_to_description() simplification ratified first, see status.md | 02     |
 | 02 | [Fallback policy and legacy-scan isolation](02-fallback-policy-and-legacy-scan-isolation.md) | ✅ Complete | 03     |
-| 03 | [Tests](03-tests.md)                                                        | ⬜ Not started | -      |
+| 03 | [Tests](03-tests.md)                                                        | ✅ Complete - "byte-identical render_to_description()" criterion reconciled, see status.md | -      |
 
 ## Key constraints
 

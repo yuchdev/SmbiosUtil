@@ -6,7 +6,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 | Story | Name                               | Status         | Tests |
 |-------|---------------------------------------|----------------|-------|
-| 01.0  | `ISmbiosSource` strategy interface   | 🔶 In progress (2/3 tasks) | smbios_unit_test pass (150 cases) |
+| 01.0  | `ISmbiosSource` strategy interface   | ✅ Complete | smbios_unit_test pass (150 cases); real CI green incl. Windows |
 | 01.1  | Per-OS source libraries                | ⬜ Not started | -     |
 | 02.0  | Linux sysfs & EFI sources             | ⬜ Not started | -     |
 | 03.0  | macOS UEFI source                     | ⬜ Not started | -     |
@@ -250,3 +250,41 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   `smbios_integration_test`/`smbios_perf_test` unchanged from baseline);
   and a live `smbios_util` CLI run confirming the same `Source: none`
   diagnostic output as before this task.
+
+### Story 01.0 - ISmbiosSource Strategy Interface (✅ 2026-11-07)
+
+**Delivered:** `ISmbiosSource` (C1) and `make_default_source_chain()`
+(C2); `SMBios::SMBios()`'s constructor is now entirely `#if`-free,
+walking the chain generically - the sole remaining `#if defined(_WIN32)`
+lives inside `make_default_source_chain()` itself, selecting which
+source type exists on this platform (R8). `LegacyMemoryScanSource` is a
+real, standalone `ISmbiosSource` both platform wrappers delegate to.
+`fixup_smbios_version()` (R9) is new, additive correctness this codebase
+never had before. All three of milestone 0003's hard-won fixes
+(two exception-safety `try`/`catch` blocks, one null-pointer-arithmetic
+UB guard) preserved byte-for-byte, independently re-verified by direct
+file read at every task, not merely trusted from agent reports.
+
+**Tests / gate:** `smbios_unit_test` 150/150 cases (8 new this story:
+`smbios_source_chain_test.cpp` ×3, `smbios_version_fixup_test.cpp` ×5,
+plus `legacy_memory_scan_source_test.cpp` ×3 - 11 new cases total across
+both tasks). Confirmed by real, green 5-job CI on both pushes
+(`https://github.com/yuchdev/SmbiosUtil/actions/runs/42290814193` for
+Task 01, including `build (windows-latest)` succeeding on the
+previously-unverified `WindowsNativeSource`). `smbios_integration_test`/
+`smbios_perf_test` behave identically to the established pre-story
+baseline throughout - no new crash, no new uncaught exception.
+
+**Reconciliation note:** both Task 02's and Task 03's own spec files
+name a "byte-identical `render_to_description()`" success criterion
+that predates a decision ratified before Task 01 even started -
+`render_to_description()` was simplified (version/size/count/source-
+name) rather than preserved byte-for-byte, since the old detailed
+entry-point-struct dump is exactly the internal state the new chain
+model encapsulates away, and nothing depended on its exact prior text.
+Disposition: both specs' entry-point-dump criterion is *superseded*,
+not applicable going forward; the simplified format is itself stable
+across every task in this story (confirmed unchanged by `git diff`
+after Task 02), which is the real substance of "byte-identical... before
+Stories 02.0-04.0 add real sources on top of it" that Task 03's gate
+actually cares about.
