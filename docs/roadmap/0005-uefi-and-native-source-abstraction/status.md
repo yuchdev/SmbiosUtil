@@ -6,7 +6,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 | Story | Name                               | Status         | Tests |
 |-------|---------------------------------------|----------------|-------|
-| 01.0  | `ISmbiosSource` strategy interface   | 🔶 In progress (1/3 tasks) | smbios_unit_test pass (142 cases) |
+| 01.0  | `ISmbiosSource` strategy interface   | 🔶 In progress (2/3 tasks) | smbios_unit_test pass (150 cases) |
 | 01.1  | Per-OS source libraries                | ⬜ Not started | -     |
 | 02.0  | Linux sysfs & EFI sources             | ⬜ Not started | -     |
 | 03.0  | macOS UEFI source                     | ⬜ Not started | -     |
@@ -224,3 +224,29 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   `LegacyMemoryScanSource`, adding `fixup_smbios_version()` per R9) -
   the detailed entry-point dump does **not** come back, and
   `render_to_description()` is not touched by this task at all.
+- **2026-11-07: Story 01.0 Task 02 complete.** `LegacyMemoryScanSource`
+  (`smbios/include/smbios/legacy_memory_scan_source.h`/`.cpp`) is now a
+  real, standalone `ISmbiosSource` - the scan/checksum logic that Task
+  01 had already moved once (from `SMBios` into free functions in
+  `smbios_source_chain.cpp`) now lives a second and final time inside
+  this class. Both `WindowsNativeSource::try_read()` and
+  `UnixNativeOrLegacyScanSource::try_read()` confirmed (by direct file
+  read) to delegate to `LegacyMemoryScanSource{}.try_read(...)` instead
+  of calling a free function - the old free functions are gone from
+  `smbios_source_chain.cpp` entirely. `fixup_smbios_version()`
+  (`smbios/include/smbios/smbios_version_fixup.h`, R9) ported and
+  independently re-verified against `dmi_fixup_version()`
+  (`c-versions/dmidecode_linux/dmidecode.c:5967`): packed `0x021F`/
+  `0x0221` → corrected to major 2/minor 3, packed `0x0233` → major
+  2/minor 6, everything else passes through unchanged - called from
+  `LegacyMemoryScanSource::try_read()` before the real table mapping
+  stage, genuinely new correctness this codebase never had.
+  `render_to_description()` confirmed untouched by direct `git diff`
+  (empty) against both `smbios.cpp` and `smbios.h` - the reconciliation
+  above held. Verified independently: direct file read of the fixup
+  table, the delegation call sites, and the diff confirming
+  `render_to_description()` wasn't touched; a real local macOS rebuild;
+  a full `ctest` run (`smbios_unit_test` 150/150 cases,
+  `smbios_integration_test`/`smbios_perf_test` unchanged from baseline);
+  and a live `smbios_util` CLI run confirming the same `Source: none`
+  diagnostic output as before this task.
