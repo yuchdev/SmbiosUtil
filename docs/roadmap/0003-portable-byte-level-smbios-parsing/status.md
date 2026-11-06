@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                                           | Status         | Tests |
 |-------|---------------------------------------------------|----------------|-------|
 | 01.0  | Endian-safe field accessors                        | ✅ Complete | smbios_unit_test pass (ByteReaderUnitTests: 5 cases); CI confirmation pending |
-| 02.0  | Field-table redesign of versioned entries         | 🔶 In progress (2/4 tasks) | smbios_unit_test pass (Bios+MemoryDevice entry suites: 11 cases) |
+| 02.0  | Field-table redesign of versioned entries         | 🔶 In progress (3/4 tasks) | smbios_unit_test pass (33 cases incl. Bios+MemoryDevice+PortConnection entry suites) |
 | 03.0  | Table and string walk hardening                    | 🔶 In progress (1/3 tasks) | smbios_unit_test pass (30 cases incl. SmbiosTableWalkUnitTests: 3); smbios_perf_test now passes too |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
@@ -99,6 +99,20 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   touched here. Verified independently: direct file read (all 22 offsets
   confirmed), a real local macOS rebuild, and running
   `MemoryDeviceEntryUnitTests` directly (8 cases, all passing).
+- **2026-11-06: Story 02.0 Task 03 complete** - `PortConnectionEntry`
+  (the simplest of the three conversions, no version chain) rebuilt on
+  the new accessors; the single `PortConnection` struct and its
+  `port_connection_` member deleted (confirmed by grep - empty). All
+  three offsets (`0x05` internal connection, `0x07` external connection,
+  `0x08` port type) matched the existing struct layout exactly, so no
+  doc-comment correction was needed here (unlike Memory Device). The
+  constructor's role shrank to just the type-check throw, per R2 - no
+  constructor-level length guard reintroduced. Added
+  `tests/unit/port_connection_entry_test.cpp` focused on the length-guard
+  boundary (not duplicating the two pre-existing PS2/USB scenario tests
+  in `unit_tests.cpp`, which were re-run and confirmed to still pass
+  unmodified - R8). Verified independently: direct file read, a real
+  local macOS rebuild, and a full `smbios_unit_test` run (33/33 cases).
 - **2026-11-06: Story 03.0 Task 01 complete**, with a real, previously-
   undiscovered bug fixed along the way. Bounds checks added to both
   `SMBios::read_smbios_table()` and `count_smbios_structures()` (which
