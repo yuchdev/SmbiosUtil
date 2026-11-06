@@ -1,4 +1,5 @@
 #include <smbios/port_connection_entry.h>
+#include <smbios/byte_reader.h>
 #include <smbios/smbios.h>
 
 #include <sstream>
@@ -17,12 +18,6 @@ PortConnectionEntry::PortConnectionEntry(const DMIHeader& header, [[maybe_unused
     }
 
     init_string_values();
-
-    // check empty entry
-    if (header.length < 0x09)
-        return;
-
-    port_connection_ = reinterpret_cast<const PortConnection*>(header.data);
 }
 
 void PortConnectionEntry::init_string_values()
@@ -130,11 +125,13 @@ std::string PortConnectionEntry::render_to_description() const
 
 uint8_t PortConnectionEntry::get_internal_connection_type() const
 {
-    if (nullptr == port_connection_) {
+    constexpr size_t offset = 0x05;
+    if (get_entry_size() < offset + sizeof(uint8_t)) {
         return ConnectorType::NoneConnector;
     }
 
-    auto it = connection_type_map_.find(port_connection_->internal_connection);
+    const uint8_t internal_connection = read_u8(raw_data(), offset);
+    auto it = connection_type_map_.find(internal_connection);
     if (it != connection_type_map_.end()) {
         return (*it).first;
     }
@@ -144,11 +141,13 @@ uint8_t PortConnectionEntry::get_internal_connection_type() const
 
 uint8_t PortConnectionEntry::get_external_connection_type() const
 {
-    if (nullptr == port_connection_) {
+    constexpr size_t offset = 0x07;
+    if (get_entry_size() < offset + sizeof(uint8_t)) {
         return ConnectorType::NoneConnector;
     }
 
-    auto it = connection_type_map_.find(port_connection_->external_connection);
+    const uint8_t external_connection = read_u8(raw_data(), offset);
+    auto it = connection_type_map_.find(external_connection);
     if (it != connection_type_map_.end()) {
         return (*it).first;
     }
@@ -158,11 +157,13 @@ uint8_t PortConnectionEntry::get_external_connection_type() const
 
 uint8_t PortConnectionEntry::get_port_type() const
 {
-    if (nullptr == port_connection_) {
+    constexpr size_t offset = 0x08;
+    if (get_entry_size() < offset + sizeof(uint8_t)) {
         return PortType::NonePort;
     }
 
-    auto it = port_type_map_.find(port_connection_->port_type);
+    const uint8_t port_type = read_u8(raw_data(), offset);
+    auto it = port_type_map_.find(port_type);
     if (it != port_type_map_.end()) {
         return (*it).first;
     }

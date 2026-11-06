@@ -13,21 +13,6 @@ namespace smbios {
 struct DMIHeader;
 struct SMBiosVersion;
 
-// should be aligned to be mapped to physical memory
-#pragma pack(push, 1)
-
-/// @brief SMBIOS PortConnection entry Ver 2.0+
-struct PortConnection {
-    uint32_t header;
-    uint8_t internal_designator;
-    uint8_t internal_connection;
-    uint8_t external_designator;
-    uint8_t external_connection;
-    uint8_t port_type;
-};
-
-#pragma pack(pop)
-
 /// @brief Information in this structure defines the attributes of a system port connector
 /// (for example, parallel, serial, keyboard, or mouse ports)
 /// The port's type and connector information are provided
@@ -170,9 +155,6 @@ private:
     void init_string_values();
 
 private:
-
-    /// Raw structure
-    const PortConnection* port_connection_;
 
     /// Bitwise to string representation
     std::map<uint8_t, std::string> connection_type_map_;
