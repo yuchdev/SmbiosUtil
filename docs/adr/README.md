@@ -8,7 +8,7 @@ are in `assets/`.
 
 | ADR        | Title                          | Status | Date |
 |------------|--------------------------------|--------|------|
-| _none yet_ | Add a row per ADR as they land |        |      |
+| [0001](0001-per-os-smbios-source-libraries.md) | Per-OS SMBIOS source libraries | Proposed | 2026-11-06 |
 
 ## Template
 

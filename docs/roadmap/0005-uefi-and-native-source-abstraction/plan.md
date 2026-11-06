@@ -20,9 +20,28 @@ fallback instead of the accidental default.
 | Story | Name                                       | Category    | Output                                                                              |
 |-------|-----------------------------------------------|-------------|----------------------------------------------------------------------------------------|
 | 01.0  | `ISmbiosSource` strategy interface           | core        | Runtime source-chain interface replacing the `#if _WIN32` compile-time split          |
-| 02.0  | Linux sysfs & EFI sources                     | feature     | Real (non-stubbed) `/sys/firmware/dmi/tables` and `/sys/firmware/efi/systab` sources |
-| 03.0  | macOS UEFI source                             | feature     | New: IORegistry-based SMBIOS entry-point/table reader for macOS                       |
-| 04.0  | Windows source parity                         | integration | Existing Windows native-API source adapted to the new interface, unchanged behavior   |
+| 01.1  | Per-OS source libraries                       | infrastructure | New CMake target graph (`smbios_source_interface`/`smbios_source_legacy`/`smbios_source_windows`/`smbios_source_macos`/`smbios_source_linux`) packaging each platform's `ISmbiosSource` implementations as its own static library, skeleton only (no new source logic) |
+| 02.0  | Linux sysfs & EFI sources                     | feature     | Real (non-stubbed) `/sys/firmware/dmi/tables` and `/sys/firmware/efi/systab` sources, implemented inside `smbios_source_linux` |
+| 03.0  | macOS UEFI source                             | feature     | New: IORegistry-based SMBIOS entry-point/table reader for macOS, implemented inside `smbios_source_macos` |
+| 04.0  | Windows source parity                         | integration | Existing Windows native-API source adapted to the new interface, unchanged behavior, implemented inside `smbios_source_windows` |
+
+### Story 01.1 - why this one was added after the milestone's stories were already numbered
+
+User-requested, after this milestone's four stories were already planned
+and numbered: make `smbios` "completely cross-platform" by packaging each
+platform's `ISmbiosSource` implementation as its **own library**, not just
+a class inside the single `smbios` static library Stories 01.0-04.0
+originally planned to compile everything into. Following this roadmap's
+own `{TT.t}` sub-story convention for inserting unplanned work discovered
+after a milestone's numbering was set (see milestone 0001's `02.1-fix-macos-build`
+precedent), this lands as **01.1**: it needs contract C1 (`ISmbiosSource`)
+to exist first (Story 01.0), and it must land *before* Stories 02.0/03.0/04.0
+so each of those stories implements its real source logic directly inside
+its own library from day one, rather than being refactored into that shape
+after the fact. See [ADR 0001](/docs/adr/0001-per-os-smbios-source-libraries.md)
+for the full library-count decision and its alternatives, and Story 01.1's
+own [README.md](01.1-per-os-source-libraries/README.md) for the task
+breakdown.
 
 ## Rationale
 
@@ -163,6 +182,32 @@ implementation per platform behind the minimal remaining `#if`), try each
 in order, and record which one succeeded (R3) for `render_to_description()`
 or a new diagnostic accessor to surface.
 
+### C3 - Per-OS library CMake target boundary (added by Story 01.1)
+
+Each platform's `ISmbiosSource` implementations are packaged as their own
+static CMake library, not merely a class compiled into `smbios` - see
+[ADR 0001](/docs/adr/0001-per-os-smbios-source-libraries.md) for the full
+decision and alternatives considered. Five targets:
+
+| Target                     | Kind                        | Contents                                                                                   | Built when |
+|-----------------------------|------------------------------|----------------------------------------------------------------------------------------------|------------|
+| `smbios_source_interface`  | CMake `INTERFACE` (header-only) | `ISmbiosSource` (C1), `make_default_source_chain()` *declaration*, `fixup_smbios_version()` (R9), `read_u8/16/32/64`, `detect_smbios_anchor()` | always |
+| `smbios_source_legacy`     | `STATIC`                     | `PhysicalMemory`/`NativePhysicalMemory`, `LegacyMemoryScanSource`                            | always |
+| `smbios_source_windows`    | `STATIC`                     | `WindowsNativeSource` (adapted `SMBiosImpl`); defines `make_default_source_chain()`          | `WIN32` |
+| `smbios_source_macos`      | `STATIC`                     | `MacOsUefiSource`; defines `make_default_source_chain()`                                    | `APPLE` |
+| `smbios_source_linux`      | `STATIC`                     | `LinuxSysfsSource`, `LinuxEfiSource`; defines `make_default_source_chain()`                  | Linux |
+
+`smbios` (core) links `smbios_source_interface` unconditionally, plus
+**exactly one** of the three per-OS libraries, selected by a CMake-time
+`if(WIN32)/elseif(APPLE)/elseif(Linux)` branch in `smbios/src/CMakeLists.txt`
+- this is the full resolution of **R8**: the branch moves from a C++
+preprocessor `#if` to a CMake `if()`, and shrinks to "which library to
+link." `SMBios`'s constructor calls `make_default_source_chain()`,
+declared once in `smbios_source_interface` and **defined exactly once**,
+in whichever per-OS library CMake linked for this build - a link-seam,
+not a preprocessor-seam. No build ever links more than one of the three
+per-OS libraries together.
+
 ## Non-goals
 
 - Changing anything in milestones 0003/0004's entry-model or parsing code
@@ -178,14 +223,18 @@ or a new diagnostic accessor to surface.
 
 ```mermaid
 flowchart TD
-    A["Story 01.0<br/>ISmbiosSource strategy interface"] --> B["Story 02.0<br/>Linux sysfs & EFI sources"]
-    A --> C["Story 03.0<br/>macOS UEFI source"]
-    A --> D["Story 04.0<br/>Windows source parity"]
+    A["Story 01.0<br/>ISmbiosSource strategy interface"] --> A1["Story 01.1<br/>Per-OS source libraries"]
+    A1 --> B["Story 02.0<br/>Linux sysfs & EFI sources"]
+    A1 --> C["Story 03.0<br/>macOS UEFI source"]
+    A1 --> D["Story 04.0<br/>Windows source parity"]
     B --> M["Milestone exit"]
     C --> M
     D --> M
 ```
 
-Stories 02.0, 03.0 and 04.0 all depend only on Story 01.0's interface and
-touch disjoint platform-specific files, so they can proceed in parallel
-once the interface is settled.
+Story 01.1 depends on Story 01.0's interface and sits **between** it and
+Stories 02.0/03.0/04.0, which now additionally depend on 01.1's library
+skeleton (each story's "Depends on" line is updated accordingly). Stories
+02.0, 03.0 and 04.0 still depend only on their own platform-specific
+library (no cross-platform-library dependency among themselves) and touch
+disjoint files, so they can proceed in parallel once 01.1 lands.

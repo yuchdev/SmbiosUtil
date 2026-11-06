@@ -11,7 +11,16 @@ untouched.
 
 ## Files
 
-- **Modify** `smbios/include/smbios/win_bios.h` / `smbios/src/win_bios.cpp`:
+*(Path note: Story 01.1 relocated `win_bios.h`/`.cpp` to
+`smbios/include/smbios/source_windows/` / `smbios/src/source_windows/`,
+inside the new `smbios_source_windows` library, and added a temporary
+inline `make_default_source_chain()` adapter there so Windows's real
+native source kept working unchanged between Story 01.1 and this story.
+This task now also replaces that temporary adapter with the permanent
+implementation below - the adaptation content itself is unchanged.)*
+
+- **Modify** `smbios/include/smbios/source_windows/win_bios.h` /
+  `smbios/src/source_windows/win_bios.cpp`:
   add `: public ISmbiosSource` to `SMBiosImpl` (or introduce
   `WindowsNativeSource` as a thin delegating wrapper - decide based on how
   cleanly `SMBiosImpl`'s existing `smbios_read_success()`/

@@ -2,7 +2,9 @@
 
 **Parent milestone:** [plan.md](../plan.md)
 **Status:** ⬜ Not started
-**Depends on:** Story 01.0 (`ISmbiosSource`)
+**Depends on:** Story 01.0 (`ISmbiosSource`); Story 01.1 (the
+`smbios_source_linux` library skeleton this story's files land inside -
+see [01.1's README](../01.1-per-os-source-libraries/README.md))
 
 ## Scope
 
@@ -44,13 +46,20 @@ line format (`address_from_efi()`'s `SMBIOS=`/`SMBIOS3=` parsing) - see
 
 ## Files or directories created or modified by this story
 
-- `smbios/include/smbios/linux_sysfs_source.h` / `.cpp` (new).
-- `smbios/include/smbios/linux_efi_source.h` / `.cpp` (new).
-- `smbios/include/smbios/unix_bios.h` / `smbios/src/unix_bios.cpp` - the
-  old `SMBiosImpl` class (per-platform PImpl, pre-dating `ISmbiosSource`)
-  is retired once both new sources are registered in
-  `make_default_source_chain()`'s Linux branch; confirm BSD/Solaris
-  targets this header's `#if` guard also lists
-  (`__FreeBSD__`/`__NetBSD__`/`__OpenBSD__`/`__sun`) fall through cleanly
+- `smbios/include/smbios/source_linux/linux_sysfs_source.h` /
+  `smbios/src/source_linux/linux_sysfs_source.cpp` (new; path updated per
+  Story 01.1's `smbios_source_linux` library - was planned as a flat
+  `smbios/include/smbios/` path before that story landed).
+- `smbios/include/smbios/source_linux/linux_efi_source.h` /
+  `smbios/src/source_linux/linux_efi_source.cpp` (new; same path update).
+- `smbios/include/smbios/source_linux/unix_bios.h` /
+  `smbios/src/source_linux/unix_bios.cpp` - the old `SMBiosImpl` class
+  (per-platform PImpl, pre-dating `ISmbiosSource`, relocated here verbatim
+  by Story 01.1) is retired once both new sources are registered in
+  `smbios_source_linux`'s own `make_default_source_chain()` definition;
+  confirm BSD/Solaris targets (which, per Story 01.1, get no per-OS
+  library and link `smbios_source_legacy` directly) fall through cleanly
   to `LegacyMemoryScanSource` only, since this story implements Linux
   specifically, not every `*nix` CLAUDE.md's build docs mention.
+- `smbios/src/source_linux/CMakeLists.txt` - add the two new `.cpp` files
+  to the library Story 01.1 already created.

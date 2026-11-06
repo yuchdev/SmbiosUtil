@@ -15,7 +15,12 @@ confirmed by reading that reference directly).
 
 ## Files
 
-- **Create** `smbios/include/smbios/macos_efi_reader.h` / `.cpp`:
+*(Path note: Story 01.1 relocated this story's target directory to
+`smbios/include/smbios/source_macos/` / `smbios/src/source_macos/`, inside
+the new `smbios_source_macos` library, replacing that story's temporary
+chain-factory stub. The class/logic content below is unchanged.)*
+
+- **Create** `smbios/include/smbios/source_macos/macos_efi_reader.h` / `.cpp`:
   ```cpp
   std::optional<std::vector<uint8_t>>
   read_apple_smbios_property(const char* property_name, size_t max_len);

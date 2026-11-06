@@ -2,7 +2,10 @@
 
 **Parent milestone:** [plan.md](../plan.md)
 **Status:** ⬜ Not started
-**Depends on:** Story 01.0 (`ISmbiosSource`)
+**Depends on:** Story 01.0 (`ISmbiosSource`); Story 01.1 (the
+`smbios_source_windows` library this story's adapted class replaces the
+temporary chain-factory stub inside - see
+[01.1's README](../01.1-per-os-source-libraries/README.md))
 
 ## Scope
 
@@ -31,9 +34,13 @@ native-API logic.
 
 ## Files or directories created or modified by this story
 
-- `smbios/include/smbios/win_bios.h` / `smbios/src/win_bios.cpp` -
-  `SMBiosImpl` either renamed/repurposed as `WindowsNativeSource`
-  implementing `ISmbiosSource`, or wrapped by a thin new
-  `WindowsNativeSource` class delegating to the unchanged `SMBiosImpl` -
-  whichever keeps the diff smallest is acceptable; record the choice in
-  `status.md`.
+- `smbios/include/smbios/source_windows/win_bios.h` /
+  `smbios/src/source_windows/win_bios.cpp` (path updated per Story 01.1's
+  `smbios_source_windows` library - was planned as a flat
+  `smbios/include/smbios/` path before that story landed) - `SMBiosImpl`
+  either renamed/repurposed as `WindowsNativeSource` implementing
+  `ISmbiosSource`, or wrapped by a thin new `WindowsNativeSource` class
+  delegating to the unchanged `SMBiosImpl` - whichever keeps the diff
+  smallest is acceptable; record the choice in `status.md`. This also
+  replaces Story 01.1's temporary inline adapter in this same library
+  with the real, permanent `ISmbiosSource` implementation.

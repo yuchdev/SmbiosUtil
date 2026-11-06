@@ -18,7 +18,12 @@ parsing logic are confirmed against
 
 ## Files
 
-- **Create** `smbios/include/smbios/linux_efi_source.h` / `.cpp`:
+*(Path note: Story 01.1 relocated this story's target directory to
+`smbios/include/smbios/source_linux/` / `smbios/src/source_linux/`, inside
+the new `smbios_source_linux` library. The class/logic content below is
+unchanged.)*
+
+- **Create** `smbios/include/smbios/source_linux/linux_efi_source.h` / `.cpp`:
   ```cpp
   class LinuxEfiSource : public ISmbiosSource {
   public:

@@ -15,7 +15,12 @@ structure table.
 
 ## Files
 
-- **Create** `smbios/include/smbios/macos_uefi_source.h` / `.cpp`:
+*(Path note: Story 01.1 relocated this story's target directory to
+`smbios/include/smbios/source_macos/` / `smbios/src/source_macos/`, inside
+the new `smbios_source_macos` library. The class/logic content below is
+unchanged.)*
+
+- **Create** `smbios/include/smbios/source_macos/macos_uefi_source.h` / `.cpp`:
   ```cpp
   class MacOsUefiSource : public ISmbiosSource {
   public:

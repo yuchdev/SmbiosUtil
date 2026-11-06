@@ -7,6 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                               | Status         | Tests |
 |-------|---------------------------------------|----------------|-------|
 | 01.0  | `ISmbiosSource` strategy interface   | ⬜ Not started | -     |
+| 01.1  | Per-OS source libraries                | ⬜ Not started | -     |
 | 02.0  | Linux sysfs & EFI sources             | ⬜ Not started | -     |
 | 03.0  | macOS UEFI source                     | ⬜ Not started | -     |
 | 04.0  | Windows source parity                 | ⬜ Not started | -     |
@@ -79,3 +80,58 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   `MacOsUefiSource` (Story 03.0) is still what macOS actually needs to
   produce real data; the fix above only removed the "doesn't even
   compile" floor.
+- **2026-11-06: new Story 01.1 added, user-requested, after this
+  milestone's four stories were already numbered.** The user asked that
+  `smbios` become "completely cross-platform" not just via the runtime
+  `ISmbiosSource` chain Stories 01.0-04.0 already planned, but by
+  packaging each platform's implementation as its **own library** - their
+  own words allowed for more than 3 ("could be 3 for Windows, macOS,
+  Linux, but if the architecture favors more ... go for it"). Presented as
+  a choice (extend this milestone vs. force it into milestone 0003 vs. a
+  new milestone); the user chose to extend this milestone. Inserted as
+  **01.1** per this roadmap's own `{TT.t}` sub-story convention (the same
+  pattern milestone 0001 used for `02.1-fix-macos-build`), landing between
+  Story 01.0 (needs `ISmbiosSource` to exist) and Stories 02.0/03.0/04.0
+  (which now build their real source logic directly inside their own
+  library from day one, instead of being refactored into that shape
+  later).
+  - **Library-count decision, recorded in full in [ADR 0001](/docs/adr/0001-per-os-smbios-source-libraries.md):**
+    five targets, not a literal reading of the user's "3, maybe 5 for
+    Linux" example - `smbios_source_interface` (header-only `INTERFACE`
+    library: `ISmbiosSource`, the chain-factory *declaration*,
+    `fixup_smbios_version()`, `read_uN`, `detect_smbios_anchor()`),
+    `smbios_source_legacy` (the already-OS-agnostic legacy
+    physical-memory scan, shared by all three platforms' chains and by
+    Linux's EFI source), and exactly one real per-OS library each for
+    Windows/macOS/Linux. The reasoning, in short: a library boundary only
+    pays for itself when some build wants one piece without another. That
+    is true for the OS boundary itself (this project's CMake presets
+    already build for exactly one OS at a time) and true for the legacy
+    scan (genuinely reused four ways, with zero platform-specific code of
+    its own beyond the already-existing `PhysicalMemory` PImpl split) -
+    but **not** true for splitting Linux's sysfs and EFI sources from
+    each other, since nothing in this project ever wants to link one
+    without the other; they stay in one `smbios_source_linux` library.
+    Keeping `ISmbiosSource`/decode primitives inside core `smbios` instead
+    of a separate interface library was also considered and rejected: it
+    would create a dependency cycle the moment `SMBios`'s constructor
+    needs a symbol (`make_default_source_chain()`) only a per-OS library
+    defines, while every per-OS library simultaneously needs decode
+    primitives (`read_uN`, `detect_smbios_anchor()`) that live in core
+    `smbios` today.
+  - **R8's resolution sharpens as a result.** Story 01.0, Task 01's
+    original plan kept "a minimal remaining `#if`" inside
+    `smbios_source_chain.cpp`. Story 01.1 supersedes that one detail:
+    `make_default_source_chain()` is defined exactly once per per-OS
+    library (a link-seam CMake resolves by choosing which library to
+    link), so `smbios.cpp` and `smbios_source_chain.cpp` end up with
+    **zero** `#if defined(_WIN32)` at all, not merely "minimal." Nothing
+    else about Story 01.0's own plan changes - this is a packaging
+    refinement of where Task 01's output physically compiles, not a
+    redesign of the interface or chain-walking logic itself.
+  - Stories 02.0/03.0/04.0's "Depends on" lines and file-path references
+    are updated with a one-line amendment each (now also depending on
+    Story 01.1's library skeleton, and creating their files inside
+    `smbios/{include,src}/smbios/source_<os>/` instead of the flat
+    `smbios/{include,src}/smbios/` layout originally planned) - their
+    actual source-reading logic is unchanged.

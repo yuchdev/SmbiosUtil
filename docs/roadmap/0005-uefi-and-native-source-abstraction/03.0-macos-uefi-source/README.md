@@ -2,7 +2,9 @@
 
 **Parent milestone:** [plan.md](../plan.md)
 **Status:** ⬜ Not started
-**Depends on:** Story 01.0 (`ISmbiosSource`)
+**Depends on:** Story 01.0 (`ISmbiosSource`); Story 01.1 (the
+`smbios_source_macos` library skeleton this story's files land inside -
+see [01.1's README](../01.1-per-os-source-libraries/README.md))
 
 ## Scope
 
@@ -55,12 +57,19 @@ variables - do not rename the file without updating every inbound link via
 
 ## Files or directories created or modified by this story
 
-- `smbios/include/smbios/macos_efi_reader.h` / `.cpp` (new) - low-level
+- `smbios/include/smbios/source_macos/macos_efi_reader.h` /
+  `smbios/src/source_macos/macos_efi_reader.cpp` (new; path updated per
+  Story 01.1's `smbios_source_macos` library - was planned as a flat
+  `smbios/include/smbios/` path before that story landed) - low-level
   IORegistry property read, ported from `mem_chunk_ioreg()`.
-- `smbios/include/smbios/macos_uefi_source.h` / `.cpp` (new) - the
-  `ISmbiosSource` implementation.
-- Root `CMakeLists.txt` / `smbios/CMakeLists.txt` - link `IOKit`/
-  `CoreFoundation` frameworks on `__APPLE__`.
+- `smbios/include/smbios/source_macos/macos_uefi_source.h` /
+  `smbios/src/source_macos/macos_uefi_source.cpp` (new; same path update)
+  - the `ISmbiosSource` implementation, replacing Story 01.1's temporary
+  `make_default_source_chain()` stub in this same library with the real
+  `{MacOsUefiSource, LegacyMemoryScanSource}` chain.
+- `smbios/src/source_macos/CMakeLists.txt` (created by Story 01.1) -
+  link `IOKit`/`CoreFoundation` frameworks here, on `__APPLE__`, and add
+  the two new `.cpp` files to the library.
 - `c-versions/dmidecode_macos` - read as a reference during this story;
   never modified or built from (CLAUDE.md: untracked reference material,
   not part of the build).

@@ -16,7 +16,12 @@ constants and its "First try reading from sysfs tables" block in `main()`.
 
 ## Files
 
-- **Create** `smbios/include/smbios/linux_sysfs_source.h` / `.cpp`:
+*(Path note: Story 01.1 relocated this story's target directory from a
+flat `smbios/include/smbios/` layout to `smbios/include/smbios/source_linux/`
+/ `smbios/src/source_linux/`, inside the new `smbios_source_linux` library.
+The class/logic content below is unchanged.)*
+
+- **Create** `smbios/include/smbios/source_linux/linux_sysfs_source.h` / `.cpp`:
   ```cpp
   class LinuxSysfsSource : public ISmbiosSource {
   public:

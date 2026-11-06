@@ -98,7 +98,13 @@ linked to the milestone/story that owns it.
   depends on the `ISmbiosSource` interface instead of a compile-time `#if`,
   this is where a fake source gets substituted to assert chain/fallback
   behavior (e.g. "falls through to the next source when `is_available()`
-  is false") without needing real hardware or root.
+  is false") without needing real hardware or root. Story 01.1 (per-OS
+  source libraries) lands the injectable seam's library boundary itself
+  - two new unit tests proving `smbios_source_legacy` links standalone and
+  that `smbios::make_default_source_chain()` resolves through `smbios`
+  core's link graph - ahead of any real fake `ISmbiosSource`; the mock
+  placeholder's remaining blocker after that story is a concrete fake
+  source, not a missing architectural seam.
 - **Milestone 0006, Story 01.0** - a hermetic `SyntheticTableBuilder`
   (in-memory, well-formed SMBIOS table construction bypassing every
   `ISmbiosSource`), with every ad hoc synthetic buffer this document's
