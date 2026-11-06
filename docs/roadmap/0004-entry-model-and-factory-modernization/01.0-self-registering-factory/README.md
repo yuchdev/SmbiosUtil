@@ -1,7 +1,7 @@
 # Story 01.0 - Self-Registering Factory
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-07)
 
 ## Scope
 
@@ -18,9 +18,9 @@ eight more.
 
 | #  | Document                                                    | Status         | Blocks |
 |----|------------------------------------------------------------------|----------------|--------|
-| 01 | [Registration macro and registry](01-registration-macro-and-registry.md) | ⬜ Not started | 02     |
-| 02 | [Migrate existing entries](02-migrate-existing-entries.md)       | ⬜ Not started | 03     |
-| 03 | [Tests](03-tests.md)                                              | ⬜ Not started | -      |
+| 01 | [Registration macro and registry](01-registration-macro-and-registry.md) | ✅ Complete | 02     |
+| 02 | [Migrate existing entries](02-migrate-existing-entries.md)       | ✅ Complete - consumed by Task 01 (coexistence with the old constructor was infeasible, see status.md) | 03     |
+| 03 | [Tests](03-tests.md)                                              | ✅ Complete - all three real entry types now verified through create() itself | -      |
 
 ## Key constraints
 
