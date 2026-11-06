@@ -193,12 +193,13 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   on this unprivileged Mac (`Source: none`, matching the expected
   no-native-source-available state).
 
-  `WindowsNativeSource` is unverified - written by reading `win_bios.h`'s
-  real interface, but this session has no Windows toolchain; it reuses
-  the shared `legacy_physical_memory_scan()` helper for its own fallback
-  stage, which is itself already platform-neutral (not new
-  Windows-specific code), matching R6's "adapt, don't rewrite" mandate.
-  Real confirmation awaits a CI push.
+  `WindowsNativeSource` - written unverified against `win_bios.h`'s real
+  interface, no Windows toolchain in this session - **confirmed by real
+  CI** (`https://github.com/yuchdev/SmbiosUtil/actions/runs/42290814193`:
+  `build (windows-latest)` succeeded, alongside all 4 other jobs). The
+  shared `legacy_physical_memory_scan()` fallback it reuses is itself
+  already platform-neutral (not new Windows-specific code), matching
+  R6's "adapt, don't rewrite" mandate.
 
   Verified independently: direct file read of both exception-safety
   fixes, the null-pointer-arithmetic guard, the checksum/scan logic
@@ -208,3 +209,18 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   pre-existing baseline - no new crash or uncaught exception), and a
   live `smbios_util` CLI run confirming the new `render_to_description()`
   output format.
+- **2026-11-07, reconciliation found before starting Task 02:** Task
+  02's own spec file (`02-fallback-policy-and-legacy-scan-isolation.md`)
+  predates the `render_to_description()` decision above and still says
+  the method's "two-branch format (32-bit vs. 64-bit entry point) must
+  still be reachable and byte-identical when the legacy source is what
+  succeeded," naming this as one of its own success criteria. That
+  requirement is **superseded** by the already-ratified-and-shipped
+  simplification - the user settled this exact question for Task 01,
+  not provisionally, and Task 01's simplified `render_to_description()`
+  is already merged and CI-confirmed. Task 02 proceeds on its real
+  remaining scope (extracting `scan_physical_memory`/
+  `extract_dmi_version`/`checksum32`/`checksum64`/`smbios_crc` into
+  `LegacyMemoryScanSource`, adding `fixup_smbios_version()` per R9) -
+  the detailed entry-point dump does **not** come back, and
+  `render_to_description()` is not touched by this task at all.
