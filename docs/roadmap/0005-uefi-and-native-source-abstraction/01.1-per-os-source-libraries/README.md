@@ -31,8 +31,8 @@ branch instead of `smbios.cpp`'s current C++ `#if defined(_WIN32)`.
 
 | #  | Document                                                                      | Status         | Blocks |
 |----|----------------------------------------------------------------------------------|----------------|--------|
-| 01 | [CMake target graph and shared interface/legacy libraries](01-cmake-target-graph-and-shared-libraries.md) | ⬜ Not started | 02     |
-| 02 | [Relocate existing per-OS files; macOS and Linux skeletons](02-relocate-existing-sources-and-stub-skeletons.md) | ⬜ Not started | 03     |
+| 01 | [CMake target graph and shared interface/legacy libraries](01-cmake-target-graph-and-shared-libraries.md) | ✅ Complete - combined with Task 02, see status.md | 02     |
+| 02 | [Relocate existing per-OS files; macOS and Linux skeletons](02-relocate-existing-sources-and-stub-skeletons.md) | ✅ Complete - pulled forward into Task 01's pass (CMakeLists.txt referenced these directories before they existed) | 03     |
 | 03 | [Tests](03-tests.md)                                                            | ⬜ Not started | -      |
 
 ## Key constraints

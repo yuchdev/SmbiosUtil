@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                               | Status         | Tests |
 |-------|---------------------------------------|----------------|-------|
 | 01.0  | `ISmbiosSource` strategy interface   | ✅ Complete | smbios_unit_test pass (150 cases); real CI green incl. Windows |
-| 01.1  | Per-OS source libraries                | ⬜ Not started | -     |
+| 01.1  | Per-OS source libraries                | 🔶 In progress (2/3 tasks) | smbios_unit_test pass (149 cases) |
 | 02.0  | Linux sysfs & EFI sources             | ⬜ Not started | -     |
 | 03.0  | macOS UEFI source                     | ⬜ Not started | -     |
 | 04.0  | Windows source parity                 | ⬜ Not started | -     |
@@ -288,3 +288,79 @@ across every task in this story (confirmed unchanged by `git diff`
 after Task 02), which is the real substance of "byte-identical... before
 Stories 02.0-04.0 add real sources on top of it" that Task 03's gate
 actually cares about.
+- **2026-11-07: Story 01.1 Tasks 01 and 02 complete, done together in
+  one pass** - Task 01's own `smbios/src/CMakeLists.txt` snippet
+  references `source_windows`/`source_macos`/`source_linux`
+  subdirectories that don't exist until Task 02 creates them; doing
+  Task 01 in isolation would have left a non-configuring, broken build
+  (`add_subdirectory()` on a nonexistent path), the same "clean
+  coexistence infeasible" situation milestone 0004's Story 01.0 Task 01
+  hit for an analogous reason. Final target graph:
+  `smbios_source_interface` (`INTERFACE`, header-only: `ISmbiosSource`,
+  the chain-factory declaration, `byte_reader.h`, `smbios_anchor.h`,
+  `smbios_version_fixup.h`, and a newly-relocated
+  `smbios_entry_point.h`) ← `smbios_source_legacy` (`STATIC`:
+  `PhysicalMemory`/`NativePhysicalMemory`, `LegacyMemoryScanSource`) ←
+  exactly one of `smbios_source_windows`/`smbios_source_macos`/
+  `smbios_source_linux` (`STATIC`), selected by a CMake-time
+  `if(WIN32)/elseif(APPLE)/elseif(Linux)/else()` branch replacing the
+  role `smbios.cpp`'s old `#if defined(_WIN32)` played (R8) - confirmed
+  by direct grep, zero real preprocessor platform directives remain in
+  `smbios.cpp` (one comment-text match only).
+
+  **Two real spec-vs-ADR corrections, found and fixed during
+  implementation, not pre-judged by either task's own file list:**
+  `SMBIOSEntryPoint32`/`SMBIOSEntryPoint64` (used only by
+  `LegacyMemoryScanSource`, assigned to `smbios_source_legacy`) were
+  extracted out of core `smbios.h` into
+  `source_interface/smbios_entry_point.h` - leaving them in `smbios.h`
+  would have made `smbios_source_legacy` depend on core `smbios`,
+  backwards from ADR 0001's intended acyclic direction.
+  `win_native_api_helper.h`/`win_handle_ptr.h` (used only by
+  `win_physical_memory.cpp`, itself assigned to `smbios_source_legacy`,
+  not `win_bios.cpp`) were moved into `source_legacy`, not
+  `source_windows` as Task 02's literal file list said - moving them to
+  `source_windows` would have made the "shared, no per-OS dependency"
+  library depend on a per-OS one, violating the same acyclic rule.
+  Both corrections independently re-verified here by direct `find`/
+  `grep`, not merely trusted from the report.
+
+  `smbios_source_chain.cpp` (Story 01.0's temporary home for
+  `WindowsNativeSource`/`UnixNativeOrLegacyScanSource`) is deleted; its
+  content is redistributed into `source_windows/windows_native_source.cpp`
+  and `source_linux/linux_source_chain.cpp` respectively (each keeping
+  its own small `copy_native_result()` helper duplicated rather than
+  shared - documented as temporary pending Story 02.0/04.0, when each
+  platform's real source classes land and this duplication likely
+  resolves naturally). A new `fallback_source_chain.cpp` supplies
+  `make_default_source_chain()` for the BSD/Solaris `else()` branch
+  only - excluded from the default `file(GLOB)` and re-added
+  explicitly just there, avoiding a duplicate-definition link error on
+  every platform that does have a per-OS library (a real risk the
+  implementer caught and solved correctly, independently confirmed by
+  reading the final `smbios/src/CMakeLists.txt`).
+
+  `git diff`-confirmed pure moves (no logic change, only `#include`
+  path updates) for `win_bios.cpp`/`win_bios.h` and
+  `unix_bios.cpp`/`unix_bios.h` - re-verified directly here via `diff`
+  against the pre-move committed content, not just trusted from the
+  report. `tests/unit/unit_tests.cpp`'s `SMBiosImpl`-based regression
+  test narrowed from "any unix-like platform" to `__linux__` only,
+  since `SMBiosImpl`/`unix_bios.h` now live exclusively in the
+  Linux-only `smbios_source_linux` library - a real, well-documented
+  scope narrowing (the test still exists and will run on real Linux
+  CI), not a silent coverage loss; confirmed by direct read of the new
+  guard and its doc comment.
+
+  Verified independently: the directory/target-graph structure, the
+  `#if` removal, the acyclic-dependency grep check, both pure-move
+  diffs, a real local macOS rebuild through the entire new target
+  graph (`smbios_source_interface` → `smbios_source_legacy` →
+  `smbios_source_macos` → `smbios` core → `smbios_util`/tests), and a
+  full `ctest` run (`smbios_unit_test` 149/149 cases - one fewer than
+  before, exactly accounted for by the documented Linux-only test
+  narrowing, not a loss). Windows (`smbios_source_windows`) and Linux
+  (`smbios_source_linux`) library compilation remain unverified by a
+  real compile on this macOS sandbox, same as every per-OS-specific
+  claim throughout this milestone - the next CI push is the real
+  confirmation.
