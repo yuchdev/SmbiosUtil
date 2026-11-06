@@ -18,7 +18,7 @@ instead of reading past the mapped buffer.
 
 | #  | Document                                                      | Status         | Blocks |
 |----|--------------------------------------------------------------------|----------------|--------|
-| 01 | [Bounds-checked table walk](01-bounds-checked-table-walk.md)         | ⬜ Not started | 03     |
+| 01 | [Bounds-checked table walk](01-bounds-checked-table-walk.md)         | ✅ Complete - also fixed a real uncaught-exception bug in SMBios's constructor | 03     |
 | 02 | [Bounds-checked string parsing](02-bounds-checked-string-parsing.md) | ⬜ Not started | 03     |
 | 03 | [Tests](03-tests.md)                                                | ⬜ Not started | -      |
 

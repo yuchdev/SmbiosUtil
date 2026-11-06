@@ -8,7 +8,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 |-------|---------------------------------------------------|----------------|-------|
 | 01.0  | Endian-safe field accessors                        | ✅ Complete | smbios_unit_test pass (ByteReaderUnitTests: 5 cases); CI confirmation pending |
 | 02.0  | Field-table redesign of versioned entries         | 🔶 In progress (2/4 tasks) | smbios_unit_test pass (Bios+MemoryDevice entry suites: 11 cases) |
-| 03.0  | Table and string walk hardening                    | ⬜ Not started | -     |
+| 03.0  | Table and string walk hardening                    | 🔶 In progress (1/3 tasks) | smbios_unit_test pass (30 cases incl. SmbiosTableWalkUnitTests: 3); smbios_perf_test now passes too |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -99,3 +99,36 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   touched here. Verified independently: direct file read (all 22 offsets
   confirmed), a real local macOS rebuild, and running
   `MemoryDeviceEntryUnitTests` directly (8 cases, all passing).
+- **2026-11-06: Story 03.0 Task 01 complete**, with a real, previously-
+  undiscovered bug fixed along the way. Bounds checks added to both
+  `SMBios::read_smbios_table()` and `count_smbios_structures()` (which
+  also still used `reinterpret_cast<const DMIHeader*>`/
+  `reinterpret_cast<const uint16_t*>` with **zero** bounds checks - worse
+  than `read_smbios_table()`'s pre-existing off-by-one; both are now
+  fully converted, closing R1 for this file). Deliberately used a new
+  `kDmiHeaderWireSize` constant (4 bytes: type+length+handle) instead of
+  `sizeof(DMIHeader)` (12 bytes on a 64-bit host, since the in-memory
+  struct also carries a `data` pointer never serialized on the wire) -
+  using the wrong constant would have silently dropped legitimate
+  trailing structures and violated R8.
+  **Unplanned fix, found blocking the task's own test:** `SMBios`'s
+  constructor had a long-standing `// TODO: process exception higher`
+  gap - Boost.Iostreams' `mapped_file_source::open()` throws when
+  `/dev/mem` can't be opened (no device node at all on modern macOS;
+  would also throw without root on Linux/Windows CI), and nothing caught
+  it, so the exception escaped the constructor entirely instead of
+  degrading cleanly. Wrapped both physical-memory accesses in
+  `try`/`catch`, degrading to an empty buffer - matching this project's
+  own "fail cleanly, don't crash" convention used everywhere else.
+  Verified independently (direct file read, real local macOS rebuild,
+  full `ctest` run): `smbios_unit_test` 30/30 cases pass; `smbios_mock_test`
+  passes; `smbios_perf_test` now *also* passes as a direct, genuine
+  consequence of the fix (its only real assertion is "construction
+  doesn't throw," which was false before and is now true);
+  `smbios_integration_test` still fails cleanly on real assertions (no
+  root/hardware on this Mac) exactly as documented - unchanged baseline.
+  Added a narrowly-scoped `friend class SmbiosTableWalkTestAccess;` to
+  `smbios.h` as the test seam (same underlying mechanism as Story 01.0's
+  `SMBiosImpl::read_from_physical_memory()` seam, extended to drive
+  `SMBios`'s own private walk). AddressSanitizer confirmation (this
+  task's own stated success criterion) awaits the next CI push.
