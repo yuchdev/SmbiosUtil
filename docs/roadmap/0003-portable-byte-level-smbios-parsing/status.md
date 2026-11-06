@@ -8,7 +8,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 |-------|---------------------------------------------------|----------------|-------|
 | 01.0  | Endian-safe field accessors                        | ✅ Complete | smbios_unit_test pass (ByteReaderUnitTests: 5 cases); CI confirmation pending |
 | 02.0  | Field-table redesign of versioned entries         | 🔶 In progress (3/4 tasks) | smbios_unit_test pass (33 cases incl. Bios+MemoryDevice+PortConnection entry suites) |
-| 03.0  | Table and string walk hardening                    | 🔶 In progress (1/3 tasks) | smbios_unit_test pass (30 cases incl. SmbiosTableWalkUnitTests: 3); smbios_perf_test now passes too |
+| 03.0  | Table and string walk hardening                    | 🔶 In progress (2/3 tasks) | smbios_unit_test pass (36 cases); a real LeakSanitizer finding from Task 01 under investigation (see Notes) |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -146,3 +146,39 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   `SMBiosImpl::read_from_physical_memory()` seam, extended to drive
   `SMBios`'s own private walk). AddressSanitizer confirmation (this
   task's own stated success criterion) awaits the next CI push.
+- **2026-11-06, real CI finding from Task 01's push, under active
+  investigation:** run 42251427584's `sanitizers (ubuntu-latest)` job
+  reported genuine LeakSanitizer leaks in
+  `tests/unit/smbios_table_walk_test.cpp`'s three test cases - each
+  leaks the `native_impl_` (`SMBiosImpl`) allocation inside a locally-
+  constructed `SMBios`, and two also leak their own synthetic `buffer`
+  vector. Not yet root-caused or fixed as of this entry; cannot be
+  reproduced locally (LeakSanitizer is unsupported on macOS, no Linux
+  environment available here) - see the next entry for the outcome.
+  Next push is deliberately held back until this is resolved, so as not
+  to add further red CI runs on top of an already-diagnosed issue.
+- **2026-11-06: Story 03.0 Task 02 complete.** `AbstractSMBiosEntry::
+  parse_dmi_strings()` rebuilt with a `table_end` bound per contract C3
+  (now requires `std::find(string_section, table_end, 0)` to find a
+  terminator before `table_end`, breaking cleanly on an unterminated
+  string section instead of reading past the buffer). This changes a
+  constructor signature shared by every entry type, per the task's own
+  accepted blast radius (R6): `AbstractSMBiosEntry`, `BiosInformationEntry`,
+  `MemoryDeviceEntry`, `PortConnectionEntry`, and `SMBiosEntryFactory::create()`
+  (including its three `boost::bind` factory registrations) all gained a
+  required `table_end` parameter - no default value, by deliberate
+  choice: a defaulted `nullptr` would have silently preserved the old
+  unbounded behavior for any caller that forgot to pass it, defeating
+  the fix. All ~24 real call sites were updated explicitly (`main.cpp`,
+  `integration_tests.cpp`, `perf_tests.cpp` compute the real
+  `table_end` from `get_table_base() + get_table_size()`; every test
+  call site passes its own synthetic buffer's `data() + size()`).
+  Added `tests/unit/dmi_string_parsing_test.cpp` (3 cases) proving the
+  truncated-string-section scenario stops cleanly at the boundary.
+  Verified independently: direct grep sweep confirming every call site
+  was updated (not just a successful compile), a real local macOS
+  rebuild, and a full `ctest` run (`smbios_unit_test` 36/36,
+  `smbios_mock_test`, and - as a side effect of Task 01's earlier
+  exception-safety fix - `smbios_perf_test` all pass;
+  `smbios_integration_test` fails cleanly on real assertions, the
+  unchanged baseline).
