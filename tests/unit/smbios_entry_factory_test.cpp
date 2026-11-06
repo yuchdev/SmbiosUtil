@@ -164,4 +164,54 @@ BOOST_AUTO_TEST_CASE(CreateReturnsMemoryDeviceEntryTestCase)
     BOOST_CHECK(dynamic_cast<MemoryDeviceEntry*>(entry.get()) != nullptr);
 }
 
+/// @brief Milestone 0004's own closing success criterion ("every
+/// SMBiosHandler value except EndOfTable resolves to a concrete, non-null
+/// entry via the factory"), as one consolidated test rather than left
+/// implied by eleven separate per-type test files. Every real handler
+/// value - the original three (milestone 0003) plus all eight added by
+/// this milestone's Story 02.0 - must produce a non-null entry; EndOfTable
+/// is deliberately excluded, since it is the table's own terminator and is
+/// never constructed as an entry (see SMBios::read_smbios_table()).
+BOOST_AUTO_TEST_CASE(CreateResolvesEveryRealSMBiosHandlerExceptEndOfTableTestCase)
+{
+    constexpr uint8_t kAllRealHandlerValues[] = {
+        SMBios::BIOSInformation,
+        SMBios::SystemInformation,
+        SMBios::SystemEnclosure,
+        SMBios::ProcessorInformation,
+        SMBios::CacheInformation,
+        SMBios::PortConnection,
+        SMBios::SystemSlots,
+        SMBios::PhysicalMemoryArray,
+        SMBios::MemoryDevice,
+        SMBios::MemoryArrayMappedAddress,
+        SMBios::SystemBootInformation,
+    };
+
+    SMBiosEntryFactory factory;
+    for (uint8_t handler_value : kAllRealHandlerValues) {
+        std::vector<uint8_t> buffer = build_minimal_buffer(handler_value);
+        DMIHeader header{};
+        header.type = buffer[0];
+        header.length = buffer[1];
+        header.handle = static_cast<uint16_t>(buffer[2] | (buffer[3] << 8));
+        header.data = buffer.data();
+
+        std::unique_ptr<AbstractSMBiosEntry> entry = factory.create(header, SMBiosVersion{3, 0}, buffer.data() + buffer.size());
+
+        BOOST_CHECK_MESSAGE(entry != nullptr,
+            "SMBiosHandler value " << static_cast<unsigned>(handler_value) << " did not resolve to a concrete entry");
+    }
+
+    // EndOfTable is deliberately excluded above and confirmed null here -
+    // it is the table's own terminator, not a registered entry type.
+    DMIHeader end_of_table_header{};
+    end_of_table_header.type = SMBios::EndOfTable;
+    end_of_table_header.length = 4;
+    end_of_table_header.handle = 0;
+    end_of_table_header.data = nullptr;
+    std::unique_ptr<AbstractSMBiosEntry> end_of_table_entry = factory.create(end_of_table_header, SMBiosVersion{3, 0}, nullptr);
+    BOOST_CHECK(end_of_table_entry == nullptr);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

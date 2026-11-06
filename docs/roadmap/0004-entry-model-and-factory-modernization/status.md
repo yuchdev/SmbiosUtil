@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                        | Status         | Tests |
 |-------|-------------------------------|----------------|-------|
 | 01.0  | Self-registering factory      | ✅ Complete | smbios_unit_test pass (41 cases incl. SMBiosEntryFactoryUnitTests: 5) |
-| 02.0  | Expand structure coverage      | 🔶 In progress (3/4 tasks) | smbios_unit_test pass (138 cases) |
+| 02.0  | Expand structure coverage      | ✅ Complete | smbios_unit_test pass (139 cases) |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -173,3 +173,45 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   values aren't conflated) and the corrected boot-status table, a real
   local macOS rebuild, and a full `ctest` run (`smbios_unit_test`
   138/138 cases).
+- **2026-11-07: Story 02.0 Task 04 complete, milestone exit gate met.**
+  Added one consolidated test
+  (`CreateResolvesEveryRealSMBiosHandlerExceptEndOfTableTestCase`,
+  `tests/unit/smbios_entry_factory_test.cpp`) proving this story's own
+  closing success criterion directly - every one of the 11 real
+  `SMBios::SMBiosHandler` values resolves to a non-null, correctly-
+  dispatched entry through `SMBiosEntryFactory::create()`, and
+  `EndOfTable` (the table's own terminator, never constructed as an
+  entry) correctly resolves to `nullptr` - rather than leaving this
+  claim implied by eleven separate per-type test files. `smbios_unit_test`
+  139/139 cases. **Not independently confirmable from this sandbox:**
+  the task's own "`smbios_util` run against real hardware prints a
+  complete report" criterion needs a real machine with a native SMBIOS
+  source - every CI runner this project has used throughout its history
+  has the same no-root/no-native-source limitation as this Mac, so this
+  specific criterion has never been (and likely cannot be) confirmed by
+  CI either; it is honestly left open rather than claimed as verified.
+
+## Milestone 0004 - closing summary
+
+Both stories are complete, confirmed by real CI through Story 01.0
+(5-job green run) and locally through Story 02.0 (CI confirmation
+pending the push that closes this milestone). `SMBiosEntryFactory`'s
+hand-wired `boost::bind`/`boost::factory` constructor is gone entirely,
+replaced by `REGISTER_SMBIOS_ENTRY`-based self-registration against a
+module-scope registry - adding entry #12 in a future milestone touches
+one new file, not a shared factory constructor. All eight previously-
+unimplemented `SMBios::SMBiosHandler` structure types
+(`SystemInformation` through `SystemBootInformation`) are now real,
+tested classes built directly on milestone 0003's `read_uN` +
+length-guard pattern, with every offset cross-checked against
+`c-versions/dmidecode_linux`'s real parsing rather than derived from
+memory of the DMTF spec. Along the way: one genuinely new formatting
+concern (the UUID field's mixed-endian quirk), five confirmed
+sentinel-to-widened-field relationships across three different
+sentinel values (`0xFF`, `0xFE`, `0x80000000`, `0xFFFFFFFF` - the
+`0xFF`/`0x80000000` pair appearing twice each, at different
+offsets/structures), two non-trivial bit-encoding schemes (processor
+voltage, cache-size granularity), and one real error in this
+conversation's own task briefing (a fabricated 21-entry boot-status
+table) caught and corrected against the real reference rather than
+shipped unverified.

@@ -1,7 +1,7 @@
 # Story 02.0 - Expand Structure Coverage
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-07)
 **Depends on:** Story 01.0 (self-registering factory); Milestone 0003 (accessor pattern)
 
 ## Scope
@@ -19,7 +19,7 @@ struct, from the first line of each new class.
 | 01 | [System Information and Enclosure](01-system-information-and-enclosure.md)  | ✅ Complete - offsets and UUID byte-order cross-checked against c-versions/dmidecode_linux | 04     |
 | 02 | [Processor and Cache Information](02-processor-and-cache-information.md)    | ✅ Complete - 4 sentinel-widening relationships + voltage/cache-size encodings, all cross-checked against c-versions/dmidecode_linux | 04     |
 | 03 | [System Slots and Memory Array](03-system-slots-and-memory-array.md)        | ✅ Complete - also caught and fixed a fabricated boot-status table in this task's own briefing | 04     |
-| 04 | [Tests](04-tests.md)                                                        | ⬜ Not started | -      |
+| 04 | [Tests](04-tests.md)                                                        | ✅ Complete - all 11 real SMBiosHandler values confirmed resolving through the factory in one consolidated test | -      |
 
 Grouped by implementation session rather than one task per type (eleven
 total entry types fit this project's existing granularity of "a handful of
