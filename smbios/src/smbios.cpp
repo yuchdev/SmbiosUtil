@@ -15,6 +15,19 @@
 using std::numeric_limits;
 using namespace smbios;
 
+namespace {
+
+/// @brief Size, in bytes, of a DMIHeader's on-wire representation: Type (1)
+/// + Length (1) + Handle (2), per the DMTF SMBIOS spec. Deliberately NOT
+/// `sizeof(DMIHeader)`: that in-memory struct also carries a `const
+/// uint8_t* data` convenience pointer (smbios/include/smbios/smbios.h)
+/// that is never serialized on the wire, so `sizeof(DMIHeader)` is 12 on a
+/// 64-bit host - using it as the pre-dereference bounds margin would
+/// over-reject legitimately in-bounds trailing structures.
+constexpr size_t kDmiHeaderWireSize = sizeof(uint8_t) + sizeof(uint8_t) + sizeof(uint16_t);
+
+} // namespace
+
 bool smbios::operator>(const SMBiosVersion& lhs, const SMBiosVersion& rhs)
 {
     if (lhs.major_version != rhs.major_version) {
@@ -43,11 +56,23 @@ SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
 
         // call physical memory
         smbios::PhysicalMemory physical_memory_device;
+        std::vector<uint8_t> devmem_array;
 
-        // read service memory
-        physical_memory_device.map_physical_memory(devmem_base_, devmem_length_);
-
-        std::vector<uint8_t> devmem_array = physical_memory_device.get_memory_dump(0, devmem_length_);
+        try {
+            // read service memory
+            physical_memory_device.map_physical_memory(devmem_base_, devmem_length_);
+            devmem_array = physical_memory_device.get_memory_dump(0, devmem_length_);
+        }
+        catch (const std::exception&) {
+            // No accessible legacy physical-memory device on this host (e.g.
+            // no /dev/mem at all - removed on modern macOS - or insufficient
+            // privilege on *nix/Windows): degrade to "nothing found" rather
+            // than letting the exception escape the constructor, consistent
+            // with this project's convention of failing an inaccessible/
+            // malformed source cleanly rather than with an uncaught
+            // exception.
+            devmem_array.clear();
+        }
 
         // scan for headers
         scan_physical_memory(devmem_array);
@@ -68,8 +93,16 @@ SMBios::SMBios() : native_impl_(std::make_unique<SMBiosImpl>())
             smbios_table_length = smbios_entry64_->max_structure_size;
         }
         smbios::PhysicalMemory smbios_physical_memory;
-        smbios_physical_memory.map_physical_memory(smbios_base, smbios_table_length);
-        std::vector<uint8_t> dump = smbios_physical_memory.get_memory_dump(0, smbios_table_length);
+        std::vector<uint8_t> dump;
+
+        try {
+            smbios_physical_memory.map_physical_memory(smbios_base, smbios_table_length);
+            dump = smbios_physical_memory.get_memory_dump(0, smbios_table_length);
+        }
+        catch (const std::exception&) {
+            // same rationale as above
+            dump.clear();
+        }
         native_impl_->read_from_physical_memory(dump);
     }
     else{
@@ -154,7 +187,12 @@ void SMBios::read_smbios_table()
     size_t number_of_structures = get_structures_count();
     const uint8_t* current_structure_begin = table_base;
 
-    for (size_t i = 0; i < number_of_structures && current_structure_begin <= table_end; ++i) {
+    for (size_t i = 0; i < number_of_structures; ++i) {
+
+        if (current_structure_begin + kDmiHeaderWireSize > table_end) {
+            // Not enough bytes left for even a header. DMI table is truncated
+            break;
+        }
 
         DMIHeader header;
         header.type   = read_u8(current_structure_begin, 0);
@@ -167,6 +205,11 @@ void SMBios::read_smbios_table()
             break;
         }
 
+        if (current_structure_begin + header.length > table_end) {
+            // Declared length would read past the table end. DMI table is truncated
+            break;
+        }
+
         if (header.type == SMBiosHandler::EndOfTable) {
             // end of table marker. Exit
             break;
@@ -176,7 +219,7 @@ void SMBios::read_smbios_table()
 
         // look to the current structure end '\0\0'
         current_structure_begin = current_structure_begin + header.length;
-        while (current_structure_begin < table_end &&
+        while (current_structure_begin + 1 < table_end &&
                (current_structure_begin[0] != 0 || current_structure_begin[1] != 0)) {
 
             current_structure_begin++;
@@ -195,23 +238,31 @@ void SMBios::count_smbios_structures()
     //points to the actual address in the buff that's been checked
     const uint8_t* offset = start_table;
 
-    //header of the struct been read to get the length to increase the offset
-    const DMIHeader* header = nullptr;
-
     size_t structures_count = 0;
 
     //searches structures on the whole SMBIOS Table
-    while (offset < end_table) {
+    while (offset + kDmiHeaderWireSize <= end_table) {
 
-        //get the header to read the length and to increase the offset
-        header = reinterpret_cast<const DMIHeader*>(offset);
-        offset += header->length;
+        // only the length field (offset 1, one byte) is needed here
+        const uint8_t length = read_u8(offset, 1);
 
+        if (length < 4) {
+            // Invalid entry length. DMI table is broken
+            break;
+        }
+
+        if (offset + length > end_table) {
+            // Declared length would read past the table end. DMI table is truncated
+            break;
+        }
+
+        offset += length;
         structures_count++;
 
         // increases the offset to point to the next header that's
         // after the strings at the end of the structure.
-        while ((*reinterpret_cast<const uint16_t*>(offset) != 0) && (offset < end_table)) {
+        while (offset + 1 < end_table &&
+               (read_u8(offset, 0) != 0 || read_u8(offset, 1) != 0)) {
             offset++;
         }
 

@@ -2,6 +2,7 @@
 #include <vector>
 #include <memory>
 #include <cstdint>
+#include <string>
 
 // Main SMBIOS table implementation
 
@@ -195,6 +196,13 @@ public:
     }
 
 private:
+
+    /// Friend-only access for the Story 03.0 bounds-checked table walk unit
+    /// test (tests/unit/smbios_table_walk_test.cpp): lets the test inject a
+    /// synthetic buffer via the already-real `native_impl_->read_from_physical_memory()`
+    /// seam and re-invoke the private walk (`read_smbios_table()`) against it,
+    /// without needing root/real hardware.
+    friend class SmbiosTableWalkTestAccess;
 
     /// Friend-only access for iterator class
     std::vector<DMIHeader>& get_headers_list();
