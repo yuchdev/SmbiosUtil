@@ -1,7 +1,7 @@
 # Story 02.0 - Latent Bug Remediation
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-06)
 **Depends on:** Story 01.0 (needs `-Werror` + sanitizers on to prove each fix)
 
 ## Scope
@@ -17,9 +17,9 @@ and the dishonest `*nix` support claims/dead `// DEBUG` include in
 | #  | Document                                                                  | Status         | Blocks |
 |----|------------------------------------------------------------------------------|----------------|--------|
 | 01 | [Fix SMBiosVersion comparison](01-fix-smbiosversion-comparison.md)            | ⬜ Not started | 04     |
-| 02 | [Fix unix get_table_size and stub honesty](02-fix-unix-get-table-size-and-stub-honesty.md) | ⬜ Not started | 04     |
-| 03 | [Remove DEBUG cruft](03-remove-debug-cruft.md)                                | ⬜ Not started | 04     |
-| 04 | [Tests](04-tests.md)                                                          | ⬜ Not started | -      |
+| 02 | [Fix unix get_table_size and stub honesty](02-fix-unix-get-table-size-and-stub-honesty.md) | ✅ Complete - return fix subsumed by Story 01.0; dead code removed, doc comment corrected | 04     |
+| 03 | [Remove DEBUG cruft](03-remove-debug-cruft.md)                                | ✅ Complete | 04     |
+| 04 | [Tests](04-tests.md)                                                          | ✅ Complete | -      |
 
 ## Key constraints
 

@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                                          | Status         | Tests |
 |-------|-------------------------------------------------|----------------|-------|
 | 01.0  | Language standard raise and compiler hygiene   | ✅ Complete | real 5-job green CI (3 builds + 2 sanitizer jobs) |
-| 02.0  | Latent bug remediation                          | 🔶 In progress (1/4 tasks) | -     |
+| 02.0  | Latent bug remediation                          | ✅ Complete | smbios_unit_test pass (incl. new get_table_size regression) |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -139,3 +139,43 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   `sanitizers` × ubuntu/macos). Story 01.0's own exit gate - "full suite
   passes on GCC, Clang and MSVC under C++20/`-Werror`; sanitizer CI job
   green" - is met for real, not assumed.
+- **2026-11-06: Story 02.0 closed.** Task 01 (`SMBiosVersion` comparison)
+  was already consumed; Task 02's `get_table_size()` return fix was
+  subsumed by Story 01.0's `-Werror` pass, leaving only its documentation
+  half - `sysfs_table_exists()`'s dead `#if 1`/`#else` split removed down
+  to a single honest `return false;` with a pointer to milestone 0005
+  Story 02.0, and `unix_bios.h`'s class doc comment's false
+  "reported to work on FreeBSD, NetBSD, OpenBSD, BeOS and Solaris" claim
+  replaced with the real, current behavior (falls through to the legacy
+  physical-memory scan on every `*nix` platform). Task 03 removed the
+  dead `// DEBUG`/`<iostream>` pair from `smbios.cpp` (confirmed not a
+  transitive dependency - the file builds clean without it) and swept
+  `win_bios.cpp` (nothing found there); CLAUDE.md's "Known rough edges"
+  bullet for it is gone. Task 04 added a real regression test
+  (`tests/unit/unit_tests.cpp`'s
+  `SMBiosImplGetTableSizeReflectsPhysicalMemoryDumpTestCase`) exercising
+  `SMBiosImpl::read_from_physical_memory()`/`get_table_size()` directly -
+  no mocking needed, a real public seam - which would fail against the
+  pre-fix code. All changes independently re-verified by direct file read
+  and a real local macOS rebuild + `ctest` run (`smbios_unit_test`/
+  `smbios_mock_test` pass; `smbios_integration_test`/`smbios_perf_test`
+  fail cleanly from lack of root, the same pre-existing baseline as every
+  prior task in this milestone).
+
+## Milestone 0002 - closing summary
+
+Both stories are complete. Story 01.0 raised the language standard to
+C++20 uniformly (`CXX_STANDARD`/`CXX_STANDARD_REQUIRED`/`CXX_EXTENSIONS
+OFF`), promoted warnings to errors on `smbios`/`smbios_util`
+(`-Werror`/`/WX`), and added a Linux+macOS AddressSanitizer+
+UndefinedBehaviorSanitizer CI job - proven by a real, green, 5-job CI run
+(build × ubuntu/macos/windows, sanitizers × ubuntu/macos,
+[run 42032334597](https://github.com/yuchdev/SmbiosUtil/actions/runs/42032334597))
+after fixing five genuine, first-ever MSVC `/WX` defects that real CI
+caught on Windows-only source never previously built under
+warnings-as-errors. Story 02.0 fixed the remaining three named latent
+defects (the fourth, `SMBiosVersion` comparison, was already fixed ahead
+of schedule in milestone 0001) with a regression test for each, and
+corrected the codebase's dishonest claims about `*nix` platform support
+to match reality. The milestone's own stated exit condition - "C++20,
+`-Werror` clean, known bugs fixed with regression tests" - is met.
