@@ -1,5 +1,6 @@
 #include <smbios/memory_device_entry.h>
 #include <smbios/smbios.h>
+#include <smbios/byte_reader.h>
 
 #include <sstream>
 #include <cassert>
@@ -7,7 +8,7 @@
 using std::string;
 using namespace smbios;
 
-MemoryDeviceEntry::MemoryDeviceEntry(const DMIHeader& header, const SMBiosVersion& version) 
+MemoryDeviceEntry::MemoryDeviceEntry(const DMIHeader& header, const SMBiosVersion& /*version*/)
     : AbstractSMBiosEntry(header){
 
     if (header.type != SMBios::MemoryDevice) {
@@ -16,36 +17,11 @@ MemoryDeviceEntry::MemoryDeviceEntry(const DMIHeader& header, const SMBiosVersio
         throw std::runtime_error(err.str().c_str());
     }
 
+    // Every field below is distinguished by header.length alone (R2); no
+    // SMBiosVersion-only field exists in the Memory Device structure through
+    // spec 3.x (confirmed against c-versions/dmidecode_linux's own
+    // dmi_decode() for type 17, which gates purely on h->length as well).
     init_string_values();
-
-    // check empty entry
-    if ((header.length < 0x15) || (version < SMBiosVersion{ 2, 1 }))
-        return;
-
-    // 2.1+
-    if ((header.length >= 0x15) && (version > SMBiosVersion{ 2, 0 })) {
-        memory_device_v21_ = reinterpret_cast<const MemoryDeviceV21*>(header.data);
-    }
-
-    // 2.3+
-    if ((header.length >= 0x17) && (version > SMBiosVersion{ 2, 2 })) {
-        memory_device_v23_ = reinterpret_cast<const MemoryDeviceV23*>(header.data);
-    }
-
-    // 2.6+
-    if ((header.length >= 0x1B) && (version > SMBiosVersion{ 2, 5 })) {
-        memory_device_v26_ = reinterpret_cast<const MemoryDeviceV26*>(header.data);
-    }
-
-    // 2.7+
-    if((header.length >= 0x1C) && (version > SMBiosVersion{ 2, 6 })){
-        memory_device_v27_ = reinterpret_cast<const MemoryDeviceV27*>(header.data);
-    }
-
-    // 2.8+
-    if ((header.length >= 0x22) && (version > SMBiosVersion{ 2, 7 })) {
-        memory_device_v28_ = reinterpret_cast<const MemoryDeviceV28*>(header.data);
-    }
 }
 
 void MemoryDeviceEntry::init_string_values()
@@ -135,60 +111,67 @@ void MemoryDeviceEntry::init_string_values()
 
 uint16_t MemoryDeviceEntry::get_array_handle() const
 {
-    if (nullptr == memory_device_v21_) {
+    constexpr size_t offset = 0x04;
+    if (get_entry_size() < offset + sizeof(uint16_t)) {
         return 0;
     }
 
-    return memory_device_v21_->array_handle;
+    return read_u16(raw_data(), offset);
 }
 
 uint16_t MemoryDeviceEntry::get_error_handle() const
 {
-    if (nullptr == memory_device_v21_) {
+    constexpr size_t offset = 0x06;
+    if (get_entry_size() < offset + sizeof(uint16_t)) {
         return ErrorHandleValue::ErrorHandleNotProvided;
     }
-    
-    return memory_device_v21_->array_error_handle;
+
+    return read_u16(raw_data(), offset);
 }
 
 uint16_t MemoryDeviceEntry::get_total_width() const
 {
-    if (nullptr == memory_device_v21_) {
+    constexpr size_t offset = 0x08;
+    if (get_entry_size() < offset + sizeof(uint16_t)) {
         return DataWidthValue::DataWidthUnknown1;
     }
 
-    return memory_device_v21_->total_width;
+    return read_u16(raw_data(), offset);
 }
 
 uint16_t MemoryDeviceEntry::get_data_width() const
 {
-    if (nullptr == memory_device_v21_) {
+    constexpr size_t offset = 0x0A;
+    if (get_entry_size() < offset + sizeof(uint16_t)) {
         return DataWidthValue::DataWidthUnknown1;
     }
 
-    return memory_device_v21_->data_width;
+    return read_u16(raw_data(), offset);
 }
 
 uint16_t MemoryDeviceEntry::get_device_size() const
 {
-    if (nullptr == memory_device_v21_) {
+    constexpr size_t offset = 0x0C;
+    if (get_entry_size() < offset + sizeof(uint16_t)) {
         return DeviceSizeValue::DeviceSizeUnknown;
     }
 
-    return memory_device_v21_->device_size;
+    return read_u16(raw_data(), offset);
 }
 
 uint8_t MemoryDeviceEntry::get_form_factor() const
 {
-    if (nullptr == memory_device_v21_) {
+    constexpr size_t offset = 0x0E;
+    if (get_entry_size() < offset + sizeof(uint8_t)) {
         return FormFactorValue::FormFactorOutOfSpec;
     }
-    
-    auto it = form_factor_map_.find(memory_device_v21_->device_form_factor);
+
+    const uint8_t form_factor = read_u8(raw_data(), offset);
+    auto it = form_factor_map_.find(form_factor);
     if (it != form_factor_map_.end()) {
         return (*it).first;
     }
-    
+
     // should not be undefined values
     assert(false);
     return FormFactorValue::FormFactorOutOfSpec;
@@ -196,38 +179,43 @@ uint8_t MemoryDeviceEntry::get_form_factor() const
 
 uint8_t MemoryDeviceEntry::get_device_set() const
 {
-    if (nullptr == memory_device_v21_) {
+    constexpr size_t offset = 0x0F;
+    if (get_entry_size() < offset + sizeof(uint8_t)) {
         return DeviceSetValue::DeviceSetUnknown;
     }
 
-    return memory_device_v21_->device_set;
+    return read_u8(raw_data(), offset);
 }
 
 uint8_t MemoryDeviceEntry::get_device_locator_index() const
 {
-    if (nullptr == memory_device_v21_) {
+    constexpr size_t offset = 0x10;
+    if (get_entry_size() < offset + sizeof(uint8_t)) {
         return 0x0;
     }
 
-    return memory_device_v21_->device_locator;
+    return read_u8(raw_data(), offset);
 }
 
 uint8_t MemoryDeviceEntry::get_bank_locator_index() const
 {
-    if (nullptr == memory_device_v21_) {
+    constexpr size_t offset = 0x11;
+    if (get_entry_size() < offset + sizeof(uint8_t)) {
         return 0x0;
     }
 
-    return memory_device_v21_->bank_locator;
+    return read_u8(raw_data(), offset);
 }
 
 uint8_t MemoryDeviceEntry::get_device_type() const
 {
-    if (nullptr == memory_device_v21_) {
+    constexpr size_t offset = 0x12;
+    if (get_entry_size() < offset + sizeof(uint8_t)) {
         return DeviceTypeValue::DeviceTypeOutOfSpec;
     }
 
-    auto it = device_type_map_.find(memory_device_v21_->device_type);
+    const uint8_t device_type = read_u8(raw_data(), offset);
+    auto it = device_type_map_.find(device_type);
     if (it != device_type_map_.end()) {
         return (*it).first;
     }
@@ -239,11 +227,13 @@ uint8_t MemoryDeviceEntry::get_device_type() const
 
 uint16_t MemoryDeviceEntry::get_device_detail() const
 {
-    if (nullptr == memory_device_v21_) {
+    constexpr size_t offset = 0x13;
+    if (get_entry_size() < offset + sizeof(uint16_t)) {
         return DeviceProperties::DevicePropertiesOutOfSpec;
     }
 
-    auto it = device_properties_map_.find(memory_device_v21_->type_detail);
+    const uint16_t type_detail = read_u16(raw_data(), offset);
+    auto it = device_properties_map_.find(type_detail);
     if (it != device_properties_map_.end()) {
         return (*it).first;
     }
@@ -253,51 +243,101 @@ uint16_t MemoryDeviceEntry::get_device_detail() const
 
 uint16_t MemoryDeviceEntry::get_device_speed() const
 {
-    if (nullptr == memory_device_v23_) {
+    constexpr size_t offset = 0x15;
+    if (get_entry_size() < offset + sizeof(uint16_t)) {
         return DeviceSpeed::DeviceSpeedUnknown;
     }
-    return memory_device_v23_->device_speed;
+    return read_u16(raw_data(), offset);
 }
 
 uint8_t MemoryDeviceEntry::get_manufacturer_index() const
 {
-    if (nullptr == memory_device_v23_) {
+    constexpr size_t offset = 0x17;
+    if (get_entry_size() < offset + sizeof(uint8_t)) {
         return 0;
     }
-    return memory_device_v23_->manufacturer;
+    return read_u8(raw_data(), offset);
 }
 
 uint8_t MemoryDeviceEntry::get_serial_number_index() const
 {
-    if (nullptr == memory_device_v23_) {
+    constexpr size_t offset = 0x18;
+    if (get_entry_size() < offset + sizeof(uint8_t)) {
         return 0;
     }
-    return memory_device_v23_->serial_number;
+    return read_u8(raw_data(), offset);
 }
 
 uint8_t MemoryDeviceEntry::get_asset_tag_index() const
 {
-    if (nullptr == memory_device_v23_) {
+    constexpr size_t offset = 0x19;
+    if (get_entry_size() < offset + sizeof(uint8_t)) {
         return 0;
     }
-    return memory_device_v23_->asset_tag;
+    return read_u8(raw_data(), offset);
 }
 
 uint8_t MemoryDeviceEntry::get_part_number_index() const
 {
-    if (nullptr == memory_device_v23_) {
+    constexpr size_t offset = 0x1A;
+    if (get_entry_size() < offset + sizeof(uint8_t)) {
         return 0;
     }
-    return memory_device_v23_->part_number;
+    return read_u8(raw_data(), offset);
 }
 
 uint8_t MemoryDeviceEntry::get_device_rank() const
 {
-    if (nullptr == memory_device_v26_) {
+    constexpr size_t offset = 0x1B;
+    if (get_entry_size() < offset + sizeof(uint8_t)) {
         return 0;
     }
-    return memory_device_v26_->device_rank;
+    return read_u8(raw_data(), offset);
+}
 
+uint32_t MemoryDeviceEntry::get_extended_size() const
+{
+    constexpr size_t offset = 0x1C;
+    if (get_entry_size() < offset + sizeof(uint32_t)) {
+        return 0;
+    }
+    return read_u32(raw_data(), offset);
+}
+
+uint16_t MemoryDeviceEntry::get_memory_clock_speed() const
+{
+    constexpr size_t offset = 0x20;
+    if (get_entry_size() < offset + sizeof(uint16_t)) {
+        return DeviceSpeed::DeviceSpeedUnknown;
+    }
+    return read_u16(raw_data(), offset);
+}
+
+uint16_t MemoryDeviceEntry::get_minimum_voltage() const
+{
+    constexpr size_t offset = 0x22;
+    if (get_entry_size() < offset + sizeof(uint16_t)) {
+        return 0;
+    }
+    return read_u16(raw_data(), offset);
+}
+
+uint16_t MemoryDeviceEntry::get_maximum_voltage() const
+{
+    constexpr size_t offset = 0x24;
+    if (get_entry_size() < offset + sizeof(uint16_t)) {
+        return 0;
+    }
+    return read_u16(raw_data(), offset);
+}
+
+uint16_t MemoryDeviceEntry::get_configured_voltage() const
+{
+    constexpr size_t offset = 0x26;
+    if (get_entry_size() < offset + sizeof(uint16_t)) {
+        return 0;
+    }
+    return read_u16(raw_data(), offset);
 }
 
 std::string MemoryDeviceEntry::get_type() const

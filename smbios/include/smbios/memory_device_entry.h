@@ -14,55 +14,6 @@ namespace smbios {
 struct DMIHeader;
 struct SMBiosVersion;
 
-// should be aligned to be mapped to physical memory
-#pragma pack(push, 1)
-
-/// @brief SMBIOS MemoryDevice entry Ver 2.1+
-struct MemoryDeviceV21 {
-    uint32_t header;
-    uint16_t array_handle;
-    uint16_t array_error_handle;
-    uint16_t total_width;
-    uint16_t data_width;
-    uint16_t device_size;
-    uint8_t device_form_factor;
-    uint8_t device_set;
-    uint8_t device_locator;
-    uint8_t bank_locator;
-    uint8_t device_type;
-    uint16_t type_detail;
-};
-
-/// @brief SMBIOS MemoryDevice entry Ver 2.3+
-struct MemoryDeviceV23 : public MemoryDeviceV21 {
-    uint16_t device_speed;
-    uint8_t manufacturer;
-    uint8_t serial_number;
-    uint8_t asset_tag;
-    uint8_t part_number;
-};
-
-/// @brief SMBIOS MemoryDevice entry Ver 2.6+
-struct MemoryDeviceV26 : public MemoryDeviceV23 {
-    uint8_t device_rank;
-};
-
-/// @brief SMBIOS MemoryDevice entry Ver 2.7+
-struct MemoryDeviceV27 : public MemoryDeviceV26 {
-    
-    uint32_t extended_size;
-    uint16_t memory_clock_speed;
-};
-
-/// @brief SMBIOS MemoryDevice entry Ver 2.8+
-struct MemoryDeviceV28 : public MemoryDeviceV27 {
-    uint16_t minimum_voltage;
-    uint16_t maximum_voltage;
-    uint16_t configured_voltage;
-};
-
-#pragma pack(pop)
-
 /// @brief Class-wrapper under raw memory structures
 class MemoryDeviceEntry : public AbstractSMBiosEntry {
 public:
@@ -91,18 +42,18 @@ public:
         FormFactorOutOfSpec = 0x00,
         FormFactorOther = 0x01,
         FormFactorUnknown = 0x02,
-        SIMM = 0x03, 
-        SIP = 0x04, 
-        Chip = 0x05, 
-        DIP = 0x06, 
-        ZIP = 0x07, 
-        ProprietaryCard = 0x08, 
-        DIMM = 0x09, 
-        TSOP = 0x0A, 
-        Rowofchips = 0x0B, 
-        RIMM = 0x0C, 
-        SODIMM = 0x0D, 
-        SRIMM = 0x0E, 
+        SIMM = 0x03,
+        SIP = 0x04,
+        Chip = 0x05,
+        DIP = 0x06,
+        ZIP = 0x07,
+        ProprietaryCard = 0x08,
+        DIMM = 0x09,
+        TSOP = 0x0A,
+        Rowofchips = 0x0B,
+        RIMM = 0x0C,
+        SODIMM = 0x0D,
+        SRIMM = 0x0E,
         FBDIMM = 0x0F,
     };
 
@@ -176,7 +127,7 @@ public:
         DeviceSpeedReserved = 0xFFFF
     };
 
-    /// @brief Parse the header, recognize SMBIOS version and how much information 
+    /// @brief Parse the header, recognize SMBIOS version and how much information
     /// do we have in MemoryDevice SMBIOS entry
     MemoryDeviceEntry(const DMIHeader& header, const SMBiosVersion& version);
 
@@ -192,7 +143,7 @@ public:
     //////////////////////////////////////////////////////////////////////////
     // Bitwise values
 
-    /// @brief 0x05 offset
+    /// @brief 0x04 offset
     /// Handle, or instance number, associated with the structure
     uint16_t get_array_handle() const;
 
@@ -273,9 +224,29 @@ public:
     /// String number for the part number of this memory device
     uint8_t get_part_number_index() const;
 
-    /// @brief 0x1A offset
+    /// @brief 0x1B offset
     /// Bits 7-4: reserved; Bits 3 - 0: rank; Value = 0 for unknown rank
     uint8_t get_device_rank() const;
+
+    /// @brief 0x1C offset
+    /// Extended size when get_device_size() returns 0x7FFF (32GB-1MB or greater)
+    uint32_t get_extended_size() const;
+
+    /// @brief 0x20 offset
+    /// Configured clock speed of the memory device, in MHz
+    uint16_t get_memory_clock_speed() const;
+
+    /// @brief 0x22 offset
+    /// Minimum operating voltage for this device, in millivolts; 0 means unknown
+    uint16_t get_minimum_voltage() const;
+
+    /// @brief 0x24 offset
+    /// Maximum operating voltage for this device, in millivolts; 0 means unknown
+    uint16_t get_maximum_voltage() const;
+
+    /// @brief 0x26 offset
+    /// Configured operating voltage for this device, in millivolts; 0 means unknown
+    uint16_t get_configured_voltage() const;
 
     //////////////////////////////////////////////////////////////////////////
     // String values
@@ -314,7 +285,7 @@ public:
     /// DeviceType string representation
     std::string get_device_type_string() const;
 
-    /// DeviceProperties string representation, separated by 
+    /// DeviceProperties string representation, separated by
     std::string get_device_detail_string() const;
 
     /// Maximum capable speed string representation
@@ -341,13 +312,6 @@ private:
     void init_string_values();
 
 private:
-
-    /// Init pointers depend on SMBIOS version
-    const MemoryDeviceV21* memory_device_v21_ = nullptr;
-    const MemoryDeviceV23* memory_device_v23_ = nullptr;
-    const MemoryDeviceV26* memory_device_v26_ = nullptr;
-    const MemoryDeviceV27* memory_device_v27_ = nullptr;
-    const MemoryDeviceV28* memory_device_v28_ = nullptr;
 
     /// Bitwise to string representation
     std::map<uint16_t, std::string> error_handle_map_;
