@@ -19,7 +19,7 @@ currently carry.
 | #  | Document                                                        | Status         | Blocks |
 |----|------------------------------------------------------------------|----------------|--------|
 | 01 | [BIOS Information field table](01-bios-information-field-table.md)  | ✅ Complete - offsets cross-checked against c-versions/dmidecode_linux | 04     |
-| 02 | [Memory Device field table](02-memory-device-field-table.md)        | ⬜ Not started | 04     |
+| 02 | [Memory Device field table](02-memory-device-field-table.md)        | ✅ Complete - offsets cross-checked against c-versions/dmidecode_linux; closed a real latent OOB-read | 04     |
 | 03 | [Port Connection field table](03-port-connection-field-table.md)     | ⬜ Not started | 04     |
 | 04 | [Tests](04-tests.md)                                                | ⬜ Not started | -      |
 

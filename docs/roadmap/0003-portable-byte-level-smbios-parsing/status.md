@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                                           | Status         | Tests |
 |-------|---------------------------------------------------|----------------|-------|
 | 01.0  | Endian-safe field accessors                        | ✅ Complete | smbios_unit_test pass (ByteReaderUnitTests: 5 cases); CI confirmation pending |
-| 02.0  | Field-table redesign of versioned entries         | 🔶 In progress (1/4 tasks) | smbios_unit_test pass (BiosInformationEntryUnitTests: 3 cases) |
+| 02.0  | Field-table redesign of versioned entries         | 🔶 In progress (2/4 tasks) | smbios_unit_test pass (Bios+MemoryDevice entry suites: 11 cases) |
 | 03.0  | Table and string walk hardening                    | ⬜ Not started | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
@@ -68,3 +68,34 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   Verified independently by direct file read, a real local macOS rebuild,
   and running the new `BiosInformationEntryUnitTests` suite directly (3
   cases, all passing).
+- **2026-11-06: Story 02.0 Task 02 complete** - `MemoryDeviceEntry`, the
+  deepest version chain in the codebase (5 structs: `V21`→`V23`→`V26`→
+  `V27`→`V28`), rebuilt on the new accessors; all five structs and
+  pointer members deleted (confirmed by grep - empty). Found and fixed
+  **two real doc-comment bugs**, both independently confirmed against
+  `c-versions/dmidecode_linux`'s own type-17 parsing: `get_array_handle()`
+  was documented as offset `0x05` (real: `0x04`), and `get_device_rank()`
+  was documented as `0x1A` (a copy-paste duplicate of
+  `get_part_number_index()`'s offset; real: `0x1B`) - the underlying
+  accessor behavior was always correct via the struct's own layout, only
+  the comments were wrong. **Found and closed a real latent
+  out-of-bounds read**: the old code assigned the `memory_device_v23_`
+  pointer whenever `header.length >= 0x17`, but `MemoryDeviceV23`'s real
+  struct size is `0x1B` - any structure with `0x17 <= length < 0x1B`
+  let the old pointer-overlay technique read `manufacturer`/
+  `serial_number`/`asset_tag`/`part_number` past the structure's declared
+  bounds. The new per-field length guards close this automatically
+  (contract C2); a dedicated regression test
+  (`MemoryDeviceEntryTier0x17DecodesSpeedNotManufacturerTestCase`) proves
+  those four fields now correctly default instead of reading garbage at
+  that exact length. Added 5 previously-unexposed getters
+  (`get_extended_size()` 0x1C, `get_memory_clock_speed()` 0x20,
+  `get_minimum_voltage()`/`get_maximum_voltage()`/
+  `get_configured_voltage()` 0x22/0x24/0x26) for fields the deleted V27/V28
+  structs carried but never exposed. Noted, left untouched per R8/out of
+  scope: `get_device_size_string()`'s `& 0x8000` sentinel check appears to
+  disagree with `get_device_size()`'s own doc comment's `0x7FFF` claim -
+  a pre-existing possible inconsistency for a future milestone, not
+  touched here. Verified independently: direct file read (all 22 offsets
+  confirmed), a real local macOS rebuild, and running
+  `MemoryDeviceEntryUnitTests` directly (8 cases, all passing).
