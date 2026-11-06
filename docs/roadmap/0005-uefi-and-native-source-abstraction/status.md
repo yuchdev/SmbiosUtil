@@ -135,3 +135,25 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
     `smbios/{include,src}/smbios/source_<os>/` instead of the flat
     `smbios/{include,src}/smbios/` layout originally planned) - their
     actual source-reading logic is unchanged.
+- **2026-11-07, decision ratified before Story 01.0 Task 01 execution:**
+  reading the real current `smbios.cpp` in full surfaced a contract-level
+  fork Task 01's own spec example doesn't resolve - `SMBios::
+  render_to_description()` today prints the raw entry-point struct's
+  fields (checksum, entry-point revision, BCD version, intermediate
+  checksum) directly from `smbios_entry32_`/`smbios_entry64_`, members
+  that the new one-source-per-platform chain model encapsulates away
+  inside whichever concrete `ISmbiosSource` succeeds. Task 01's own
+  "byte-identical results" success criterion cannot literally apply to
+  this method without re-exposing that struct back through the
+  interface, partly undercutting the encapsulation the refactor is for.
+  Presented to the user as a fork (simplify vs. preserve byte-for-byte
+  vs. defer to the implementing agent); **ratified: simplify**.
+  `render_to_description()` becomes a diagnostic report of SMBIOS
+  version, table size, structure count, and which source succeeded -
+  the detailed entry-point struct dump is dropped. Nothing in
+  `smbios_util`'s CLI or any existing test depends on that output's
+  exact text (confirmed before asking). The "byte-identical" success
+  criterion is understood to apply to `get_table_base()`/
+  `get_table_size()`/`get_smbios_version()`/the parsed `headers_list_`
+  contents - the actual data a caller consumes - not to this one
+  diagnostic method's prose.
