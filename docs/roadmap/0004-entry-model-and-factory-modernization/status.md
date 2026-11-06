@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                        | Status         | Tests |
 |-------|-------------------------------|----------------|-------|
 | 01.0  | Self-registering factory      | ✅ Complete | smbios_unit_test pass (41 cases incl. SMBiosEntryFactoryUnitTests: 5) |
-| 02.0  | Expand structure coverage      | 🔶 In progress (1/4 tasks) | smbios_unit_test pass (60 cases) |
+| 02.0  | Expand structure coverage      | 🔶 In progress (2/4 tasks) | smbios_unit_test pass (104 cases) |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -118,3 +118,34 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   than assumed. Verified independently: direct file read of the UUID
   formatter and the variable-offset SKU logic, a real local macOS
   rebuild, and a full `ctest` run (`smbios_unit_test` 60/60 cases).
+- **2026-11-07: Story 02.0 Task 02 complete** - `ProcessorInformationEntry`
+  (type 4, the richest revision history of any type this project
+  implements) and `CacheInformationEntry` (type 7). Four distinct
+  `0xFF`/`0xFE`-sentinel-to-widened-field relationships implemented and
+  each independently tested without-sentinel/with-sentinel/length-
+  insufficient-fallback: `core_count` (byte `0x23` → `u16` at `0x2A`),
+  `core_enabled` (`0x24` → `0x2C`), `thread_count` (`0x25` → `0x2E`),
+  and - not explicitly named in this task's own objective, but real and
+  flagged as mandatory during briefing - `processor_family` (`0x06`
+  sentinel value `0xFE`, not `0xFF` → `u16` at `0x28`), confirmed against
+  `dmi_processor_family()`'s own `data[0x06] == 0xFE && h->length >= 0x2A`
+  check. Voltage's two-branch bit-7 encoding (explicit volts vs. a
+  multi-bit-settable legacy bitmask of 5.0V/3.3V/2.9V) and cache size's
+  granularity-flag encoding (bit 31/15: 64KB vs 1KB units) both
+  independently re-derived correctly, confirmed by direct code read
+  against `dmi_processor_voltage()`/`dmi_cache_size_2()`. Cache's
+  legacy-vs-widened size-field selection (a length-threshold check, not
+  an `0xFF` sentinel, but the same spirit) tested with the legacy and
+  widened fields deliberately holding different values, proving which
+  one actually wins rather than merely returning a plausible number.
+  Scope calls made and documented: `processor_id` exposed raw (no
+  x86 CPUID/ARM MIDR architecture-specific decode); the full 234-entry
+  processor-family and 80-entry upgrade string tables keyed by numeric
+  code in a map (many real DMTF names, e.g. `"80286"`, aren't valid C++
+  identifiers); two manufacturer-string-dependent ambiguous family codes
+  (`0x30`, `0xBE`) not reproduced, since they need a second unrelated
+  field and are a presentation nuance layered on top of the sentinel
+  concern this task actually cares about. Verified independently: direct
+  file read of all four sentinel paths and both encoding decodes, a real
+  local macOS rebuild under `-Wall -Wextra -Werror`, and a full `ctest`
+  run (`smbios_unit_test` 104/104 cases).
