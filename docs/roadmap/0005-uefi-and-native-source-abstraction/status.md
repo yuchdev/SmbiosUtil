@@ -10,7 +10,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 01.1  | Per-OS source libraries                | ✅ Complete | smbios_unit_test pass (152 cases); local macOS build/test green, Windows/Linux CI confirmation pending next push |
 | 02.0  | Linux sysfs & EFI sources             | ✅ Complete | real Linux CI: smbios_unit_test + smbios_mock_test pass clean under ASan+UBSan (LinuxSysfsSource/LinuxEfiSource tests actually executed, not just compiled); integration test fails cleanly (no crash, no sanitizer trip) on this unprivileged runner - the expected no-source-available degrade path; all 5 CI jobs green |
 | 03.0  | macOS UEFI source                     | ✅ Complete | Intel (direct): smbios_util reports Source: macos-uefi, 33 structures, no root; Apple Silicon (real CI, macos-26-arm64): real-hardware test assertion executed and passed under ASan+UBSan, zero sanitizer findings |
-| 04.0  | Windows source parity                 | ⬜ Not started | -     |
+| 04.0  | Windows source parity                 | 🔶 In progress (1/2 tasks) | real Windows CI confirmation pending next push |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -414,6 +414,51 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   regardless of CPU architecture, which was the whole point of this
   story's deliberate deviation from the reference's x86-only gating.
   All 5 CI jobs green (run 42365820195). **Story 03.0 closed.**
+- **2026-11-07, Story 04.0 Task 01 (adapt `win_bios` to `ISmbiosSource`) -
+  design decision ratified.** `WindowsNativeSource`
+  (`smbios/src/source_windows/windows_native_source.cpp`) already existed
+  as a thin delegating wrapper around the unchanged `SMBiosImpl`
+  (`win_bios.h`), built during Story 01.1 and marked "temporary" pending
+  this story's decision. Checked `win_bios.h` directly: `SMBiosImpl` has
+  no `is_available()`/`try_read()`/`source_name()`-shaped methods and is
+  constructed nowhere except inside this one wrapper, so giving it `:
+  public ISmbiosSource` directly would mean editing a file this story's
+  own R6 ("zero Windows API call site changed") is meant to leave alone,
+  for no behavioral gain. Ratified: keep the wrapper permanently - the
+  genuinely zero-diff choice, not merely the smaller one. `win_bios.h`/
+  `.cpp`/`win_native_api_helper.h` are untouched by this story.
+  **Real gap found and fixed while implementing, not left for Task 02:**
+  `make_default_source_chain()` had only one chain entry
+  (`WindowsNativeSource`), with the legacy-scan fallback called *inside*
+  that class's own `try_read()` - directly contradicting this story's own
+  Key Constraints ("`{WindowsNativeSource, LegacyMemoryScanSource}`...
+  matching every other platform's chain shape"). This also meant
+  `source_name()` would misreport `"windows-native"` even when the real
+  data came from the legacy scan - a diagnostic-accuracy bug. Fixed:
+  `try_read()` now returns `false` on a failed native read instead of
+  delegating internally, and `LegacyMemoryScanSource` is a separate,
+  second top-level chain entry, matching `LinuxSysfsSource`/
+  `LinuxEfiSource`/`LegacyMemoryScanSource` and `MacOsUefiSource`/
+  `LegacyMemoryScanSource`'s shape exactly. The *overall* observable
+  outcome (does a working table get found at all) is unchanged - only
+  the diagnostic label in the fallback case is now accurate, which R6
+  covers Windows API call semantics, not this.
+  **Also found and fixed a real CI coverage gap**: unlike
+  ubuntu/macos, there is no `sanitizers (windows-latest)` job (MSVC
+  sanitizer flags are a different setup, legitimately out of this
+  story's scope) - meaning nothing in CI ever ran
+  `smbios_unit_test`/`smbios_mock_test` on Windows at all before this.
+  Added a `ctest` step to the `build (windows-latest)` leg specifically
+  (`.github/workflows/ci.yml`), the only automated way to actually
+  confirm this story's own exit criterion ("full existing functional
+  suite passes... `source_name()` reports the adapted native source's
+  name"). **Could not build or syntax-check any of this locally** -
+  `win_bios.h` is entirely guarded behind `#if defined(_WIN32)`, and
+  macOS's own libc++ headers actively break when `_WIN32` is defined
+  (tried; `_aligned_malloc`/`_aligned_free` errors from `<new>`) - manual
+  review of the diff is all that's possible here; real Windows CI is the
+  only verification path, same situation Linux's sources were in for
+  this session.
 
 ### Story 03.0 - macOS UEFI Source (✅ 2026-11-07)
 

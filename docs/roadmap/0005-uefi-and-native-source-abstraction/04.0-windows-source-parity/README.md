@@ -1,7 +1,7 @@
 # Story 04.0 - Windows Source Parity
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** 🔶 In progress (1/2 tasks)
 **Depends on:** Story 01.0 (`ISmbiosSource`); Story 01.1 (the
 `smbios_source_windows` library this story's adapted class replaces the
 temporary chain-factory stub inside - see
@@ -20,7 +20,7 @@ native-API logic.
 
 | #  | Document                                                      | Status         | Blocks |
 |----|--------------------------------------------------------------------|----------------|--------|
-| 01 | [Adapt win_bios to interface](01-adapt-win-bios-to-interface.md)     | ⬜ Not started | 02     |
+| 01 | [Adapt win_bios to interface](01-adapt-win-bios-to-interface.md)     | ✅ Complete - ratified keeping WindowsNativeSource as the delegating wrapper, see status.md | 02     |
 | 02 | [Tests](02-tests.md)                                                | ⬜ Not started | -      |
 
 ## Key constraints
