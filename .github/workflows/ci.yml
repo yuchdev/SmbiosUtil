@@ -77,7 +77,13 @@ jobs:
       # own unit coverage passes on a real Windows runner.
       - name: Run unprivileged tests (smbios_unit_test, smbios_mock_test)
         if: matrix.os == 'windows-latest' && steps.build.outcome == 'success'
-        run: ctest --test-dir build/${{ matrix.preset }} --output-on-failure -R "smbios_unit_test|smbios_mock_test"
+        # -C Debug: the windows preset uses the Visual Studio generator
+        # (multi-config), unlike linux/macos's single-config Ninja - ctest
+        # needs an explicit configuration or every test shows "Not Run"
+        # ("Test not available without configuration"). cmake --build
+        # --preset windows with no --config defaults to Debug (confirmed
+        # from the Build step's own .vcxproj output paths).
+        run: ctest --test-dir build/${{ matrix.preset }} -C Debug --output-on-failure -R "smbios_unit_test|smbios_mock_test"
 
   sanitizers:
     name: sanitizers (${{ matrix.os }})
