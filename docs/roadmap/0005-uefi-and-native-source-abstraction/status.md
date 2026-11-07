@@ -8,7 +8,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 |-------|---------------------------------------|----------------|-------|
 | 01.0  | `ISmbiosSource` strategy interface   | ✅ Complete | smbios_unit_test pass (150 cases); real CI green incl. Windows |
 | 01.1  | Per-OS source libraries                | ✅ Complete | smbios_unit_test pass (152 cases); local macOS build/test green, Windows/Linux CI confirmation pending next push |
-| 02.0  | Linux sysfs & EFI sources             | 🔶 In progress (2/3 tasks) | smbios_unit_test pass (152 cases, Linux-only new tests compile as no-op on macOS); Linux CI confirmation pending next push |
+| 02.0  | Linux sysfs & EFI sources             | ✅ Complete | real Linux CI: smbios_unit_test + smbios_mock_test pass clean under ASan+UBSan (LinuxSysfsSource/LinuxEfiSource tests actually executed, not just compiled); integration test fails cleanly (no crash, no sanitizer trip) on this unprivileged runner - the expected no-source-available degrade path; all 5 CI jobs green |
 | 03.0  | macOS UEFI source                     | ⬜ Not started | -     |
 | 04.0  | Windows source parity                 | ⬜ Not started | -     |
 
@@ -324,6 +324,64 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   check, not claimed as done. Same category of "needs root/real hardware,
   fails cleanly without it" already established by CLAUDE.md for
   `tests/integration`/`tests/perf`.
+  **Resolved via real CI (run 42362960964, 2026-11-07).** The unprivileged
+  GitHub Ubuntu runner is, concretely, availability combination (c) from
+  the task spec's own list - no readable sysfs DMI tables, no `/dev/mem`
+  access - so the chain correctly falls all the way through to nothing
+  available. Confirmed two distinct things on real Linux, not macOS
+  syntax-checks: (1) `smbios_unit_test`/`smbios_mock_test` pass 100% clean
+  under `-fsanitize=address,undefined` - this is the first time
+  `LinuxSysfsSource`/`LinuxEfiSource`'s `#if defined(__linux__)`-guarded
+  test bodies actually compiled and ran, not just a macOS no-op; zero
+  sanitizer findings anywhere in the job. (2) `smbios_integration_test`
+  fails *cleanly* (four `BOOST_CHECK` assertion failures, zero crash, zero
+  sanitizer trip) - exactly the degrade-safely behavior milestone 0003's
+  nullptr guards were built to guarantee, now proven under a real
+  three-source chain walk ending in total failure, not just the
+  single-source case those guards originally targeted. All 5 CI jobs
+  (`sanitizers`/`build` x ubuntu/macos, `build` x windows) green. The
+  other two hand-provisioned configurations (sysfs-readable;
+  EFI-only-with-/dev/mem) remain a real, un-executed manual check - not
+  claimed as verified by this run. **Story 02.0 closed.**
+
+### Story 02.0 - Linux sysfs & EFI Sources (✅ 2026-11-07)
+
+**Delivered:** `LinuxSysfsSource` (Task 01) and `LinuxEfiSource` (Task
+02), both real `ISmbiosSource` implementations direct-ported from
+`c-versions/dmidecode_linux/dmidecode.c`'s sysfs block and
+`address_from_efi()` respectively, registered in
+`linux_source_chain.cpp`'s `make_default_source_chain()` in the
+reference's own priority order: sysfs → EFI systab → legacy scan. The
+two sources share the same entry-point wire format but read it two
+structurally different ways - sysfs trusts a kernel-pre-extracted file's
+own bounds and ignores the entry point's address field entirely; EFI
+has no such file and must use that address field to map real
+`/dev/mem`, exactly like the legacy scan. With both landed, the
+pre-milestone-0005 `SMBiosImpl`/`unix_bios.cpp`/`unix_bios.h` stub -
+which only ever detected EFI's presence and never actually read
+anything - is fully retired, along with its one dependent regression
+test (superseded: the bug class it guarded against, a stored-buffer
+size getter that could diverge from the real buffer, cannot recur in
+the new design).
+
+**Tests / gate:** `smbios_unit_test` 152 cases passing locally on macOS
+throughout (Linux-only new test files compile as a no-op there); on real
+Linux CI (run 42362960964) those same Linux-only test bodies actually
+compiled and ran under `-fsanitize=address,undefined` with zero
+sanitizer findings, and `smbios_integration_test` failed cleanly (no
+crash) on the unprivileged runner - the expected "no source available"
+degrade path. All 5 CI jobs green. `/link-check`-equivalent
+(`check_doc_links.py`) clean after fixing one break the
+`unix_bios.cpp` deletion caused in a milestone 0002 historical spec.
+
+**Reconciliation note:** Task 03's spec called for a manual check across
+three hand-provisioned Linux configurations; this environment can
+access only one (the CI runner, which happens to be configuration (c) -
+neither sysfs nor `/dev/mem` available). Disposition: configuration (c)
+verified via real CI; configurations (a)/(b) (sysfs-readable;
+EFI-only) remain an explicitly-deferred manual check, recorded above,
+not claimed as done - a genuine scope narrowing, not a silently dropped
+requirement.
 
 ### Story 01.0 - ISmbiosSource Strategy Interface (✅ 2026-11-07)
 
