@@ -1,7 +1,7 @@
 # Story 03.0 - macOS UEFI Source
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** 🔶 In progress (2/3 tasks)
+**Status:** ✅ Complete (2026-11-07)
 **Depends on:** Story 01.0 (`ISmbiosSource`); Story 01.1 (the
 `smbios_source_macos` library skeleton this story's files land inside -
 see [01.1's README](../01.1-per-os-source-libraries/README.md))
@@ -22,7 +22,7 @@ usable for this purpose on modern macOS).
 |----|--------------------------------------------------------------|----------------|--------|
 | 01 | [macOS IORegistry reader](01-macos-efi-nvram-reader.md)       | ✅ Complete | 02     |
 | 02 | [macOS SMBIOS source](02-macos-smbios-source.md)              | ✅ Complete - verified on real Intel Mac (see status.md) | 03     |
-| 03 | [Tests](03-tests.md)                                         | ⬜ Not started | -      |
+| 03 | [Tests](03-tests.md)                                         | ✅ Complete - both Intel (direct) and Apple Silicon (real CI) confirmed, see status.md | -      |
 
 (Task 01's filename is kept as `01-macos-efi-nvram-reader.md` for roadmap
 continuity with earlier links into it, even though its content now

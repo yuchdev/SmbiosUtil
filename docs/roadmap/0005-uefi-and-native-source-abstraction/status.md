@@ -9,7 +9,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 01.0  | `ISmbiosSource` strategy interface   | ✅ Complete | smbios_unit_test pass (150 cases); real CI green incl. Windows |
 | 01.1  | Per-OS source libraries                | ✅ Complete | smbios_unit_test pass (152 cases); local macOS build/test green, Windows/Linux CI confirmation pending next push |
 | 02.0  | Linux sysfs & EFI sources             | ✅ Complete | real Linux CI: smbios_unit_test + smbios_mock_test pass clean under ASan+UBSan (LinuxSysfsSource/LinuxEfiSource tests actually executed, not just compiled); integration test fails cleanly (no crash, no sanitizer trip) on this unprivileged runner - the expected no-source-available degrade path; all 5 CI jobs green |
-| 03.0  | macOS UEFI source                     | 🔶 In progress (2/3 tasks) | real Intel Mac: smbios_unit_test 159/159 pass, smbios_util reports Source: macos-uefi, 33 structures, no root needed; Apple Silicon unconfirmed on real hardware so far |
+| 03.0  | macOS UEFI source                     | ✅ Complete | Intel (direct): smbios_util reports Source: macos-uefi, 33 structures, no root; Apple Silicon (real CI, macos-26-arm64): real-hardware test assertion executed and passed under ASan+UBSan, zero sanitizer findings |
 | 04.0  | Windows source parity                 | ⬜ Not started | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
@@ -397,6 +397,67 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   and its stale "Mac has no native SMBIOS source" line, and updated the
   top-level `README.md`'s own call for a UEFI implementation to note
   it's resolved.
+- **2026-11-07, Story 03.0 Task 03 (Tests/exit gate) - resolved, both
+  architectures confirmed.** Pushed Tasks 01-02 and checked real CI: the
+  `macos-latest` runner's image is `macos-26-arm64` - genuine Apple
+  Silicon, not a label alias for Intel. `sanitizers (macos-latest)`'s
+  `smbios_unit_test` run (under `-fsanitize=address,undefined`) shows no
+  "property not available, skipping" message - the real-hardware anchor
+  assertion in `macos_efi_reader_test.cpp`/`macos_uefi_source_test.cpp`
+  genuinely executed against that runner's live IORegistry and passed,
+  zero sanitizer findings. Combined with this session's own direct,
+  independently re-run verification on real Intel hardware (recorded
+  above), both of Task 03's named architectures are now confirmed - a
+  better outcome than Story 02.0's Task 03, where only one of three
+  configurations was reachable. No architecture-specific difference was
+  found or expected: the IOKit/IORegistry mechanism is the same API
+  regardless of CPU architecture, which was the whole point of this
+  story's deliberate deviation from the reference's x86-only gating.
+  All 5 CI jobs green (run 42365820195). **Story 03.0 closed.**
+
+### Story 03.0 - macOS UEFI Source (✅ 2026-11-07)
+
+**Delivered:** `read_apple_smbios_property()` (Task 01) and
+`MacOsUefiSource` (Task 02), macOS's first-ever native `ISmbiosSource` -
+closing the gap `CLAUDE.md`/`README.md` named directly. Ports
+`c-versions/dmidecode_macos/util.c`'s `mem_chunk_ioreg()`, reading the
+`AppleSMBIOS` IORegistry entry's `"SMBIOS-EPS"`/`"SMBIOS"` CFData
+properties via IOKit, deliberately architecture-neutral (no
+`__i386__`/`__x86_64__` guard, unlike the reference's own call site) and
+needing no root/admin privilege (R7) - the first source in this entire
+project usable by a non-root user. `make_default_source_chain()` now
+tries `MacOsUefiSource` first, `LegacyMemoryScanSource` kept as
+fallback. Two deliberate deviations from the C reference, both
+documented inline: (1) truncate-not-pad on `max_len`, avoiding the
+reference's zero-padding-to-requested-size quirk; (2) the table read
+caps at the entry point's own declared length rather than the task
+spec's suggested hardcoded `0x10000`, resolving a spec-vs-story-README
+inconsistency in the README's favor.
+
+**Tests / gate:** `smbios_unit_test` 159/159 passing. Real,
+independently-verified results on two distinct real architectures - not
+a synthetic fixture standing in for hardware: Intel (this session's own
+working machine, re-run directly, not just trusted from agent reports)
+and Apple Silicon (`macos-latest` CI's real `macos-26-arm64` image,
+confirmed by checking the runner image name and the absence of this
+project's own skip-logging message in the sanitizer run's output). Zero
+sanitizer findings on either. `smbios_util`, run as a plain non-root
+user, reports `Source: macos-uefi` - a complete, non-fallback SMBIOS
+report, the first in this project's history on a Mac.
+
+**Reconciliation note:** caught and corrected one inaccuracy in the
+implementing agent's own report (not the code) - its commit message
+claimed "real Apple Silicon hardware," but direct verification
+(`uname`, `sysctl hw.optional.arm64`/`machdep.cpu.brand_string`) showed
+this session's actual machine is a genuine Intel Mac. The verification
+itself was real and correct either way; only the architecture label in
+the agent's narration was wrong, corrected in this record rather than
+left standing. Apple Silicon coverage, which the agent couldn't have
+had in the first place on this machine, was separately and genuinely
+obtained from real CI once pushed. Also updated `CLAUDE.md`'s
+Architecture section (described a design milestone 0005 had already
+fully replaced) and `README.md`'s resolved call-for-help, caught while
+verifying this story, not part of either task's own scope.
 
 ### Story 02.0 - Linux sysfs & EFI Sources (✅ 2026-11-07)
 
