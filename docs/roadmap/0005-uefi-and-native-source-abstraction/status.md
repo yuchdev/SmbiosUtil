@@ -10,9 +10,20 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 01.1  | Per-OS source libraries                | ✅ Complete | smbios_unit_test pass (152 cases); local macOS build/test green, Windows/Linux CI confirmation pending next push |
 | 02.0  | Linux sysfs & EFI sources             | ✅ Complete | real Linux CI: smbios_unit_test + smbios_mock_test pass clean under ASan+UBSan (LinuxSysfsSource/LinuxEfiSource tests actually executed, not just compiled); integration test fails cleanly (no crash, no sanitizer trip) on this unprivileged runner - the expected no-source-available degrade path; all 5 CI jobs green |
 | 03.0  | macOS UEFI source                     | ✅ Complete | Intel (direct): smbios_util reports Source: macos-uefi, 33 structures, no root; Apple Silicon (real CI, macos-26-arm64): real-hardware test assertion executed and passed under ASan+UBSan, zero sanitizer findings |
-| 04.0  | Windows source parity                 | 🔶 In progress (1/2 tasks) | real Windows CI confirmation pending next push |
+| 04.0  | Windows source parity                 | ✅ Complete | real Windows CI: smbios_unit_test/smbios_mock_test/smbios_integration_test/smbios_perf_test all genuinely pass (not just compiled) - the integration pass is real evidence WindowsNativeSource succeeded, since the legacy-scan fallback cannot work under modern Windows user-mode privilege restrictions |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
+
+**Milestone 0005: CLOSED 2026-11-07.** All exit gates passed: full suite
+green on every platform via real CI (not claimed results) - Linux
+(sanitizers, run 42362960964), macOS (sanitizers on genuine
+`macos-26-arm64` Apple Silicon plus direct Intel hardware verification,
+run 42365820195), Windows (build, run 42370746389, including the
+`smbios_integration_test` real-chain confirmation added by Story 04.0);
+zero `#if defined(_WIN32)`/`__APPLE__`/`__linux__` remaining in
+`smbios.cpp` or `source_interface/` (confirmed by direct grep); doc-link
+check (`check_doc_links.py`) clean. See Story 04.0's closeout note below
+for the full milestone summary.
 
 ## Notes & decisions
 
@@ -459,6 +470,86 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   review of the diff is all that's possible here; real Windows CI is the
   only verification path, same situation Linux's sources were in for
   this session.
+- **2026-11-07, Story 04.0 Task 02 (Tests/exit gate) - resolved, with two
+  real CI bugs found and fixed along the way.** Pushed Task 01 and the
+  new `ctest` step; real CI immediately caught a genuine mistake in that
+  step, not a product bug: "Test not available without configuration.
+  (Missing `-C <config>`?)" - the `windows` preset uses the Visual
+  Studio generator (multi-config), unlike linux/macos's single-config
+  Ninja, so `ctest` needs an explicit `-C <config>` or every test shows
+  "Not Run." Confirmed `Debug` is the configuration `cmake --build
+  --preset windows` actually produces (from that run's own `.vcxproj`
+  output paths) and fixed the step accordingly - this is exactly why
+  real CI, not a claimed result, is the gate: the first attempt looked
+  plausible and was wrong. Re-pushed; `smbios_unit_test`/
+  `smbios_mock_test` then genuinely passed on real Windows CI for the
+  first time ever. That alone doesn't exercise the real chain though
+  (neither constructs a real `SMBios`), so added a second step running
+  `smbios_integration_test`/`smbios_perf_test` too - unlike Linux/macOS's
+  legacy-scan fallback, Windows's native source needs no elevated
+  privilege, so a passing run here is real, direct evidence
+  `WindowsNativeSource` succeeded (the legacy-scan fallback that would
+  otherwise explain a pass has been blocked for user-mode processes on
+  Windows since Server 2003 SP1, via `\Device\PhysicalMemory` access
+  removal). Pushed again: `smbios_integration_test` passed cleanly (real
+  `SMBios` construction, `major_version`/`get_structures_count()`/
+  `get_table_base()`/`get_table_size()` all genuinely non-zero). Task
+  02's own "no new test source" constraint is honored - no new test file
+  added, only new CI *invocations* of tests that already existed. All 5
+  CI jobs green (final run 42370746389). **Story 04.0 closed - milestone
+  0005 closed, all four stories complete.**
+
+### Story 04.0 - Windows Source Parity (✅ 2026-11-07)
+
+**Delivered:** `WindowsNativeSource` (`smbios/src/source_windows/windows_native_source.cpp`)
+ratified as the permanent `ISmbiosSource` wrapper around the unchanged
+`SMBiosImpl`/`win_bios.h` - the genuinely zero-diff choice, since
+`SMBiosImpl` has no `ISmbiosSource`-shaped methods of its own and is
+constructed nowhere else. `win_bios.h`/`.cpp`/`win_native_api_helper.h`
+are byte-for-byte unmodified (R6 honored literally). Fixed a real
+architectural gap found while implementing, not left standing:
+`make_default_source_chain()` previously had one chain entry with the
+legacy scan called *internally* from inside `try_read()`, contradicting
+this story's own Key Constraints and silently misreporting
+`source_name()` as `"windows-native"` on a fallback. Now two separate
+top-level entries, matching every other platform's chain shape
+(`LinuxSysfsSource`/`LinuxEfiSource`/`LegacyMemoryScanSource`,
+`MacOsUefiSource`/`LegacyMemoryScanSource`).
+
+**Tests / gate:** found and fixed a second real gap: there was no
+`sanitizers (windows-latest)` CI job (MSVC sanitizer flags are a
+separate setup, legitimately out of scope) and the `build
+(windows-latest)` job never ran `ctest` at all - meaning nothing in CI
+had ever executed `smbios_unit_test`/`smbios_mock_test`/
+`smbios_integration_test`/`smbios_perf_test` on Windows before this
+story. Added them to `.github/workflows/ci.yml`. The first attempt was
+itself wrong (missing `-C Debug` for the Visual Studio multi-config
+generator - real CI caught it immediately, exactly the discipline this
+is for) and was fixed on the next push. Final state: all four test
+binaries genuinely pass on real Windows CI, including
+`smbios_integration_test` constructing a real `SMBios` with all its
+assertions true - strong direct evidence `WindowsNativeSource`
+succeeded, since the legacy-scan fallback that could otherwise explain
+a pass needs raw physical-memory access removed from Windows user-mode
+since Server 2003 SP1. Zero API-call-site diff in `win_bios.cpp`/
+`win_native_api_helper.h`, confirmed by `git diff` showing no changes to
+either file at any point in this story.
+
+**Milestone 0005 closeout.** All four stories (01.0/01.1/02.0/03.0/04.0
+- five, counting the user-requested 01.1 insertion) are now complete.
+Every platform (Windows, Linux, macOS) plus the universal legacy-scan
+fallback runs through one shared `ISmbiosSource` chain abstraction with
+zero remaining `#if defined(_WIN32)`/`__APPLE__`/`__linux__` in
+`smbios.cpp` or anywhere under `source_interface/` (confirmed by direct
+grep, not assumed). The milestone's headline UEFI ask is delivered on
+both platforms it was written for (`CLAUDE.md`/`README.md` corrected
+during Story 03.0's verification to reflect this), and Windows - which
+already had a working native source before this milestone - now
+participates in the identical runtime chain/diagnostics model instead
+of its own separate code path. `docs/adr/0001-per-os-smbios-source-libraries.md`
+records the per-OS library architecture this all sits on. All five
+stories closed via real CI confirmation on every platform they touch,
+never on a claimed or assumed result.
 
 ### Story 03.0 - macOS UEFI Source (✅ 2026-11-07)
 
