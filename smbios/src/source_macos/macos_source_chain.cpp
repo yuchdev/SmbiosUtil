@@ -3,19 +3,18 @@
 
 #include <smbios/source_interface/smbios_source_chain.h>
 #include <smbios/source_legacy/legacy_memory_scan_source.h>
+#include <smbios/source_macos/macos_uefi_source.h>
 
-// Temporary: macOS has no native ISmbiosSource implementation yet (milestone
-// 0005, Story 03.0 adds MacOsUefiSource alongside this file). This
-// definition reproduces today's actual macOS behavior exactly - legacy scan
-// only. Before this story, macOS fell through to unix_bios.h's stub
-// (compose_native_smbios_table() never finds a usable sysfs/EFI systab path
-// on macOS, so smbios_read_success() was always false there) and then to
-// the legacy scan; omitting that always-failing attempt entirely here is
-// therefore the same observable outcome, without a dead SMBiosImpl
-// construction.
+// Milestone 0005, Story 03.0, Task 02: macOS now has a real native
+// ISmbiosSource (MacOsUefiSource, reading the AppleSMBIOS IORegistry entry
+// via IOKit - Task 01's read_apple_smbios_property()). It is tried first;
+// the legacy physical-memory scan stays as a fallback per the story's own
+// R3 note, even though it is very unlikely to find anything meaningful on
+// modern Mac hardware - costs nothing to leave it last.
 std::vector<std::unique_ptr<smbios::ISmbiosSource>> smbios::make_default_source_chain()
 {
     std::vector<std::unique_ptr<smbios::ISmbiosSource>> chain;
+    chain.push_back(std::make_unique<smbios::MacOsUefiSource>());
     chain.push_back(std::make_unique<smbios::LegacyMemoryScanSource>());
     return chain;
 }

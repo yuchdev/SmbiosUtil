@@ -1,9 +1,7 @@
 # smbios_source_macos - milestone 0005, Story 01.1 (ADR 0001). Only added
-# by smbios/src/CMakeLists.txt's elseif(APPLE) branch. No file relocation
-# here - macOS has no native ISmbiosSource implementation today (Story
-# 03.0 adds MacOsUefiSource); macos_source_chain.cpp's
-# make_default_source_chain() is {LegacyMemoryScanSource} only, matching
-# macOS's real behavior exactly.
+# by smbios/src/CMakeLists.txt's elseif(APPLE) branch. Story 03.0, Task 02
+# adds MacOsUefiSource, macOS's first native ISmbiosSource; macos_source_chain.cpp's
+# make_default_source_chain() is now {MacOsUefiSource, LegacyMemoryScanSource}.
 set(TARGET smbios_source_macos)
 
 file(GLOB SOURCES *.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../include/smbios/source_macos/*.h)
