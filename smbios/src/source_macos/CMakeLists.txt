@@ -12,4 +12,13 @@ add_library(${TARGET} STATIC ${SOURCES})
 
 target_link_libraries(${TARGET} PUBLIC smbios_source_interface smbios_source_legacy)
 
+# Milestone 0005, Story 03.0, Task 01: macos_efi_reader.cpp reads SMBIOS
+# properties off the IORegistry via IOKit/CoreFoundation - system
+# frameworks, not vcpkg packages. This library only builds under the root
+# CMakeLists.txt's elseif(APPLE) branch, so no extra __APPLE__ guard is
+# needed here.
+find_library(IOKIT_FRAMEWORK IOKit REQUIRED)
+find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
+target_link_libraries(${TARGET} PUBLIC ${IOKIT_FRAMEWORK} ${COREFOUNDATION_FRAMEWORK})
+
 target_compile_options(${TARGET} PRIVATE ${SMBIOS_COMPILE_OPTIONS} ${SMBIOS_WARNING_OPTIONS})
