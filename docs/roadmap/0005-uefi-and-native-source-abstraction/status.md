@@ -9,7 +9,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 01.0  | `ISmbiosSource` strategy interface   | ✅ Complete | smbios_unit_test pass (150 cases); real CI green incl. Windows |
 | 01.1  | Per-OS source libraries                | ✅ Complete | smbios_unit_test pass (152 cases); local macOS build/test green, Windows/Linux CI confirmation pending next push |
 | 02.0  | Linux sysfs & EFI sources             | ✅ Complete | real Linux CI: smbios_unit_test + smbios_mock_test pass clean under ASan+UBSan (LinuxSysfsSource/LinuxEfiSource tests actually executed, not just compiled); integration test fails cleanly (no crash, no sanitizer trip) on this unprivileged runner - the expected no-source-available degrade path; all 5 CI jobs green |
-| 03.0  | macOS UEFI source                     | ⬜ Not started | -     |
+| 03.0  | macOS UEFI source                     | 🔶 In progress (2/3 tasks) | real Intel Mac: smbios_unit_test 159/159 pass, smbios_util reports Source: macos-uefi, 33 structures, no root needed; Apple Silicon unconfirmed on real hardware so far |
 | 04.0  | Windows source parity                 | ⬜ Not started | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
@@ -343,6 +343,60 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   other two hand-provisioned configurations (sysfs-readable;
   EFI-only-with-/dev/mem) remain a real, un-executed manual check - not
   claimed as verified by this run. **Story 02.0 closed.**
+- **2026-11-07, Story 03.0 Task 01 (`read_apple_smbios_property`).**
+  Ported `mem_chunk_ioreg()` (`c-versions/dmidecode_macos/util.c:163-215`)
+  into an architecture-neutral free function (no
+  `__i386__`/`__x86_64__` guard, unlike the reference's own call site -
+  this story's whole point is native Apple Silicon support). One real
+  bug in the reference caught before porting it forward: `calloc(1, len)`
+  at the *originally requested* size, then a clamp-and-partial-`memcpy`,
+  means the C function always returns a buffer zero-padded to the
+  requested size whenever the real property is shorter. Deliberately did
+  **not** replicate that - the C++ port truncates to
+  `min(actual, max_len)` instead, since a `std::vector` has no reason to
+  carry synthetic trailing zero bytes, and Task 02's table read would
+  otherwise risk decoding fabricated padding as real structure bytes.
+  Verified for real against this machine's live IORegistry (not a
+  fixture): `read_apple_smbios_property("SMBIOS-EPS", 0x20)` returned 31
+  bytes, `5f 53 4d 5f` (`_SM_`), major/minor = 2/7 - independently
+  re-run and confirmed byte-for-byte via a standalone probe linked
+  against the built library, not just trusted from the agent's report.
+- **2026-11-07, Story 03.0 Task 02 (`MacOsUefiSource`) - the milestone's
+  headline result.** Implements the two-property read
+  (`"SMBIOS-EPS"` then `"SMBIOS"`) and wires `MacOsUefiSource` first in
+  `make_default_source_chain()`, `LegacyMemoryScanSource` kept as
+  fallback. **Resolved a spec-vs-README inconsistency deliberately**:
+  Task 02's own spec suggested a hardcoded `0x10000` cap for the table
+  read ("no reliable length from entry point"), but the story README's
+  own "Key constraints" section explicitly says the entry point's
+  *length* field is still worth reading to size the request - only the
+  *address* field is meaningless for this source (IORegistry ignores it
+  and returns the whole stored property regardless). Used the real
+  declared length (decoded via the same `read_uN` offsets the Linux
+  sources already use for the identical wire format) instead of the
+  magic constant. **Real, independently-verified result on this actual
+  machine** (re-run myself, not just trusted from the agent's report):
+  `smbios_util`, run as a plain non-root user, reports `Source:
+  macos-uefi`, SMBIOS version 2.7, table size 1926 bytes, 33 structures
+  - the first complete, non-fallback SMBIOS report this project has ever
+  produced on a Mac. `smbios_unit_test` 159/159 passing (154 + 5 new).
+  **Correction to the implementing agent's own report:** its commit
+  message and summary both described this as "real Apple Silicon
+  hardware" - checked directly (`uname -a`, `sysctl hw.optional.arm64`,
+  `sysctl machdep.cpu.brand_string`) and this machine is actually a
+  genuine Intel Mac (`MacBookAir7,2`, Core i7-5650U, macOS 12.7.6,
+  `x86_64`), not Apple Silicon, not Rosetta. The verification itself is
+  real and correct; only the architecture label in the agent's own
+  narration was wrong - corrected here rather than let it stand
+  uncorrected in the permanent record. Apple Silicon coverage remains
+  unconfirmed on real hardware from this environment; Task 03's
+  disposition (below) is where this gets resolved via CI if possible.
+  Also closed out this story's documentation debt while verifying:
+  corrected `CLAUDE.md`'s Architecture section (still described the
+  pre-milestone-0005 `#if`/`SMBiosImpl`-PImpl design, entirely gone now)
+  and its stale "Mac has no native SMBIOS source" line, and updated the
+  top-level `README.md`'s own call for a UEFI implementation to note
+  it's resolved.
 
 ### Story 02.0 - Linux sysfs & EFI Sources (✅ 2026-11-07)
 
