@@ -85,6 +85,19 @@ jobs:
         # from the Build step's own .vcxproj output paths).
         run: ctest --test-dir build/${{ matrix.preset }} -C Debug --output-on-failure -R "smbios_unit_test|smbios_mock_test"
 
+      # Milestone 0005, Story 04.0, Task 02: unlike Linux/macOS's legacy
+      # scan, Windows's native source (GetSystemFirmwareTable(), via
+      # WindowsNativeSource) needs no elevated privilege - so a passing
+      # run here is real evidence the native source succeeded, not just
+      # "it compiled". Kept best-effort (not a hard gate) only because a
+      # virtualized CI runner's firmware could plausibly not expose a
+      # usable SMBIOS table at all - a CI-environment limitation, not a
+      # privilege one, unlike every other best-effort step in this file.
+      - name: Run integration test (best-effort - a virtualized CI runner's firmware may not expose a real SMBIOS table)
+        if: matrix.os == 'windows-latest' && steps.build.outcome == 'success'
+        run: ctest --test-dir build/${{ matrix.preset }} -C Debug --output-on-failure -R "smbios_integration_test" || echo "::warning::smbios_integration_test failed on Windows - WindowsNativeSource needs no privilege, so this likely means the CI runner's (possibly virtualized) firmware doesn't expose a usable SMBIOS table, not a privilege issue. See docs/roadmap/0005-uefi-and-native-source-abstraction/status.md's Story 04.0 entry."
+        continue-on-error: true
+
   sanitizers:
     name: sanitizers (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
