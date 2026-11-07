@@ -54,22 +54,45 @@ bool copy_native_result(const SMBiosImpl& native_impl, std::vector<uint8_t>& out
 /// @brief Thin `ISmbiosSource` adapter around the existing Windows-native
 /// `SMBiosImpl` (`win_bios.h`, `GetSystemFirmwareTable()`-based). Delegates
 /// entirely to it - no Windows-specific logic is rewritten here (plan.md
-/// R6) - and falls back to `LegacyMemoryScanSource` exactly as the
-/// pre-refactor `SMBios::SMBios()` did whenever the native read failed.
+/// R6).
 ///
 /// Milestone 0005, Story 01.1 (ADR 0001): this class and its
 /// `make_default_source_chain()` definition below were relocated out of
 /// `smbios_source_chain.cpp`'s `#if defined(_WIN32)` branch into this
 /// library's own translation unit - the class itself is unchanged, only its
 /// home and the mechanism that selects it (a CMake `if(WIN32)` link choice
-/// instead of a C++ `#if`). This is still a **temporary** adapter: Story
-/// 04.0's own Task 01 is expected to give `SMBiosImpl` (or its replacement)
-/// `: public ISmbiosSource` directly and either keep or replace this class
-/// outright - either way is acceptable per that story's own constraints;
-/// this comment records that the decision is still open as of this story.
+/// instead of a C++ `#if`).
 ///
-/// Unverified on real Windows hardware: written from reading `win_bios.h`'s
-/// interface only (this implementation was built and tested on macOS).
+/// Milestone 0005, Story 04.0, Task 01: this design question is now
+/// ratified permanent, not temporary. `SMBiosImpl` (`win_bios.h`) has no
+/// `is_available()`/`try_read()`/`source_name()`-shaped methods of its own
+/// and is used nowhere else as a value type in its own right - only ever
+/// constructed and consumed right here - so giving it `: public
+/// ISmbiosSource` directly would mean editing a file this story's own
+/// "zero Windows API call site changed" constraint (R6) is meant to keep
+/// untouched, for no behavioral gain over the wrapper that already exists.
+/// Keeping this thin delegating class is therefore the genuinely
+/// zero-diff choice the story README asks for (`win_bios.h`/`.cpp`/
+/// `win_native_api_helper.h` are unmodified by this story), not merely the
+/// smaller one.
+///
+/// Also as of Story 04.0: no longer internally falls back to
+/// `LegacyMemoryScanSource` on a failed native read - `try_read()` now
+/// returns `false` and lets `make_default_source_chain()`'s second entry
+/// (below) run instead, same shape every other platform's chain already
+/// uses (`LinuxSysfsSource`/`LinuxEfiSource`/`LegacyMemoryScanSource`,
+/// `MacOsUefiSource`/`LegacyMemoryScanSource`). The pre-Story-04.0 version
+/// delegated to the scan from inside this class's own `try_read()`, which
+/// meant `source_name()` would still report `"windows-native"` even when
+/// the real data came from the legacy scan - a diagnostic-accuracy bug,
+/// not a behavior worth preserving under R6 (R6 covers the Windows API
+/// call semantics, not which string `source_name()` happens to report).
+/// The *overall* observable outcome (does a working table get found at
+/// all) is unchanged either way.
+///
+/// See `status.md`'s Story 04.0 entry for this class's real Windows-CI
+/// confirmation (not just read from `win_bios.h`'s interface, as this
+/// class's implementation originally was).
 class WindowsNativeSource : public ISmbiosSource {
 public:
     bool is_available() const override
@@ -86,11 +109,11 @@ public:
     {
         SMBiosImpl native_impl;
 
-        if (native_impl.smbios_read_success()) {
-            return copy_native_result(native_impl, out_table, major_version, minor_version);
+        if (!native_impl.smbios_read_success()) {
+            return false;
         }
 
-        return LegacyMemoryScanSource{}.try_read(out_table, major_version, minor_version);
+        return copy_native_result(native_impl, out_table, major_version, minor_version);
     }
 
     const char* source_name() const override { return "windows-native"; }
@@ -102,5 +125,6 @@ std::vector<std::unique_ptr<ISmbiosSource>> smbios::make_default_source_chain()
 {
     std::vector<std::unique_ptr<ISmbiosSource>> chain;
     chain.push_back(std::make_unique<WindowsNativeSource>());
+    chain.push_back(std::make_unique<LegacyMemoryScanSource>());
     return chain;
 }
