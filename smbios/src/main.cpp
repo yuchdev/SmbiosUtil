@@ -25,6 +25,9 @@
 #include <smbios/tables/electrical_current_probe_entry.h>
 #include <smbios/tables/out_of_band_remote_access_entry.h>
 #include <smbios/tables/boot_integrity_services_entry.h>
+#include <smbios/tables/management_device_entry.h>
+#include <smbios/tables/management_device_component_entry.h>
+#include <smbios/tables/management_device_threshold_data_entry.h>
 #include <smbios/smbios_entry_factory.h>
 #include <smbios_util/command_line_parser.h>
 

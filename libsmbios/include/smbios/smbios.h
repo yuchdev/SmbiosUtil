@@ -121,6 +121,9 @@ public:
         BootIntegrityServices = 31,
         SystemBootInformation = 32,
         MemoryErrorInformation64Bit = 33,
+        ManagementDevice = 34,
+        ManagementDeviceComponent = 35,
+        ManagementDeviceThresholdData = 36,
         EndOfTable = 127
     };
 

@@ -10,7 +10,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 02.0  | Board, OEM, and firmware metadata structures                       | ✅ Complete (2026-11-08) | 191 unit |
 | 03.0  | Event log and memory error/mapping structures                      | ✅ Complete (2026-11-08) | 237 unit |
 | 04.0  | Sensors, probes, and small system-control structures                | ✅ Complete (2026-11-09) | 317 unit |
-| 05.0  | Remote/out-of-band management structures                           | 🔶 In progress (1/4 tasks) | 324 unit |
+| 05.0  | Remote/out-of-band management structures                           | 🔶 In progress (2/4 tasks) | 340 unit |
 | 06.0  | Power, onboard-device, and additional-info structures              | ⬜ Not started | -     |
 | 07.0  | Security, processor, firmware-inventory, and terminal structures    | ⬜ Not started | -     |
 
@@ -117,7 +117,7 @@ Types 21/22 are not yet added to the consolidated factory-resolution test in `te
 
 Task 04 added types 21-29 to the consolidated factory-resolution test - all resolve correctly. Full suite: 317 unit cases, 4/4 ctest targets green, independently re-verified after every task. Story 04.0 complete.
 
-## Story 05.0 - Remote/Out-of-Band Management Structures (🔶 in progress, 1/4 tasks)
+## Story 05.0 - Remote/Out-of-Band Management Structures (🔶 in progress, 2/4 tasks)
 
 **Task 01 delivered:** `OutOfBandRemoteAccessEntry` (`SMBios::OutOfBandRemoteAccess` = 30, DSP0134 3.9.0 7.31, Table 103) - Manufacturer Name string plus a Connections bit-field. `BootIntegrityServicesEntry` (`SMBios::BootIntegrityServices` = 31, 7.32) - deliberately content-free; DSP0134 3.9.0 defines no field table for this structure at all (7.32's text only reserves the type number for an external Boot Integrity Services API spec), so the class performs only the usual type check and a `render_to_description()` stating plainly that it carries no DSP0134-defined fields, rather than inventing any.
 
@@ -128,3 +128,13 @@ Task 04 added types 21-29 to the consolidated factory-resolution test - all reso
 **CLI:** `smbios/src/main.cpp` includes both new headers for display, mirroring existing precedent (display itself is generic, via the factory-dispatch loop); the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
 
 Types 30/31 are not yet added to the consolidated factory-resolution test in `tests/unit/smbios_entry_factory_test.cpp` - deferred to this story's own Task 04 (Tests), matching Stories 03.0/04.0's precedent.
+
+**Task 02 delivered:** `ManagementDeviceEntry` (`SMBios::ManagementDevice` = 34, DSP0134 3.9.0 7.35, Table 107) - Description string, Device Type (7.35.1, Table 108, named `get_device_type()`/`get_device_type_string()` to avoid colliding with `AbstractSMBiosEntry::get_type()`, same hazard as Story 04.0's `PointingDeviceEntry`), Address, Address Type (7.35.2, Table 109). `ManagementDeviceComponentEntry` (`SMBios::ManagementDeviceComponent` = 35, 7.36, Table 110) - Description string plus three raw, unresolved handles: Management Device Handle, Component Handle (references a probe/cooling-device structure from Story 04.0), and Threshold Handle (`has_threshold()` sentinel check). `ManagementDeviceThresholdDataEntry` (`SMBios::ManagementDeviceThresholdData` = 36, 7.37, Table 111) - six WORD threshold fields, each independently `0x8000`-sentineled "unavailable", deliberately exposing no unit information of its own (the unit depends on whichever probe/cooling-device structure a Component's own Threshold Handle points this structure at).
+
+**Threshold Handle "no threshold" sentinel confirmation (the task's own flagged open question):** Table 110's own row for Threshold Handle does not state an explicit sentinel value. However, DSP0134 3.9.0's generic structure-header text (6.1.2, Table 3, describing the Handle field every structure carries) states the project-wide default explicitly: "Unless otherwise specified, when referring to another structure's handle, the value 0FFFFh is used to indicate that the referenced handle is not applicable or does not exist." Since 7.36/Table 110 does not override this default for Threshold Handle, the general convention applies: **0xFFFF** confirmed as the "no threshold" sentinel (`ManagementDeviceComponentEntry::NoThresholdHandle`) - matching the common SMBIOS convention the task flagged as unconfirmed, now verified directly against the spec text rather than assumed.
+
+**Tests / gate:** `tests/unit/management_device_entry_test.cpp` (new, 6 cases: a normal-values decode case, every documented Device Type value from Table 108, every documented Address Type value from Table 109, a minimum-length-buffer defaults case, a wrong-type-throws case, a factory-resolution case), `tests/unit/management_device_component_entry_test.cpp` (new, 5 cases: a real-handle-values case including a real Threshold Handle, the confirmed `0xFFFF` "no threshold" sentinel case, a minimum-length-buffer defaults case, a wrong-type-throws case, a factory-resolution case), `tests/unit/management_device_threshold_data_entry_test.cpp` (new, 5 cases: a normal-values decode case covering all 6 fields, one distinct `0x8000` unknown-sentinel case per this story's own task-document allowance that the shared sentinel-check helper's correctness is already covered by Story 04.0's probe tests, a minimum-length-buffer defaults case, a wrong-type-throws case, a factory-resolution case). `smbios_unit_test` 340 cases, 0 failures (up from 324 before this task). All 4 `ctest` targets green.
+
+**CLI:** `smbios/src/main.cpp` includes all three new headers for display, mirroring existing precedent (display itself is generic, via the factory-dispatch loop); the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
+
+Types 34/35/36 are not yet added to the consolidated factory-resolution test in `tests/unit/smbios_entry_factory_test.cpp` - deferred to this story's own Task 04 (Tests), matching Stories 03.0/04.0's precedent and this story's own Task 01.

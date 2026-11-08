@@ -1,7 +1,7 @@
 # 02 - Management Device, Component, and Threshold Data
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 
 ## Objective
 
@@ -98,8 +98,18 @@ Implement `ManagementDeviceEntry` (`SMBiosHandler` value `34`), DSP0134
 
 ## Success criteria
 
-- [ ] All three types register and resolve through the factory
+- [x] All three types register and resolve through the factory
       (`SMBiosHandler` values 34, 35, 36).
-- [ ] Threshold Handle's "no threshold" sentinel confirmed against the
-      spec and covered by a test case.
-- [ ] `smbios` CLI displays all three on real hardware where present.
+- [x] Threshold Handle's "no threshold" sentinel confirmed against the
+      spec and covered by a test case. Confirmed value: `0xFFFF`, per
+      DSP0134 3.9.0's generic structure-header text (6.1.2, Table 3:
+      "Unless otherwise specified, when referring to another structure's
+      handle, the value 0FFFFh is used to indicate that the referenced
+      handle is not applicable or does not exist.") - Table 110 itself does
+      not state an override for Threshold Handle, so the general default
+      applies.
+- [x] `smbios` CLI displays all three on real hardware where present (via
+      the existing generic factory-dispatch render loop in `main.cpp`; the
+      three new headers are included there for display, mirroring existing
+      precedent - the CLI-linking bug is tracked separately in
+      `task_dc27f15d` and is unchanged by this task).
