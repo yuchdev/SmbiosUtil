@@ -8,7 +8,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 |-------|----------------------------------------|----------------|-------|
 | 01.0  | Hermetic fixture-based test layer     | ✅ Complete (2026-11-08) | 163 unit (smbios_unit_test) |
 | 02.0  | Boundary and malformed-table tests    | ✅ Complete (2026-11-08) | 166 unit (smbios_unit_test) |
-| 03.0  | Documentation and release pass        | 🔶 In progress (1/3 tasks) | -     |
+| 03.0  | Documentation and release pass        | ✅ Complete (2026-11-08) | 166 unit (smbios_unit_test) |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -316,3 +316,19 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   same count as Story 02.0's baseline, confirming this was a comment-only
   pass. Tasks 02 (CLAUDE.md/README rewrite) and 03 (tests) of this story
   remain.
+
+## Story 03.0 - Documentation and Release Pass (✅ 2026-11-08)
+
+**Delivered:**
+- Doxygen audit across all 29 headers in every `include/smbios/` tree (not just `libsmbios/`) - 9 files had gaps closed; most of the codebase already met the bar. One real comment-vs-code mismatch found and fixed as documentation: `port_connection_entry.h`'s connector accessors were documented as the Reference Designator *string* but actually read the Connector *Type* code - now documented accurately, with the missing accessor noted as a gap (not implemented in this pass - out of scope, doc-only task).
+- `docs/architecture/overview.md` (new) - `ISmbiosSource` chain data-flow diagram (Mermaid) and a "how to add a new structure type" walkthrough, cross-checked against the real current code.
+- `CLAUDE.md` - targeted additions (not a full rewrite - most of the as-built description was already current from this session's earlier repo-root restructuring pass): the hermetic `SyntheticTableBuilder`-based unit suite and its unprivileged CI coverage, the `SMBIOS_BUILD_FUZZERS` local-only fuzz harness, and a cross-reference to the new architecture overview. Root `README.md`'s platform-support statement was already corrected in an earlier pass (confirmed, not re-touched).
+- `python3 scripts/check_doc_links.py docs/` - 183 files scanned, 0 problems.
+
+**Tests / gate:** All 4 `ctest` targets green, `smbios_unit_test` still 166 cases - confirmed comment/doc-only changes introduced no regression.
+
+**Reconciliation note:** Task 02's spec assumed CLAUDE.md needed a wholesale rewrite (R6) against milestones 0001-0005; in practice an earlier, user-directed session pass had already rewritten it against the as-built system (repo-root library layout, `ISmbiosSource` chain, field-table accessors, self-registering factory) - this task's real remaining work was the milestone-0006-specific additions (hermetic suite, fuzz harness) plus the architecture-doc cross-reference, not a rewrite from scratch. Task 03's spec text about "closing the program this roadmap describes" predates milestones 0007-0010 being added to the roadmap after this spec was written - it is read here as closing milestone 0006 (the "core program," per `docs/roadmap/README.md`'s own Program overview numbering), not the full now-ten-milestone roadmap.
+
+## Milestone 0006 - CLOSED (2026-11-08)
+
+All 3 stories complete (01.0, 02.0, 03.0). Exit gates: full suite green (4/4 `ctest` targets, 166 unit cases, independently re-verified after every task, not just agent-reported) + real ASan/UBSan sanitizer confirmation for every boundary test + `scripts/check_doc_links.py docs/` clean (183 files, 0 problems). No `/pr-review` tool was available in this session; each task's diff was independently rebuilt, retested, and spot-checked against its commit by the milestone loop itself before being accepted, in lieu of that gate.

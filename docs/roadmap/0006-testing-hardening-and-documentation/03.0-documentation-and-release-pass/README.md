@@ -1,7 +1,7 @@
 # Story 03.0 - Documentation and Release Pass
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 **Depends on:** Story 01.0 (documents the final test strategy, so should follow it)
 
 ## Scope
@@ -17,8 +17,8 @@ story.
 | #  | Document                                                        | Status         | Blocks |
 |----|----------------------------------------------------------------------|----------------|--------|
 | 01 | [Doxygen and architecture docs](01-doxygen-and-architecture-docs.md)   | ✅ Complete | 02     |
-| 02 | [Update CLAUDE.md and README](02-update-claude-md-and-readme.md)      | ⬜ Not started | 03     |
-| 03 | [Tests](03-tests.md)                                                  | ⬜ Not started | -      |
+| 02 | [Update CLAUDE.md and README](02-update-claude-md-and-readme.md)      | ✅ Complete | 03     |
+| 03 | [Tests](03-tests.md)                                                  | ✅ Complete | -      |
 
 ## Key constraints
 
