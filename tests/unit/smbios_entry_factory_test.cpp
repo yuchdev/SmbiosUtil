@@ -204,6 +204,14 @@ BOOST_AUTO_TEST_CASE(CreateResolvesEveryRealSMBiosHandlerExceptEndOfTableTestCas
         SMBios::CoolingDevice,
         SMBios::TemperatureProbe,
         SMBios::ElectricalCurrentProbe,
+        SMBios::OutOfBandRemoteAccess,
+        SMBios::BootIntegrityServices,
+        SMBios::ManagementDevice,
+        SMBios::ManagementDeviceComponent,
+        SMBios::ManagementDeviceThresholdData,
+        SMBios::MemoryChannel,
+        SMBios::IpmiDeviceInformation,
+        SMBios::ManagementControllerHostInterface,
     };
 
     SMBiosEntryFactory factory;

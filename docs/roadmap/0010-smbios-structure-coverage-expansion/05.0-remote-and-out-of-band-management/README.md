@@ -1,7 +1,7 @@
 # Story 05.0 - Remote/Out-of-Band Management Structures
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 **Depends on:** Story 01.0 (`tables/` reorg)
 
 ## Scope
@@ -21,7 +21,7 @@ Host Interface (42, section 7.43).
 | 01 | [Out-of-band remote access and BIS entry point](01-oob-remote-access-and-bis.md) | ✅ Complete | 04     |
 | 02 | [Management device, component, and threshold data](02-management-device-family.md) | ✅ Complete | 04     |
 | 03 | [Memory channel, IPMI device, and MCTP host interface](03-memory-channel-ipmi-mctp.md) | ✅ Complete | 04     |
-| 04 | [Tests](04-tests.md)                                                   | ⬜ Not started | -      |
+| 04 | [Tests](04-tests.md)                                                   | ✅ Done | -      |
 
 Task 01 pairs the two smallest/oldest types in this story: Out-of-Band
 Remote Access (30, one string field plus a redacted second row this
