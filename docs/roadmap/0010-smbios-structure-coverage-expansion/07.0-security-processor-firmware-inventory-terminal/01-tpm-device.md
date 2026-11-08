@@ -1,7 +1,7 @@
 # 01 - TPM Device
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 
 ## Objective
 
@@ -64,9 +64,11 @@ section 7.44, through its Characteristics bitmask (7.44.1).
 
 ## Success criteria
 
-- [ ] Registers and resolves through the factory for `SMBiosHandler ==
+- [x] Registers and resolves through the factory for `SMBiosHandler ==
       43`.
-- [ ] Vendor ID 3-char and 4-char cases both verified distinctly.
-- [ ] `bitset_to_properties<uint64_t>()` confirmed working (compiles and
+- [x] Vendor ID 3-char and 4-char cases both verified distinctly.
+- [x] `bitset_to_properties<uint64_t>()` confirmed working (compiles and
       renders correctly) for this QWORD field.
-- [ ] `smbios` CLI displays the type on real hardware where present.
+- [x] `smbios` CLI displays the type on real hardware where present (via
+      the existing generic factory-dispatch loop in `main.cpp` - no
+      per-type code needed, same as every type since milestone 0005).

@@ -130,6 +130,7 @@ public:
         AdditionalInformation = 40,
         OnboardDevicesExtendedInformation = 41,
         ManagementControllerHostInterface = 42,
+        TpmDevice = 43,
         EndOfTable = 127
     };
 

@@ -1,7 +1,7 @@
 # Story 07.0 - Security, Processor, Firmware-Inventory, and Terminal Structures
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** 🔶 In progress (1/4 tasks)
 **Depends on:** Story 01.0 (`tables/` reorg)
 
 ## Scope
@@ -18,7 +18,7 @@ lands.
 
 | #  | Document                                                  | Status         | Blocks |
 |----|------------------------------------------------------------------|----------------|--------|
-| 01 | [TPM device](01-tpm-device.md)                                      | ⬜ Not started | 04     |
+| 01 | [TPM device](01-tpm-device.md)                                      | ✅ Complete | 04     |
 | 02 | [Processor additional information](02-processor-additional-information.md) | ⬜ Not started | 04     |
 | 03 | [Firmware inventory, string property, and inactive](03-firmware-inventory-string-property-inactive.md) | ⬜ Not started | 04     |
 | 04 | [Tests](04-tests.md)                                              | ⬜ Not started | -      |
