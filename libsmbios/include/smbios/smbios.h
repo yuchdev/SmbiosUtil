@@ -110,6 +110,9 @@ public:
         MemoryDeviceMappedAddress = 20,
         PointingDevice = 21,
         PortableBattery = 22,
+        SystemReset = 23,
+        HardwareSecurity = 24,
+        SystemPowerControls = 25,
         SystemBootInformation = 32,
         MemoryErrorInformation64Bit = 33,
         EndOfTable = 127

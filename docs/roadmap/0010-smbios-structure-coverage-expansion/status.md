@@ -9,7 +9,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 01.0  | `tables/` segment reorg                                             | ✅ Complete (2026-11-08) | 166 unit |
 | 02.0  | Board, OEM, and firmware metadata structures                       | ✅ Complete (2026-11-08) | 191 unit |
 | 03.0  | Event log and memory error/mapping structures                      | ✅ Complete (2026-11-08) | 237 unit |
-| 04.0  | Sensors, probes, and small system-control structures                | 🔶 In progress (1/4 tasks, 2026-11-08) | 255 unit |
+| 04.0  | Sensors, probes, and small system-control structures                | 🔶 In progress (2/4 tasks, 2026-11-08) | 274 unit |
 | 05.0  | Remote/out-of-band management structures                           | ⬜ Not started | -     |
 | 06.0  | Power, onboard-device, and additional-info structures              | ⬜ Not started | -     |
 | 07.0  | Security, processor, firmware-inventory, and terminal structures    | ⬜ Not started | -     |
@@ -88,3 +88,15 @@ Task 04 added types 15, 18, 20, 33 to the consolidated factory-resolution test i
 **CLI:** `smbios/src/main.cpp` includes both new headers for display, mirroring existing precedent; the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
 
 Types 21/22 are not yet added to the consolidated factory-resolution test in `tests/unit/smbios_entry_factory_test.cpp` - deferred to this story's own Task 04 (Tests), matching Story 03.0's precedent of doing that consolidation in its own final task rather than per-task.
+
+**Task 02 delivered:** `SystemResetEntry` (`SMBios::SystemReset` = 23, 7.24, Table 92), `HardwareSecurityEntry` (`SMBios::HardwareSecurity` = 24, 7.25, Table 93), `SystemPowerControlsEntry` (`SMBios::SystemPowerControls` = 25, 7.26, Table 94).
+
+**Bit-layout confirmation (the task's own flagged open question):** this task's own source excerpt redacted both Table 92's Capabilities row and Table 93's Hardware Security Settings row, so both were re-read in full directly from `docs/standard/DSP0134_3.9.0.md` before any decoding logic was written. Confirmed layouts:
+- Table 92 (System Reset Capabilities, 0x04): Bits 7:6 Reserved; Bit 5 Watchdog timer present; Bits 4:3 Boot Option on Limit; Bits 2:1 Boot Option; Bit 0 Status (user-enabled). Boot Option and Boot Option on Limit share the identical 2-bit value space (00b Reserved/do not use, 01b Operating system, 10b System utilities, 11b Do not reboot), so both are exposed through one `SystemResetEntry::BootOption` enum.
+- Table 93 (Hardware Security Settings, 0x04): Bits 7:6 Power-on Password Status; Bits 5:4 Keyboard Password Status; Bits 3:2 Administrator Password Status; Bits 1:0 Front Panel Reset Status - all four sharing the identical 4-value `HardwareSecurityEntry::SecurityStatus` enum (00b Disabled, 01b Enabled, 10b Not Implemented, 11b Unknown), exactly the "informed guess" the task doc itself flagged as unconfirmed, now verified against the real table.
+
+`SystemResetEntry` also exposes Reset Count/Reset Limit/Timer Interval (minutes)/Timeout (minutes), each a WORD with `0xFFFF` ("unknown") as a distinct, independently-tested sentinel. `SystemPowerControlsEntry` (7.26/7.26.1, Table 94 - not redacted in the task excerpt, so no bit-layout confirmation was needed, only whole-byte BCD fields) exposes raw BCD accessors plus decimal convenience accessors via a shared private `bcd_to_decimal()` helper performing the mechanical `(b >> 4) * 10 + (b & 0x0F)` nibble-pair conversion with no range validation, documented as such.
+
+**Tests / gate:** `tests/unit/system_reset_entry_test.cpp` (10 cases: every Boot Option/Boot Option on Limit value decoded independently, a Status-disabled/Watchdog-absent case, the 4 WORD unknown-sentinel cases each as its own test, a known-values round-trip, a minimum-length-buffer defaults case, a wrong-type-throws case, a factory-resolution case), `tests/unit/hardware_security_entry_test.cpp` (4 cases: an exhaustive 4^4 = 256-combination sweep over all four SecurityStatus sub-fields confirming no bit-position aliasing, a minimum-length-buffer defaults case, a wrong-type-throws case, a factory-resolution case), `tests/unit/system_power_controls_entry_test.cpp` (5 cases: a real BCD date/time decode with explicit per-field value-equality assertions including `0x25` BCD → decimal `25`, a minimum-length-buffer defaults case, a malformed-0xFF-byte mechanical-decode case, a wrong-type-throws case, a factory-resolution case). `smbios_unit_test` 274 cases, 0 failures (up from 255 before this task). All 4 `ctest` targets green.
+
+**CLI:** `smbios/src/main.cpp` includes all three new headers for display, mirroring existing precedent; the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.

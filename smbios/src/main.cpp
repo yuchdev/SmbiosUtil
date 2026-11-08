@@ -16,6 +16,9 @@
 #include <smbios/tables/memory_device_mapped_address_entry.h>
 #include <smbios/tables/pointing_device_entry.h>
 #include <smbios/tables/portable_battery_entry.h>
+#include <smbios/tables/system_reset_entry.h>
+#include <smbios/tables/hardware_security_entry.h>
+#include <smbios/tables/system_power_controls_entry.h>
 #include <smbios/smbios_entry_factory.h>
 #include <smbios_util/command_line_parser.h>
 

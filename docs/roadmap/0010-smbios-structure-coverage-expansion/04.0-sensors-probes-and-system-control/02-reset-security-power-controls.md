@@ -1,7 +1,7 @@
 # 02 - System Reset, Hardware Security, System Power Controls
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Done
 
 ## Objective
 
@@ -93,9 +93,14 @@ section 7.24; `HardwareSecurityEntry` (value `24`), section 7.25; and
 
 ## Success criteria
 
-- [ ] Capabilities/Settings bit layouts confirmed against the full spec
-      table (not left as this task spec's placeholder names).
-- [ ] All three types register and resolve through the factory
+- [x] Capabilities/Settings bit layouts confirmed against the full spec
+      table (not left as this task spec's placeholder names) - see
+      `libsmbios/include/smbios/tables/system_reset_entry.h` and
+      `hardware_security_entry.h`'s class doc comments for the confirmed
+      Table 92/93 layouts.
+- [x] All three types register and resolve through the factory
       (`SMBiosHandler` values 23, 24, 25).
-- [ ] BCD-to-decimal conversion verified by an explicit value assertion.
-- [ ] `smbios` CLI displays all three on real hardware where present.
+- [x] BCD-to-decimal conversion verified by an explicit value assertion.
+- [x] `smbios` CLI displays all three on real hardware where present (via
+      `main.cpp`'s generic `render_to_description()` dispatch, same as
+      every other entry type).
