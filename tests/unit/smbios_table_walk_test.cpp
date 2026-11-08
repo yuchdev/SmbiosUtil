@@ -3,6 +3,8 @@
 
 #include <smbios/smbios.h>
 
+#include "synthetic_table_builder.h"
+
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
 
@@ -19,35 +21,12 @@ using namespace smbios;
 // whichever ISmbiosSource in make_default_source_chain() succeeded - see
 // milestone 0005, Story 01.0). To drive SMBios's own private
 // read_smbios_table()/count_smbios_structures() against an injected buffer,
-// smbios.h declares a narrowly-scoped `friend class SmbiosTableWalkTestAccess;`
-// for exactly this test file. SmbiosTableWalkTestAccess (below) overwrites
-// the already-constructed SMBios's table_buffer_ directly, resets the
-// cached parse state, and re-invokes the private walk - no new production
-// API, no mock.
-
-namespace smbios {
-
-/// @brief Test-only friend accessor granting smbios_table_walk_test.cpp
-/// access to SMBios's private members needed to drive a synthetic table
-/// through the real bounds-checked walk. See file header comment above.
-class SmbiosTableWalkTestAccess
-{
-public:
-    /// @brief Inject a synthetic raw structure-table buffer into an
-    /// already-constructed SMBios instance (via its table_buffer_), discard
-    /// any state from the instance's own constructor-time real-hardware
-    /// attempt, and re-run the private table walk against the synthetic
-    /// buffer only.
-    static void parse_synthetic_table(SMBios& instance, std::vector<uint8_t> synthetic_buffer)
-    {
-        instance.table_buffer_ = std::move(synthetic_buffer);
-        instance.headers_list_.clear();
-        instance.structures_count_ = 0;
-        instance.read_smbios_table();
-    }
-};
-
-} // namespace smbios
+// smbios.h declares a narrowly-scoped `friend class SmbiosTableWalkTestAccess;`,
+// shared (milestone 0006, Story 01.0) via synthetic_table_builder.h so this
+// file and synthetic_table_builder_test.cpp don't each define their own
+// copy. SmbiosTableWalkTestAccess overwrites the already-constructed
+// SMBios's table_buffer_ directly, resets the cached parse state, and
+// re-invokes the private walk - no new production API, no mock.
 
 BOOST_AUTO_TEST_SUITE(SmbiosTableWalkUnitTests)
 

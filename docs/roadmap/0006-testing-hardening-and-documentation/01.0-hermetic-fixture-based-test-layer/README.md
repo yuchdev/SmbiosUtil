@@ -15,7 +15,7 @@ Task 03 "build-only" gap.
 
 | #  | Document                                                          | Status         | Blocks |
 |----|------------------------------------------------------------------------|----------------|--------|
-| 01 | [Synthetic table builder](01-synthetic-table-builder.md)               | ⬜ Not started | 02     |
+| 01 | [Synthetic table builder](01-synthetic-table-builder.md)               | ✅ Done | 02     |
 | 02 | [Migrate functional tests to fixtures](02-migrate-functional-tests-to-fixtures.md) | ⬜ Not started | 03     |
 | 03 | [Tests](03-tests.md)                                                  | ⬜ Not started | -      |
 

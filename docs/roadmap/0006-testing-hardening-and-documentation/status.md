@@ -6,7 +6,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 | Story | Name                                | Status         | Tests |
 |-------|----------------------------------------|----------------|-------|
-| 01.0  | Hermetic fixture-based test layer     | ⬜ Not started | -     |
+| 01.0  | Hermetic fixture-based test layer     | 🔶 In progress (1/3 tasks) | 163 unit (smbios_unit_test) |
 | 02.0  | Boundary and malformed-table tests    | ⬜ Not started | -     |
 | 03.0  | Documentation and release pass        | ⬜ Not started | -     |
 
@@ -42,3 +42,20 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   building - this ad hoc work only added one entry type's worth of
   coverage via direct `AbstractSMBiosEntry` subclass construction, not a
   `SMBios`-level buffer-input path.
+- **2026-11-08, Story 01.0 Task 01 (`SyntheticTableBuilder`) landed:**
+  `tests/unit/synthetic_table_builder.h`/`.cpp` (namespace
+  `smbios::test`), reusing the existing `SmbiosTableWalkTestAccess` friend
+  seam (moved there from `smbios_table_walk_test.cpp`, which now includes
+  the shared header instead of duplicating it) rather than adding the
+  task spec's originally-proposed `read_headers_from_buffer()` free
+  function or a new `SMBios` constructor overload - the seam already
+  satisfied the "no `ISmbiosSource` involved" constraint, so a second
+  parallel mechanism was unnecessary. `add_structure()` auto-computes
+  `length` and auto-assigns sequential handles (not a builder parameter,
+  per the task's own shown interface); `add_raw_bytes()` suppresses the
+  automatic `EndOfTable` append for Story 02.0's future malformed-table
+  tests. Self-tested in `tests/unit/synthetic_table_builder_test.cpp`
+  (4 new cases). Full suite: 163 `smbios_unit_test` cases pass (was 159),
+  all 4 `ctest` targets green. Task 02 (migrating
+  `build_port_connection_buffer()` and friends onto the builder) and
+  Task 03 remain.
