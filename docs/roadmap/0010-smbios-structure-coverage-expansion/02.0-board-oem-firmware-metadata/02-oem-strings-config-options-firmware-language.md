@@ -1,7 +1,7 @@
 # 02 - OEM Strings, System Configuration Options, Firmware Language Information
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 
 ## Objective
 
@@ -79,9 +79,11 @@ section 7.12), `SystemConfigurationOptionsEntry` (value `12`, section
 
 ## Success criteria
 
-- [ ] All three register and resolve through the factory.
-- [ ] Zero-string and multi-string cases both covered for the two
+- [x] All three register and resolve through the factory.
+- [x] Zero-string and multi-string cases both covered for the two
       string-list types.
-- [ ] Pre-2.1 version guard verified for Firmware Language Information's
+- [x] Pre-2.1 version guard verified for Firmware Language Information's
       Flags field.
-- [ ] `smbios` CLI displays all three on real hardware where present.
+- [x] `smbios` CLI displays all three on real hardware where present
+      (subject to the pre-existing, separately-tracked static-registration
+      linking bug noted in this task's own assignment).

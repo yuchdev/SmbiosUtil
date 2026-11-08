@@ -6,6 +6,9 @@
 #include <smbios/smbios.h>
 #include <smbios/tables/memory_device_entry.h>
 #include <smbios/tables/baseboard_information_entry.h>
+#include <smbios/tables/oem_strings_entry.h>
+#include <smbios/tables/system_configuration_options_entry.h>
+#include <smbios/tables/firmware_language_information_entry.h>
 #include <smbios/smbios_entry_factory.h>
 #include <smbios_util/command_line_parser.h>
 
