@@ -30,6 +30,7 @@
 #include <smbios/tables/management_device_threshold_data_entry.h>
 #include <smbios/tables/memory_channel_entry.h>
 #include <smbios/tables/ipmi_device_information_entry.h>
+#include <smbios/tables/system_power_supply_entry.h>
 #include <smbios/tables/management_controller_host_interface_entry.h>
 #include <smbios/smbios_entry_factory.h>
 #include <smbios_util/command_line_parser.h>

@@ -11,7 +11,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 03.0  | Event log and memory error/mapping structures                      | ✅ Complete (2026-11-08) | 237 unit |
 | 04.0  | Sensors, probes, and small system-control structures                | ✅ Complete (2026-11-09) | 317 unit |
 | 05.0  | Remote/out-of-band management structures                           | ✅ Complete (2026-11-09) | 360 unit |
-| 06.0  | Power, onboard-device, and additional-info structures              | ⬜ Not started | -     |
+| 06.0  | Power, onboard-device, and additional-info structures              | 🔶 In progress (1/4 tasks) | 366 unit |
 | 07.0  | Security, processor, firmware-inventory, and terminal structures    | ⬜ Not started | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
@@ -154,3 +154,19 @@ Types 34/35/36 are not yet added to the consolidated factory-resolution test in 
 Types 37/38/42 are not yet added to the consolidated factory-resolution test in `tests/unit/smbios_entry_factory_test.cpp` - deferred to this story's own Task 04 (Tests), matching Stories 03.0/04.0's precedent and this story's own Tasks 01/02.
 
 Task 04 added types 30, 31, 34-38, 42 to the consolidated factory-resolution test - all resolve correctly. Full suite: 360 unit cases, 4/4 ctest targets green, independently re-verified after every task. Story 05.0 complete.
+
+## Story 06.0 - Power, Onboard-Device, and Additional-Info Structures (🔶 in progress, 1/4 tasks)
+
+**Task 01 delivered:** `SystemPowerSupplyEntry` (`SMBios::SystemPowerSupply` = 39, DSP0134 3.9.0 7.40, Table 116) - Power Unit Group, seven identifying DMI strings (Location/Device Name/Manufacturer/Serial Number/Asset Tag/Model Part Number/Revision Level), Max Power Capacity, a Power Supply Characteristics bit-field (7.40.1, Table 117), and three raw, unresolved cross-reference handles into the probe/cooling-device family Story 04.0 already implemented (Input Voltage Probe Handle → Type 26, Cooling Device Handle → Type 27, Input Current Probe Handle → Type 29).
+
+**Units resolution (the task's own flagged open question, Max Power Capacity 0x0C):** Table 116's own field-description cell is internally self-contradictory - "Maximum sustained power output in Watts ... Note that the units specified by DMTF for this field are milliwatts" is one sentence followed immediately by a sentence contradicting it. This class documents and returns the raw WORD value as Watts, matching the field description's primary prose and the reference `dmidecode` implementation (`c-versions/dmidecode_linux/dmidecode.c`, `c-versions/dmidecode_macos/dmidecode.c`, both print `"%u W"` unscaled) rather than applying an unverifiable /1000 conversion derived from a note that contradicts the very table it annotates. `get_max_power_capacity()`'s own Doxygen comment documents both the chosen convention and the spec's own inconsistency, citing the reference implementation, for a future reader comparing output against another tool.
+
+**Power Supply Characteristics bit layout confirmation (the task's own flagged open question, 7.40.1/Table 117 - not included in the task's own source excerpt):** read in full directly from `docs/standard/DSP0134_3.9.0.md`. Confirmed layout: bits 15:14 reserved; bits 13:10 DMTF Power Supply Type (Other/Unknown/Linear/Switching/Battery/UPS/Converter/Regulator, 0001b-1000b); bits 9:7 Status (Other/Unknown/OK/Non-critical/Critical, 001b-101b - a shorter 5-value enumeration than the six-value Status sub-field shared by VoltageProbeEntry/CoolingDeviceEntry/TemperatureProbeEntry/ElectricalCurrentProbeEntry, which also defines Non-recoverable; this is a different sub-field, not reused); bits 6:3 DMTF Input Voltage Range Switching (Other/Unknown/Manual/Auto-switch/Wide range/Not applicable, 0001b-0110b); bit 2 unplugged-from-wall; bit 1 present; bit 0 hot-replaceable.
+
+**Handle "absent" sentinel confirmation (the task's own flagged open question, all three handle fields):** Table 116 does not itself state a sentinel for any of the three handle fields. DSP0134 3.9.0's general Handle field description (6.1.2/Table 3's own Handle row) states the project-wide default: "Unless otherwise specified, when referring to another structure's handle, the value 0FFFFh is used to indicate that the referenced handle is not applicable or does not exist." Table 116 does not override this default for any of the three fields, so **0xFFFF** (`SystemPowerSupplyEntry::HandleAbsent`) is confirmed for all three - matching the common SMBIOS convention the task flagged as unconfirmed, not 0x0000 (a theoretically valid handle value).
+
+**Tests / gate:** `tests/unit/system_power_supply_entry_test.cpp` (new, 6 cases: a minimum-length (0x10) buffer with no handle fields present at all, all three handles present with real values, all three handles set to the confirmed 0xFFFF sentinel despite being physically present, the Max Power Capacity 0x8000 unknown-sentinel case, a wrong-type-throws case, a factory-resolution case). `smbios_unit_test` 366 cases, 0 failures (up from 360 before this task). All 4 `ctest` targets green.
+
+**CLI:** `smbios/src/main.cpp` includes the new header for display, mirroring existing precedent (display itself is generic, via the factory-dispatch loop); the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
+
+Type 39 is not yet added to the consolidated factory-resolution test in `tests/unit/smbios_entry_factory_test.cpp` - deferred to this story's own Task 04 (Tests), matching Stories 03.0/04.0/05.0's precedent.
