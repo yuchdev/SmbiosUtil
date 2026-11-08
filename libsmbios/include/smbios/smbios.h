@@ -132,6 +132,9 @@ public:
         ManagementControllerHostInterface = 42,
         TpmDevice = 43,
         ProcessorAdditionalInformation = 44,
+        FirmwareInventoryInformation = 45,
+        StringProperty = 46,
+        Inactive = 126,
         EndOfTable = 127
     };
 

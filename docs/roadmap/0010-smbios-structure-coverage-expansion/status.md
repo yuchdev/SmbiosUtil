@@ -12,7 +12,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 04.0  | Sensors, probes, and small system-control structures                | ✅ Complete (2026-11-09) | 317 unit |
 | 05.0  | Remote/out-of-band management structures                           | ✅ Complete (2026-11-09) | 360 unit |
 | 06.0  | Power, onboard-device, and additional-info structures              | ✅ Complete (2026-11-09) | 381 unit |
-| 07.0  | Security, processor, firmware-inventory, and terminal structures    | 🔶 In progress | 395 unit |
+| 07.0  | Security, processor, firmware-inventory, and terminal structures    | 🔶 In progress | 409 unit |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -199,7 +199,7 @@ Type 41 is not yet added to the consolidated factory-resolution test in `tests/u
 
 Task 04 added types 39, 40, 41 to the consolidated factory-resolution test - all resolve correctly. Full suite: 381 unit cases, 4/4 ctest targets green, independently re-verified after every task. Story 06.0 complete.
 
-## Story 07.0 - Security, Processor, Firmware-Inventory, and Terminal Structures (🔶 in progress, 2/4 tasks)
+## Story 07.0 - Security, Processor, Firmware-Inventory, and Terminal Structures (🔶 in progress, 3/4 tasks)
 
 **Task 01 delivered:** `TpmDeviceEntry` (`SMBios::TpmDevice` = 43, DSP0134 3.9.0 7.44/7.44.1, Table 126/127) - raw 4-byte TCG Vendor ID (0x04), Major/Minor Spec Version (0x08/0x09), Firmware Version 1/2 DWORDs (0x0A/0x0E), a Description DMI string (0x12), a QWORD Characteristics bit-field (0x13, 7.44.1), and OEM-defined (0x1B).
 
@@ -228,3 +228,23 @@ Task 04 added types 39, 40, 41 to the consolidated factory-resolution test - all
 **CLI:** no changes needed to `smbios/src/command_line_parser.cpp`/`main.cpp` - display is already fully generic via the existing factory-dispatch loop in `main.cpp` (`smbios_factory.create(header, ver, table_end)` then `entry->render_to_description()`), which dispatches on the now-registered `SMBios::TpmDevice` handler automatically; the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
 
 Type 43 is not yet added to the consolidated factory-resolution test in `tests/unit/smbios_entry_factory_test.cpp` - deferred to this story's own Task 04 (Tests), matching every prior story's precedent.
+
+**Task 03 delivered (this story's last feature task - every one of the 34 new structure types this milestone adds is now implemented; only Task 04, the consolidated factory test, remains to close the story):** `FirmwareInventoryInformationEntry` (`SMBios::FirmwareInventoryInformation` = 45, DSP0134 3.9.0 7.46/7.46.1-7.46.4, Table 133-137), `StringPropertyEntry` (`SMBios::StringProperty` = 46, 7.47/7.47.1, Table 138/139), and `InactiveEntry` (`SMBios::Inactive` = 126, 7.48, Table 140).
+
+**Associated Component Handles offset (0x18) confirmed against the full Table 133, not the task doc's own deliberately truncated excerpt:** Table 133 is split across two source pages in `docs/standard/DSP0134_3.9.0.md`; the 0x17 row (Number of Associated Components, `n`) is the last row on the first page, and the very next row - with nothing in between - is 0x18 (Associated Component Handles, `n` WORDs). So the "likely 0x18" guess in the task doc is exactly right, and no intervening field exists.
+
+**Number of Associated Components (0x17) - third confirmed instance of the explicit-count-field idiom this milestone**, after Memory Channel's Memory Device Count (Story 05.0) and Additional Information's entry count (Story 06.0): Table 133's own Length row warns "this field must not be used to determine the number of Associated Components Handles specified within the structure," so `get_associated_component_count()` reads the explicit 0x17 byte directly, never derives it from `get_entry_size()`/header `Length`. `get_associated_component_handle_at(size_t index)` is double-guarded (index against the explicit count, and the computed offset independently against `get_entry_size()`), matching every trailing-array accessor pattern established earlier in this milestone (`MemoryChannelEntry::get_device_handle_at`).
+
+**Image Size (0x0C, QWORD) unknown sentinel:** `0xFFFFFFFFFFFFFFFF` means "unknown" per Table 133's own Description column; `kImageSizeUnknown` is exposed as a public `static constexpr` so callers can compare directly, and `is_image_size_known()` wraps that comparison for convenience. `get_image_size()` also returns this same sentinel (rather than 0) when the field is absent from a truncated/older structure, so there is exactly one "don't know" value for callers to check.
+
+**Version Format (7.46.1, Table 134) and Firmware ID Format (7.46.2, Table 135) reserved-range rendering:** both enums have exactly two reserved ranges each (a "future DSP0134 assignment" range and an "80h-FFh vendor/OEM-specific" range); `get_version_format_string()`/`get_firmware_id_format_string()` render these two ranges distinctly rather than collapsing them into "Unknown," the same rationale documented on `StringPropertyEntry::get_property_id_string()` below.
+
+**String Property ID (7.47.1, Table 139) - three distinct reserved ranges rendered by name, not a flat "Unknown":** `0` = Reserved (do not use), `1` = UEFI device path (the one currently-assigned value), `2`-`32767` = Reserved (DMTF), `32768`-`49151` = Reserved (Firmware Vendor), `49152`-`65535` = Reserved (OEM). `get_property_id_string()` checks these three ranges directly rather than treating every unassigned value identically, since the ranges themselves convey which party may claim a future value within them even before any specific ID is assigned - the task's own explicit requirement, and each range plus the assigned value (1) is covered by its own distinct test case in `tests/unit/string_property_entry_test.cpp`.
+
+**Inactive (7.48, Table 140):** no decoded fields, matching `BootIntegrityServicesEntry`'s shape exactly (Story 05.0) - constructor type-checks only, `get_type()` returns `"Inactive"`, `render_to_description()` states per 7.48's own guidance that upper-level software should bypass/skip this structure.
+
+**CLI:** no changes needed to `smbios/src/command_line_parser.cpp`/`main.cpp` for any of the three types - display is fully generic via the existing factory-dispatch loop in `main.cpp`, which dispatches on the three newly-registered handlers automatically; the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
+
+**Tests / gate:** `tests/unit/firmware_inventory_information_entry_test.cpp` (new, 6 cases: 0 Associated Component Handles, 3 Associated Component Handles, the Image Size unknown sentinel, a wrong-type-throws case, a factory-resolution case, plus characteristics/state/version-format/firmware-id-format decoding assertions folded into the 0- and 3-handle cases), `tests/unit/string_property_entry_test.cpp` (new, 7 cases: the assigned ID (1, UEFI device path), Reserved (0), one value from each of the three reserved ranges as distinct cases, a wrong-type-throws case, a factory-resolution case), `tests/unit/inactive_entry_test.cpp` (new, 2 cases: factory registration/resolution from a minimal header-only buffer, a wrong-type-throws case). `smbios_unit_test` 409 cases, 0 failures (up from 395 before this task). All 4 `ctest` targets green.
+
+Types 45, 46, 126 are not yet added to the consolidated factory-resolution test in `tests/unit/smbios_entry_factory_test.cpp` - deferred to this story's own Task 04 (Tests), matching every prior story's precedent. Story 07.0: 3/4 tasks complete.

@@ -1,7 +1,7 @@
 # 03 - Firmware Inventory Information, String Property, and Inactive
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 
 ## Objective
 
@@ -101,12 +101,17 @@ explicit Non-goals decision rather than given a dedicated task.
 
 ## Success criteria
 
-- [ ] Associated Component Handles array offset confirmed against the
-      full spec table.
-- [ ] All three types register and resolve through the factory
+- [x] Associated Component Handles array offset confirmed against the
+      full spec table. Table 133 is split across two source pages; the
+      0x17 (Number of Associated Components) row is the last row on the
+      first page, and the very next row is 0x18 (Associated Component
+      Handles, n WORDs) - nothing sits between them.
+- [x] All three types register and resolve through the factory
       (`SMBiosHandler` values 45, 46, 126).
-- [ ] String Property's reserved-range rendering covered by a test case
+- [x] String Property's reserved-range rendering covered by a test case
       per range.
-- [ ] `smbios` CLI displays all three on real hardware where present (or,
+- [x] `smbios` CLI displays all three on real hardware where present (or,
       for Inactive, in a synthetic demonstration if no real machine
-      happens to report one).
+      happens to report one) - via the existing generic factory-driven
+      `render_to_description()` loop in `smbios/src/main.cpp`; no CLI edit
+      needed, same finding as Tasks 01/02.
