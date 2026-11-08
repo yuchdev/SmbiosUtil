@@ -1,5 +1,16 @@
 name: CI
 
+# Milestone 0006, Story 01.0 (R3): every push already runs the full
+# hermetic (synthetic-table, no-privilege) unit/mock suite unprivileged -
+# via the `sanitizers` job's "Run unprivileged tests" step on
+# ubuntu-latest/macos-latest, and via the `build` job's own
+# "Run unprivileged tests" step on windows-latest (sanitizers aren't set
+# up for MSVC - see that step's own comment). Every step that instead
+# needs root/admin to read the real SMBIOS table (the "functional test"
+# and "integration test" steps below) is explicitly named
+# "best-effort"/"needs elevated privileges" and run with
+# `continue-on-error: true` - the privileged, real-hardware complement to
+# the unprivileged hermetic suite, not a redundant duplicate of it.
 on: [push, pull_request]
 
 jobs:

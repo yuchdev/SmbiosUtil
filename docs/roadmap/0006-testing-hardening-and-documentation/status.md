@@ -6,7 +6,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 | Story | Name                                | Status         | Tests |
 |-------|----------------------------------------|----------------|-------|
-| 01.0  | Hermetic fixture-based test layer     | 🔶 In progress (2/3 tasks) | 163 unit (smbios_unit_test) |
+| 01.0  | Hermetic fixture-based test layer     | ✅ Complete (2026-11-08) | 163 unit (smbios_unit_test) |
 | 02.0  | Boundary and malformed-table tests    | ⬜ Not started | -     |
 | 03.0  | Documentation and release pass        | ⬜ Not started | -     |
 
@@ -97,3 +97,31 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   reliable signal for this codebase's push_back-style construction); the
   real signal is `grep -rl synthetic_table_builder.h tests/unit/*.cpp`:
   3 files before this task, 16 after. Task 03 remains.
+- **2026-11-08, Story 01.0 Task 03 (CI wiring, R3) landed - Story 01.0
+  complete:** found that the full hermetic suite was *already* running
+  unprivileged on every push for all three OSes, just not under a job
+  named `hermetic-tests` as the stale task spec assumed - Windows via
+  the `build` job's existing "Run unprivileged tests" step, Linux/macOS
+  via the `sanitizers` job's existing "Run unprivileged tests
+  (smbios_unit_test, smbios_mock_test)" step. Added a single traceability
+  comment at the top of `.github/workflows/ci.yml` naming which step
+  covers which OS and why the root/admin-needing "functional test"/
+  "integration test" steps are the privileged complement, not a
+  duplicate, rather than introducing a fourth near-identical job - a new
+  job would not have made the suite any more unprivileged or any more
+  complete than the jobs already doing this work, only added
+  maintenance surface. YAML syntax validated (`python3 -c "import
+  yaml; yaml.safe_load(...)"`). Full suite re-confirmed green: 163
+  `smbios_unit_test` cases, all 4 `ctest` targets pass.
+
+## Story 01.0 - Hermetic Fixture-Based Test Layer (✅ 2026-11-08)
+
+**Delivered:**
+- `smbios::test::SyntheticTableBuilder` (`tests/unit/synthetic_table_builder.h`/`.cpp`) - fluent, well-formed-by-default in-memory SMBIOS table construction (R1), with an `add_raw_bytes()` escape hatch reserved for Story 02.0's malformed-table tests.
+- Reused rather than duplicated the pre-existing `SmbiosTableWalkTestAccess` friend seam for feeding a synthetic buffer into `SMBios`'s private table walk - no new production API surface was added.
+- 13 `tests/unit/*_test.cpp` files migrated off hand-rolled byte buffers onto the shared builder (R2); 13 duplicate `append_string_terminator()` helpers deleted as dead code.
+- Confirmed (not newly built) that CI already runs the full hermetic suite unprivileged on every push across Windows/Linux/macOS (R3); added one traceability comment rather than a redundant job.
+
+**Tests / gate:** `smbios_unit_test` 163 cases, 0 failures (up from 159 before this story). All 4 `ctest` targets (`smbios_unit_test`, `smbios_mock_test`, `smbios_perf_test`, `smbios_integration_test`) green on macOS, independently re-verified (not just agent-reported) after each task. No regressions.
+
+**Reconciliation note:** the story's spec file paths (`smbios/test/unit/...`) predate the repo-root library restructuring; actual location is `tests/unit/...` - task specs are otherwise fully consumed as written, no redesign.

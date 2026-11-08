@@ -1,7 +1,7 @@
 # Story 01.0 - Hermetic Fixture-Based Test Layer
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 
 ## Scope
 
@@ -17,7 +17,7 @@ Task 03 "build-only" gap.
 |----|------------------------------------------------------------------------|----------------|--------|
 | 01 | [Synthetic table builder](01-synthetic-table-builder.md)               | ✅ Done | 02     |
 | 02 | [Migrate functional tests to fixtures](02-migrate-functional-tests-to-fixtures.md) | ✅ Done | 03     |
-| 03 | [Tests](03-tests.md)                                                  | ⬜ Not started | -      |
+| 03 | [Tests](03-tests.md)                                                  | ✅ Done | -      |
 
 ## Key constraints
 
@@ -31,9 +31,16 @@ Task 03 "build-only" gap.
 
 ## Files or directories created or modified by this story
 
-- `smbios/test/unit/synthetic_table_builder.h` / `.cpp` (new).
-- Every `tests/unit/*_test.cpp` file created across milestones 0002-0005
-  that hand-rolled its own synthetic byte array - migrated to use the
-  shared builder (R2).
-- `.github/workflows/ci.yml` (milestone 0001) - new unprivileged hermetic-
-  suite job.
+- `tests/unit/synthetic_table_builder.h` / `.cpp` (new; actual location -
+  the spec's `smbios/test/unit/` path predates the repo-root
+  restructuring, see CLAUDE.md).
+- 13 `tests/unit/*_test.cpp` files that hand-rolled their own synthetic
+  byte buffers - migrated onto the shared builder (R2); see status.md for
+  the full list.
+- `.github/workflows/ci.yml` - the unprivileged hermetic suite was
+  already running per-OS via the `build` (Windows) and `sanitizers`
+  (Linux/macOS) jobs' existing "Run unprivileged tests" steps; Task 03
+  added a traceability comment rather than a new job, since adding a
+  fourth near-duplicate job name would not have made the suite any more
+  unprivileged or any more complete - see Task 03's own doc for the
+  reasoning.
