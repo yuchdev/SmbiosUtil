@@ -18,7 +18,7 @@ justified by how tightly the last 4 (26-29) share one field shape.
 
 | #  | Document                                                        | Status         | Blocks |
 |----|----------------------------------------------------------------------|----------------|--------|
-| 01 | [Pointing device and portable battery](01-pointing-device-and-portable-battery.md) | ⬜ Not started | 04     |
+| 01 | [Pointing device and portable battery](01-pointing-device-and-portable-battery.md) | ✅ Done | 04     |
 | 02 | [Reset, hardware security, power controls](02-reset-security-power-controls.md) | ⬜ Not started | 04     |
 | 03 | [Voltage, cooling, temperature, and current probes](03-probes.md) | ⬜ Not started | 04     |
 | 04 | [Tests](04-tests.md)                                                  | ⬜ Not started | -      |

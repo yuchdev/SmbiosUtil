@@ -1,7 +1,7 @@
 # 01 - Pointing Device and Portable Battery
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Done
 
 ## Objective
 
@@ -87,8 +87,8 @@ Implement `PointingDeviceEntry` (`SMBiosHandler` value `21`), DSP0134
 
 ## Success criteria
 
-- [ ] Both types register and resolve through the factory
+- [x] Both types register and resolve through the factory
       (`SMBiosHandler` values 21 and 22).
-- [ ] SBDS-indicator and unknown-sentinel cases are each covered by a
+- [x] SBDS-indicator and unknown-sentinel cases are each covered by a
       distinct test case.
-- [ ] `smbios` CLI displays both types on real hardware where present.
+- [x] `smbios` CLI displays both types on real hardware where present.

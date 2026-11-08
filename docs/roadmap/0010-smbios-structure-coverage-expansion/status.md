@@ -9,7 +9,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 01.0  | `tables/` segment reorg                                             | ✅ Complete (2026-11-08) | 166 unit |
 | 02.0  | Board, OEM, and firmware metadata structures                       | ✅ Complete (2026-11-08) | 191 unit |
 | 03.0  | Event log and memory error/mapping structures                      | ✅ Complete (2026-11-08) | 237 unit |
-| 04.0  | Sensors, probes, and small system-control structures                | ⬜ Not started | -     |
+| 04.0  | Sensors, probes, and small system-control structures                | 🔶 In progress (1/4 tasks, 2026-11-08) | 255 unit |
 | 05.0  | Remote/out-of-band management structures                           | ⬜ Not started | -     |
 | 06.0  | Power, onboard-device, and additional-info structures              | ⬜ Not started | -     |
 | 07.0  | Security, processor, firmware-inventory, and terminal structures    | ⬜ Not started | -     |
@@ -76,3 +76,15 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 **CLI:** `smbios/src/main.cpp` includes the new header for display, mirroring existing precedent; the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
 
 Task 04 added types 15, 18, 20, 33 to the consolidated factory-resolution test in `tests/unit/smbios_entry_factory_test.cpp` - all resolve correctly from a minimal header-only buffer. Full suite: 237 unit cases, 4/4 ctest targets green, independently re-verified after every task. Story 03.0 complete.
+
+## Story 04.0 - Sensors, Probes, and Small System-Control Structures (🔶 in progress, 2026-11-08)
+
+**Task 01 delivered:** `PointingDeviceEntry` (`SMBios::PointingDevice` = 21, DSP0134 3.9.0 7.22, Table 87) - Device Type (7.22.1, Table 88) and Interface (7.22.2, Table 89) enums plus Number of Buttons, with the accessor deliberately named `get_device_type()` (never `get_type()`) to avoid shadowing the inherited structure-kind accessor. `PortableBatteryEntry` (`SMBios::PortableBattery` = 22, 7.23, Table 90) - Location/Manufacturer/Device Name/SBDS Version strings, Manufacture Date and Serial Number strings each with a `uses_sbds_manufacture_date()`/`uses_sbds_serial_number()` predicate for the "index 0 means see SBDS instead" 2.2+ convention (SBDS data itself not decoded), Device Chemistry enum (7.23.1, Table 91), Design Capacity (mWh) and Design Voltage (mV) each with a known/unknown predicate, and Maximum Error percentage.
+
+**Design Capacity Multiplier resolution (the task's own flagged open question):** read directly from `docs/standard/DSP0134_3.9.0.md`'s full Table 90, the Design Capacity Multiplier IS a separate structure field - offset 0x15h, BYTE, 2.2+, immediately after SBDS Device Chemistry (0x14h) and before the OEM-specific DWORD (0x16h) - not merely prose about external interpretation. `PortableBatteryEntry::get_design_capacity()` therefore returns the EFFECTIVE value: the raw 0x0A WORD multiplied by the 0x15 BYTE when that field is present (`get_entry_size() >= 0x16`), defaulting the multiplier to 1 (the spec's own documented default) both when the field is absent on a shorter/pre-2.2 structure and defensively if present-but-zero. The 0x0A field's own "0 means unknown" sentinel is checked pre-multiplication. The raw multiplier byte itself is not exposed as a separate public accessor, since the task's accessor list calls only for the already-resolved effective capacity; it is used internally via a private helper.
+
+**Tests / gate:** `tests/unit/pointing_device_entry_test.cpp` (new, 6 cases) and `tests/unit/portable_battery_entry_test.cpp` (new, 12 cases) - every documented Device Type/Interface/Device Chemistry enum value, the SBDS-indicator (index 0) cases for Manufacture Date and Serial Number as cases distinct from the normal-string case, the unknown sentinels for Design Capacity (0)/Design Voltage (0)/Maximum Error (0xFF) each as a distinct case, the Design Capacity Multiplier applying when present vs. defaulting to 1 when absent (also distinct cases), a minimum-length-buffer defaults case, an unrecognized-enum-value case, and a factory-resolution case, for each type. `smbios_unit_test` 255 cases, 0 failures (up from 237 before this task). All 4 `ctest` targets green.
+
+**CLI:** `smbios/src/main.cpp` includes both new headers for display, mirroring existing precedent; the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
+
+Types 21/22 are not yet added to the consolidated factory-resolution test in `tests/unit/smbios_entry_factory_test.cpp` - deferred to this story's own Task 04 (Tests), matching Story 03.0's precedent of doing that consolidation in its own final task rather than per-task.

@@ -108,6 +108,8 @@ public:
         MemoryErrorInformation32Bit = 18,
         MemoryArrayMappedAddress = 19,
         MemoryDeviceMappedAddress = 20,
+        PointingDevice = 21,
+        PortableBattery = 22,
         SystemBootInformation = 32,
         MemoryErrorInformation64Bit = 33,
         EndOfTable = 127
