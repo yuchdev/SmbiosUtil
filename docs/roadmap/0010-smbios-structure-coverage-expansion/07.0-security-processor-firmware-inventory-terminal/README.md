@@ -21,7 +21,7 @@ lands.
 | 01 | [TPM device](01-tpm-device.md)                                      | ✅ Complete | 04     |
 | 02 | [Processor additional information](02-processor-additional-information.md) | ✅ Complete | 04     |
 | 03 | [Firmware inventory, string property, and inactive](03-firmware-inventory-string-property-inactive.md) | ✅ Complete | 04     |
-| 04 | [Tests](04-tests.md)                                              | ⬜ Not started | -      |
+| 04 | [Tests](04-tests.md)                                              | ✅ Done     | -      |
 
 Task 01 is TPM Device (43) alone - a flat, fully fixed-offset structure
 with its own QWORD characteristics bitmask (7.44.1), self-contained.

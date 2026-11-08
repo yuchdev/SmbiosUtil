@@ -215,6 +215,11 @@ BOOST_AUTO_TEST_CASE(CreateResolvesEveryRealSMBiosHandlerExceptEndOfTableTestCas
         SMBios::SystemPowerSupply,
         SMBios::AdditionalInformation,
         SMBios::OnboardDevicesExtendedInformation,
+        SMBios::TpmDevice,
+        SMBios::ProcessorAdditionalInformation,
+        SMBios::FirmwareInventoryInformation,
+        SMBios::StringProperty,
+        SMBios::Inactive,
     };
 
     SMBiosEntryFactory factory;

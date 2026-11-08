@@ -12,7 +12,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 04.0  | Sensors, probes, and small system-control structures                | ✅ Complete (2026-11-09) | 317 unit |
 | 05.0  | Remote/out-of-band management structures                           | ✅ Complete (2026-11-09) | 360 unit |
 | 06.0  | Power, onboard-device, and additional-info structures              | ✅ Complete (2026-11-09) | 381 unit |
-| 07.0  | Security, processor, firmware-inventory, and terminal structures    | 🔶 In progress | 409 unit |
+| 07.0  | Security, processor, firmware-inventory, and terminal structures    | ✅ Complete (2026-11-09) | 409 unit |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -248,3 +248,5 @@ Type 43 is not yet added to the consolidated factory-resolution test in `tests/u
 **Tests / gate:** `tests/unit/firmware_inventory_information_entry_test.cpp` (new, 6 cases: 0 Associated Component Handles, 3 Associated Component Handles, the Image Size unknown sentinel, a wrong-type-throws case, a factory-resolution case, plus characteristics/state/version-format/firmware-id-format decoding assertions folded into the 0- and 3-handle cases), `tests/unit/string_property_entry_test.cpp` (new, 7 cases: the assigned ID (1, UEFI device path), Reserved (0), one value from each of the three reserved ranges as distinct cases, a wrong-type-throws case, a factory-resolution case), `tests/unit/inactive_entry_test.cpp` (new, 2 cases: factory registration/resolution from a minimal header-only buffer, a wrong-type-throws case). `smbios_unit_test` 409 cases, 0 failures (up from 395 before this task). All 4 `ctest` targets green.
 
 Types 45, 46, 126 are not yet added to the consolidated factory-resolution test in `tests/unit/smbios_entry_factory_test.cpp` - deferred to this story's own Task 04 (Tests), matching every prior story's precedent. Story 07.0: 3/4 tasks complete.
+
+Task 04 added types 43, 44, 45, 46, 126 to the consolidated factory-resolution test - all resolve correctly. Full suite: 409 unit cases, 4/4 ctest targets green, independently re-verified after every task. Story 07.0 complete - this closes the milestone's full feature scope, all 34 new SMBIOS structure types implemented across 49 total (11 pre-existing + 34 new = 45 distinct types, plus the 3 deliberately-excluded obsolete types 5/6/10 and the 49th slot being EndOfTable's own non-entry terminator).
