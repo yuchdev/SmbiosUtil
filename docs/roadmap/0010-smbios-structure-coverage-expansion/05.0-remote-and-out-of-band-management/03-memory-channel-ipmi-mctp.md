@@ -1,7 +1,7 @@
 # 03 - Memory Channel, IPMI Device Information, and MCTP Host Interface
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 
 ## Objective
 

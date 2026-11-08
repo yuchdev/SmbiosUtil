@@ -124,6 +124,9 @@ public:
         ManagementDevice = 34,
         ManagementDeviceComponent = 35,
         ManagementDeviceThresholdData = 36,
+        MemoryChannel = 37,
+        IpmiDeviceInformation = 38,
+        ManagementControllerHostInterface = 42,
         EndOfTable = 127
     };
 
