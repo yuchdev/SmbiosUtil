@@ -19,6 +19,10 @@
 #include <smbios/tables/system_reset_entry.h>
 #include <smbios/tables/hardware_security_entry.h>
 #include <smbios/tables/system_power_controls_entry.h>
+#include <smbios/tables/voltage_probe_entry.h>
+#include <smbios/tables/cooling_device_entry.h>
+#include <smbios/tables/temperature_probe_entry.h>
+#include <smbios/tables/electrical_current_probe_entry.h>
 #include <smbios/smbios_entry_factory.h>
 #include <smbios_util/command_line_parser.h>
 

@@ -113,6 +113,10 @@ public:
         SystemReset = 23,
         HardwareSecurity = 24,
         SystemPowerControls = 25,
+        VoltageProbe = 26,
+        CoolingDevice = 27,
+        TemperatureProbe = 28,
+        ElectricalCurrentProbe = 29,
         SystemBootInformation = 32,
         MemoryErrorInformation64Bit = 33,
         EndOfTable = 127
