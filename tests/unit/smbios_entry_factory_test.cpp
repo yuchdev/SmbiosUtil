@@ -195,6 +195,15 @@ BOOST_AUTO_TEST_CASE(CreateResolvesEveryRealSMBiosHandlerExceptEndOfTableTestCas
         SMBios::MemoryErrorInformation32Bit,
         SMBios::MemoryDeviceMappedAddress,
         SMBios::MemoryErrorInformation64Bit,
+        SMBios::PointingDevice,
+        SMBios::PortableBattery,
+        SMBios::SystemReset,
+        SMBios::HardwareSecurity,
+        SMBios::SystemPowerControls,
+        SMBios::VoltageProbe,
+        SMBios::CoolingDevice,
+        SMBios::TemperatureProbe,
+        SMBios::ElectricalCurrentProbe,
     };
 
     SMBiosEntryFactory factory;

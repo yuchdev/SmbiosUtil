@@ -9,7 +9,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 01.0  | `tables/` segment reorg                                             | ✅ Complete (2026-11-08) | 166 unit |
 | 02.0  | Board, OEM, and firmware metadata structures                       | ✅ Complete (2026-11-08) | 191 unit |
 | 03.0  | Event log and memory error/mapping structures                      | ✅ Complete (2026-11-08) | 237 unit |
-| 04.0  | Sensors, probes, and small system-control structures                | 🔶 In progress (3/4 tasks, 2026-11-08) | 317 unit |
+| 04.0  | Sensors, probes, and small system-control structures                | ✅ Complete (2026-11-09) | 317 unit |
 | 05.0  | Remote/out-of-band management structures                           | ⬜ Not started | -     |
 | 06.0  | Power, onboard-device, and additional-info structures              | ⬜ Not started | -     |
 | 07.0  | Security, processor, firmware-inventory, and terminal structures    | ⬜ Not started | -     |
@@ -77,7 +77,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 Task 04 added types 15, 18, 20, 33 to the consolidated factory-resolution test in `tests/unit/smbios_entry_factory_test.cpp` - all resolve correctly from a minimal header-only buffer. Full suite: 237 unit cases, 4/4 ctest targets green, independently re-verified after every task. Story 03.0 complete.
 
-## Story 04.0 - Sensors, Probes, and Small System-Control Structures (🔶 in progress, 2026-11-08, 3/4 tasks)
+## Story 04.0 - Sensors, Probes, and Small System-Control Structures (✅ 2026-11-09)
 
 **Task 01 delivered:** `PointingDeviceEntry` (`SMBios::PointingDevice` = 21, DSP0134 3.9.0 7.22, Table 87) - Device Type (7.22.1, Table 88) and Interface (7.22.2, Table 89) enums plus Number of Buttons, with the accessor deliberately named `get_device_type()` (never `get_type()`) to avoid shadowing the inherited structure-kind accessor. `PortableBatteryEntry` (`SMBios::PortableBattery` = 22, 7.23, Table 90) - Location/Manufacturer/Device Name/SBDS Version strings, Manufacture Date and Serial Number strings each with a `uses_sbds_manufacture_date()`/`uses_sbds_serial_number()` predicate for the "index 0 means see SBDS instead" 2.2+ convention (SBDS data itself not decoded), Device Chemistry enum (7.23.1, Table 91), Design Capacity (mWh) and Design Voltage (mV) each with a known/unknown predicate, and Maximum Error percentage.
 
@@ -114,3 +114,5 @@ Types 21/22 are not yet added to the consolidated factory-resolution test in `te
 **Tests / gate:** `tests/unit/voltage_probe_entry_test.cpp` (11 cases), `tests/unit/temperature_probe_entry_test.cpp` (12 cases, including a Location-superset-value decode case), `tests/unit/electrical_current_probe_entry_test.cpp` (11 cases), `tests/unit/cooling_device_entry_test.cpp` (9 cases, covering all three documented length tiers - 0x0C neither trailing field, the 0x0D/0x0E boundary pair distinguishing "WORD half-present" from "WORD fully present" for Nominal Speed specifically, and >= 0x0F both present) - every WORD field's `0x8000` unknown-sentinel case as its own distinct test case across all four classes, a minimum-length-buffer defaults case, a wrong-type-throws case, and a factory-resolution case per class. `smbios_unit_test` 317 cases, 0 failures (up from 274 before this task). All 4 `ctest` targets green.
 
 **CLI:** `smbios/src/main.cpp` includes all four new headers for display, mirroring existing precedent; the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
+
+Task 04 added types 21-29 to the consolidated factory-resolution test - all resolve correctly. Full suite: 317 unit cases, 4/4 ctest targets green, independently re-verified after every task. Story 04.0 complete.

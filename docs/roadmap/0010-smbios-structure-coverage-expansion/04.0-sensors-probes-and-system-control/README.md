@@ -1,7 +1,7 @@
 # Story 04.0 - Sensors, Probes, and Small System-Control Structures
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 **Depends on:** Story 01.0 (`tables/` reorg)
 
 ## Scope
@@ -21,7 +21,7 @@ justified by how tightly the last 4 (26-29) share one field shape.
 | 01 | [Pointing device and portable battery](01-pointing-device-and-portable-battery.md) | ✅ Done | 04     |
 | 02 | [Reset, hardware security, power controls](02-reset-security-power-controls.md) | ✅ Done | 04     |
 | 03 | [Voltage, cooling, temperature, and current probes](03-probes.md) | ✅ Done | 04     |
-| 04 | [Tests](04-tests.md)                                                  | ⬜ Not started | -      |
+| 04 | [Tests](04-tests.md)                                                  | ✅ Done | -      |
 
 Task 01 groups Built-in Pointing Device (21) and Portable Battery (22) as
 the two "describes one piece of attached/auxiliary hardware" types with
