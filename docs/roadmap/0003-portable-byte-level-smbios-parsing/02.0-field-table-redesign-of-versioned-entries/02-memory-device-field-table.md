@@ -6,7 +6,7 @@
 ## Objective
 
 Delete `MemoryDeviceV21`/`V23`/`V26`/`V27`/`V28` and all five pointer
-members ([memory_device_entry.h:20-63,346-350](/libsmbios/include/smbios/memory_device_entry.h)) -
+members ([memory_device_entry.h:20-63,346-350](/libsmbios/include/smbios/tables/memory_device_entry.h)) -
 the deepest version chain in the current codebase - and rebuild every
 accessor in `MemoryDeviceEntry` the same way as Task 01.
 
