@@ -6,7 +6,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 | Story | Name                                                             | Status         | Tests |
 |-------|---------------------------------------------------------------------|----------------|-------|
-| 01.0  | `tables/` segment reorg                                             | 🔶 In progress (1/2) | - |
+| 01.0  | `tables/` segment reorg                                             | ✅ Complete (2026-11-08) | 166 unit |
 | 02.0  | Board, OEM, and firmware metadata structures                       | ⬜ Not started | -     |
 | 03.0  | Event log and memory error/mapping structures                      | ⬜ Not started | -     |
 | 04.0  | Sensors, probes, and small system-control structures                | ⬜ Not started | -     |

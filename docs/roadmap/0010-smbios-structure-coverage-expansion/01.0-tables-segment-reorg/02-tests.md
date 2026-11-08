@@ -1,7 +1,7 @@
 # 02 - Tests
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Done
 **Depends on:** Task 01
 
 ## Objective
@@ -44,3 +44,5 @@ None.
       pre-story baseline.
 - [ ] No test assertion was modified; only `#include` paths changed in any
       test file that needed updating.
+
+**Verification result (2026-11-08):** `ctest --test-dir build/macos --output-on-failure` - 4/4 targets green, `smbios_unit_test` 166 cases (identical to pre-story baseline). `git show` of the relocation commit confirms exactly 1-line `#include`-path changes in each of the 13 touched test files - no assertion was modified.

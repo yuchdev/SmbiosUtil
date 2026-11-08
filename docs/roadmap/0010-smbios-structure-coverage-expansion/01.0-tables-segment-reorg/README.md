@@ -1,7 +1,7 @@
 # Story 01.0 - `tables/` Segment Reorg
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** 🔶 In progress (1/2 tasks)
+**Status:** ✅ Complete
 **Depends on:** ADR [0002](/docs/adr/0002-tables-segment-for-smbios-entry-types.md)
 
 ## Scope
@@ -19,7 +19,7 @@ unmodified.
 | #  | Document                                                   | Status         | Blocks |
 |----|-------------------------------------------------------------|----------------|--------|
 | 01 | [Relocate headers and update build](01-relocate-headers-and-update-build.md) | ✅ Done        | 02     |
-| 02 | [Tests](02-tests.md)                                          | ⬜ Not started | -      |
+| 02 | [Tests](02-tests.md)                                          | ✅ Done        | -      |
 
 Two tasks, not more: the move itself (Task 01) and verifying nothing broke
 (Task 02) - there is no third concern this story needs to split out,
