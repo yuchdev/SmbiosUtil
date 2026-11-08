@@ -101,6 +101,7 @@ public:
         OemStrings = 11,
         SystemConfigurationOptions = 12,
         FirmwareLanguageInformation = 13,
+        GroupAssociations = 14,
         PhysicalMemoryArray = 16,
         MemoryDevice = 17,
         MemoryArrayMappedAddress = 19,

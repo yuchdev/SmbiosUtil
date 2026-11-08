@@ -1,7 +1,7 @@
 # Story 02.0 - Board, OEM, and Firmware Metadata Structures
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** 🔶 In progress (2/4 tasks)
+**Status:** 🔶 In progress (3/4 tasks)
 **Depends on:** Story 01.0 (`tables/` reorg)
 
 ## Scope
@@ -20,7 +20,7 @@ via `REGISTER_SMBIOS_ENTRY`.
 |----|----------------------------------------------------------------------|----------------|--------|
 | 01 | [Baseboard information](01-baseboard-information.md)                   | ✅ Complete | 04     |
 | 02 | [OEM strings, config options, firmware language](02-oem-strings-config-options-firmware-language.md) | ✅ Complete | 04     |
-| 03 | [Group associations](03-group-associations.md)                         | ⬜ Not started | 04     |
+| 03 | [Group associations](03-group-associations.md)                         | ✅ Complete | 04     |
 | 04 | [Tests](04-tests.md)                                                  | ⬜ Not started | -      |
 
 Task 01 is split out alone because Baseboard Information (2) is the only

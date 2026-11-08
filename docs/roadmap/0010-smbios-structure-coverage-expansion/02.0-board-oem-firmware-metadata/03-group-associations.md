@@ -1,7 +1,7 @@
 # 03 - Group Associations
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 
 ## Objective
 
@@ -57,7 +57,7 @@ Implement `GroupAssociationsEntry` (`SMBiosHandler` value `14`), DSP0134
 
 ## Success criteria
 
-- [ ] Registers and resolves through the factory for `SMBiosHandler == 14`.
-- [ ] Item count is derived from `Length`, never read as a structure field.
-- [ ] Malformed-length case does not read past `get_entry_size()`.
-- [ ] `smbios` CLI displays the type on real hardware where present.
+- [x] Registers and resolves through the factory for `SMBiosHandler == 14`.
+- [x] Item count is derived from `Length`, never read as a structure field.
+- [x] Malformed-length case does not read past `get_entry_size()`.
+- [x] `smbios` CLI displays the type on real hardware where present.
