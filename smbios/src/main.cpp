@@ -10,6 +10,7 @@
 #include <smbios/tables/system_configuration_options_entry.h>
 #include <smbios/tables/firmware_language_information_entry.h>
 #include <smbios/tables/group_associations_entry.h>
+#include <smbios/tables/system_event_log_entry.h>
 #include <smbios/smbios_entry_factory.h>
 #include <smbios_util/command_line_parser.h>
 

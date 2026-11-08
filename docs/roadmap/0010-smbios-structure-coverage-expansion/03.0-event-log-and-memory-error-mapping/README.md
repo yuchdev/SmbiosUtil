@@ -1,7 +1,7 @@
 # Story 03.0 - Event Log and Memory Error/Mapping Structures
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** 🔶 In progress (1/4 tasks, 2026-11-08)
 **Depends on:** Story 01.0 (`tables/` reorg)
 
 ## Scope
@@ -15,7 +15,7 @@ Memory Error Information (18, section 7.19), Memory Device Mapped Address
 
 | #  | Document                                                       | Status         | Blocks |
 |----|---------------------------------------------------------------------|----------------|--------|
-| 01 | [System event log](01-system-event-log.md)                            | ⬜ Not started | 04     |
+| 01 | [System event log](01-system-event-log.md)                            | ✅ Complete | 04     |
 | 02 | [32-bit and 64-bit memory error information](02-memory-error-information.md) | ⬜ Not started | 04     |
 | 03 | [Memory device mapped address](03-memory-device-mapped-address.md)      | ⬜ Not started | 04     |
 | 04 | [Tests](04-tests.md)                                                 | ⬜ Not started | -      |

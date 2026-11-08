@@ -102,6 +102,7 @@ public:
         SystemConfigurationOptions = 12,
         FirmwareLanguageInformation = 13,
         GroupAssociations = 14,
+        SystemEventLog = 15,
         PhysicalMemoryArray = 16,
         MemoryDevice = 17,
         MemoryArrayMappedAddress = 19,

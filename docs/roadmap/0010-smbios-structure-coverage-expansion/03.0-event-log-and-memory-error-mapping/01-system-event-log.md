@@ -1,7 +1,7 @@
 # 01 - System Event Log
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-08)
 
 ## Objective
 
@@ -81,9 +81,12 @@ cutoff below).
 
 ## Success criteria
 
-- [ ] Registers and resolves through the factory for `SMBiosHandler == 15`.
-- [ ] 2.0-shaped and 2.1+-shaped buffers both parse correctly, including
+- [x] Registers and resolves through the factory for `SMBiosHandler == 15`.
+- [x] 2.0-shaped and 2.1+-shaped buffers both parse correctly, including
       the `x == 0` "list not present" case.
-- [ ] Scope cutoff (event-log *contents* out of scope) is documented in
+- [x] Scope cutoff (event-log *contents* out of scope) is documented in
       the class doc comment.
-- [ ] `smbios` CLI displays the type on real hardware where present.
+- [x] `smbios` CLI displays the type on real hardware where present (via
+      the generic `SMBiosEntryFactory`/`render_to_description()` path, same
+      mechanism every other type uses - still subject to the separately
+      tracked CLI-linking bug `task_dc27f15d`, not fixed by this task).
