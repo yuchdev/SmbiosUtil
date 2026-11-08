@@ -9,6 +9,7 @@ are in `assets/`.
 | ADR        | Title                          | Status | Date |
 |------------|--------------------------------|--------|------|
 | [0001](0001-per-os-smbios-source-libraries.md) | Per-OS SMBIOS source libraries | Proposed | 2026-11-06 |
+| [0002](0002-tables-segment-for-smbios-entry-types.md) | `tables/` segment for SMBIOS structure-type entry classes | Proposed | 2026-11-08 |
 
 ## Template
 

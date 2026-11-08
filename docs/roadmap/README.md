@@ -94,6 +94,12 @@ on:
    text/XML/JSON/YAML, plus one worked example proving a "custom format"
    is a registration, not a fork - replacing `smbios_util`'s current
    single free-text output path.
+10. **0010** reorganizes every entry-type header into a `tables/` segment
+    (matching the `include/<segment>/` convention every other library in
+    this repo already uses) and implements the 34 non-obsolete SMBIOS
+    structure types (0004's eleven cover only 11 of the 49 the spec
+    defines) that remain unimplemented, independent of 0009's output-model
+    work.
 
 ## Milestones
 
@@ -108,5 +114,6 @@ on:
 | 0007 | C ABI shim for cross-language interop (opaque handles over the C++ core) | [plan.md](./0007-c-abi-shim-for-cross-language-interop/plan.md)     | [status.md](./0007-c-abi-shim-for-cross-language-interop/status.md)      |
 | 0008 | Upstream reference submodules and change-monitoring agent            | [plan.md](./0008-upstream-reference-submodules-and-monitoring-agent/plan.md) | [status.md](./0008-upstream-reference-submodules-and-monitoring-agent/status.md) |
 | 0009 | Structured output formats (text, XML, JSON, YAML, custom)            | [plan.md](./0009-structured-output-formats/plan.md)                | [status.md](./0009-structured-output-formats/status.md)                  |
+| 0010 | SMBIOS structure coverage expansion (`tables/` reorg + 34 new types) | [plan.md](./0010-smbios-structure-coverage-expansion/plan.md)      | [status.md](./0010-smbios-structure-coverage-expansion/status.md)        |
 
 **Legend (status.md files):** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
