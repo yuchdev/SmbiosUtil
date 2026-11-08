@@ -100,7 +100,7 @@ linked to the milestone/story that owns it.
   behavior (e.g. "falls through to the next source when `is_available()`
   is false") without needing real hardware or root. Story 01.1 (per-OS
   source libraries) lands the injectable seam's library boundary itself
-  - two new unit tests proving `smbios_source_legacy` links standalone and
+  - two new unit tests proving `smbios_legacy` links standalone and
   that `smbios::make_default_source_chain()` resolves through `smbios`
   core's link graph - ahead of any real fake `ISmbiosSource`; the mock
   placeholder's remaining blocker after that story is a concrete fake

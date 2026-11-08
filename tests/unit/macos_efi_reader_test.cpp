@@ -3,7 +3,7 @@
 #include <vector>
 
 // Milestone 0005, Story 03.0, Task 01 (ADR 0001): read_apple_smbios_property()
-// lives in the macOS-only smbios_source_macos library, so this entire file
+// lives in the macOS-only smbios_macos library, so this entire file
 // is a no-op translation unit on every other platform - matching
 // tests/unit/linux_sysfs_source_test.cpp / linux_efi_source_test.cpp's
 // established no-op-elsewhere convention for a platform-only source, with
@@ -13,7 +13,7 @@
 #include <iostream>
 
 #include <smbios/source_interface/smbios_anchor.h>
-#include <smbios/source_macos/macos_efi_reader.h>
+#include <smbios/macos/macos_efi_reader.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>

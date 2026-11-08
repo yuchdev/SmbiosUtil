@@ -1,7 +1,7 @@
 #if defined(_WIN32) || defined(_WIN64)
-#include <smbios/source_legacy/win_physical_memory.h>
-#include <smbios/source_legacy/win_native_api_helper.h>
-#include <smbios/source_legacy/win_handle_ptr.h>
+#include <smbios/legacy/win_physical_memory.h>
+#include <smbios/legacy/win_native_api_helper.h>
+#include <smbios/legacy/win_handle_ptr.h>
 
 #include <memory>
 #include <system_error>

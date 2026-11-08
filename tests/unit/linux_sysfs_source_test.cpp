@@ -3,7 +3,7 @@
 #include <vector>
 
 // Milestone 0005, Story 02.0, Task 01 (ADR 0001): LinuxSysfsSource lives in
-// the Linux-only smbios_source_linux library, so this entire file is a
+// the Linux-only smbios_linux library, so this entire file is a
 // no-op translation unit on every other platform - matching how
 // tests/unit/linux_efi_source_test.cpp (Task 02) guards its own coverage
 // for the identical reason.
@@ -15,7 +15,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <smbios/source_linux/linux_sysfs_source.h>
+#include <smbios/linux/linux_sysfs_source.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -29,7 +29,7 @@ namespace {
 /// `/sys/firmware/dmi/tables/`'s two-file layout, so
 /// `LinuxSysfsSource(entry_point_path, table_path)` can be pointed at it
 /// instead of the real sysfs paths (see that constructor's doc comment in
-/// `smbios/include/smbios/source_linux/linux_sysfs_source.h` for why it
+/// `smbios/include/smbios/linux/linux_sysfs_source.h` for why it
 /// exists).
 class SysfsFixtureDir {
 public:

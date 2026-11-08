@@ -1,10 +1,10 @@
 #include <boost/iostreams/device/mapped_file.hpp>
 
-#include <smbios/source_legacy/physical_memory.h>
+#include <smbios/legacy/physical_memory.h>
 #if defined(_WIN32) || defined(_WIN64)
-#include <smbios/source_legacy/win_physical_memory.h>
+#include <smbios/legacy/win_physical_memory.h>
 #elif defined(__APPLE__) || defined(__linux__) || defined (__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__sun)
-#include <smbios/source_legacy/posix_physical_memory.h>
+#include <smbios/legacy/posix_physical_memory.h>
 #endif
 
 using namespace smbios;

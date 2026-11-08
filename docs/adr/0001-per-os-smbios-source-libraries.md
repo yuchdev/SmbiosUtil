@@ -1,12 +1,23 @@
 # 0001 - Per-OS SMBIOS source libraries
 
-> **Status:** Proposed
+> **Status:** Accepted (implemented across milestone 0005, Stories 01.1-04.0)
 >
 > **Date:** 2026-11-06
 >
 > **Supersedes:** _(none)_
 >
 > **Superseded by:** _(none)_
+
+> **2026-11-08 addendum:** the four real libraries this ADR names -
+> `smbios_legacy`, `smbios_windows`, `smbios_macos`, `smbios_linux` -
+> were renamed from `smbios_source_legacy`/`smbios_source_windows`/
+> `smbios_source_macos`/`smbios_source_linux`, dropping the `_source_`
+> infix, at the user's explicit request. This body already reflects the
+> current names throughout; the decision itself (DD1-DD4, the
+> alternatives considered, the consequences) is unchanged - this was a
+> naming-only follow-up, not a new architectural choice. The
+> header-only interface library keeps its original name,
+> `smbios_source_interface`, unchanged.
 
 ## Context
 
@@ -72,10 +83,10 @@ EFI":
 | Target                     | Kind                        | Contents                                                                                   | Built when |
 |-----------------------------|------------------------------|----------------------------------------------------------------------------------------------|------------|
 | `smbios_source_interface`  | CMake `INTERFACE` (header-only) | `ISmbiosSource` (C1), `make_default_source_chain()` *declaration*, `fixup_smbios_version()` (R9), `read_u8/16/32/64`, `detect_smbios_anchor()` | always |
-| `smbios_source_legacy`     | `STATIC`                     | `PhysicalMemory`/`NativePhysicalMemory` (moved verbatim, same internal `#if` split), `LegacyMemoryScanSource` | always |
-| `smbios_source_windows`    | `STATIC`                     | `WindowsNativeSource` (adapted `SMBiosImpl`); defines `make_default_source_chain()` as `{WindowsNativeSource, LegacyMemoryScanSource}` | `WIN32` |
-| `smbios_source_macos`      | `STATIC`                     | `MacOsUefiSource`; defines `make_default_source_chain()` as `{MacOsUefiSource, LegacyMemoryScanSource}` | `APPLE` |
-| `smbios_source_linux`      | `STATIC`                     | `LinuxSysfsSource`, `LinuxEfiSource`; defines `make_default_source_chain()` as `{LinuxSysfsSource, LinuxEfiSource, LegacyMemoryScanSource}` | Linux |
+| `smbios_legacy`     | `STATIC`                     | `PhysicalMemory`/`NativePhysicalMemory` (moved verbatim, same internal `#if` split), `LegacyMemoryScanSource` | always |
+| `smbios_windows`    | `STATIC`                     | `WindowsNativeSource` (adapted `SMBiosImpl`); defines `make_default_source_chain()` as `{WindowsNativeSource, LegacyMemoryScanSource}` | `WIN32` |
+| `smbios_macos`      | `STATIC`                     | `MacOsUefiSource`; defines `make_default_source_chain()` as `{MacOsUefiSource, LegacyMemoryScanSource}` | `APPLE` |
+| `smbios_linux`      | `STATIC`                     | `LinuxSysfsSource`, `LinuxEfiSource`; defines `make_default_source_chain()` as `{LinuxSysfsSource, LinuxEfiSource, LegacyMemoryScanSource}` | Linux |
 
 `smbios` (core) links `smbios_source_interface` unconditionally, plus
 exactly **one** of the three per-OS libraries, selected by a **CMake-time**
@@ -84,7 +95,7 @@ branch in `smbios/src/CMakeLists.txt` - this is the full resolution of
 milestone 0005's R8: the branch moves from a C++ preprocessor `#if` to a
 CMake `if()`, and shrinks to "which library to link," nothing else. Any
 other `*nix` target (BSD/Solaris) links `smbios_source_interface` +
-`smbios_source_legacy` directly and gets no per-OS library at all,
+`smbios_legacy` directly and gets no per-OS library at all,
 honestly reproducing today's stub-only behavior rather than inventing a
 fourth named platform library nobody asked for.
 
@@ -94,14 +105,14 @@ fourth named platform library nobody asked for.
 per-OS (or, for BSD/Solaris, a trivial inline fallback compiled into
 `smbios` core itself) library CMake actually linked for this build - a
 *link-seam*, not a preprocessor-seam. No build ever links more than one of
-`smbios_source_windows`/`smbios_source_macos`/`smbios_source_linux`
+`smbios_windows`/`smbios_macos`/`smbios_linux`
 together, so "cross-platform" here means source-tree/target-graph
 organization per OS (matching this project's existing per-OS
 `CMakePresets.json` entries), never one binary containing every
 platform's code.
 
 Linux's sysfs and EFI mechanisms (the user's own "2 for Linux" example)
-stay in **one** `smbios_source_linux` library, not two: they are
+stay in **one** `smbios_linux` library, not two: they are
 `ISmbiosSource` implementations already independently selected at runtime
 via the C2 chain, always built and always linked together on every Linux
 configuration this project has (nothing ever wants one without the other -
@@ -116,7 +127,7 @@ out the legacy scan (DD3) worthwhile.
 | **A - Status quo**: classes inside one `smbios` library, runtime-selected chain, no new CMake targets (Stories 01.0-04.0 as originally scoped) | Smallest diff; no new build-graph complexity; already fully specced | Does not satisfy the user's explicit "package each platform as a separate library" ask; no independent-linkability for DD4's per-library test isolation | User-rejected scope; kept as the reason this ADR exists |
 | **B - 3 libraries only** (Windows/macOS/Linux), no shared interface/legacy library - each OS library embeds its own copy of `PhysicalMemory`/`LegacyMemoryScanSource`/decode primitives | Matches the user's literal example count exactly; conceptually simple | Violates DD2 (still need `ISmbiosSource`/decode primitives shared somewhere acyclic) and DD3 (triples identical legacy-scan logic, or forces an arbitrary "one OS library depends on another's copy" rule) | Duplication with no corresponding benefit; the cycle problem resurfaces the moment any two OS libraries both need the same decode helper |
 | **C - 5 libraries, mechanical split** along the milestone's existing 4 stories (windows, macos, linux-sysfs, linux-efi, +legacy or embedded) - the user's own example taken literally | Maps 1:1 onto existing story boundaries; "more libraries" literally satisfies the prompt's wording | Splits Linux sysfs/EFI despite DD1 finding no real consumer that wants one without the other; adds build-graph edges and two more CMakeLists.txt to maintain for zero architectural benefit | Rejected per DD1 - a library boundary with no corresponding "someone wants to link one without the other" case is complexity without payoff |
-| **D - Recommended**: 3 per-OS libraries + 1 shared `smbios_source_legacy` + 1 shared header-only `smbios_source_interface` | Satisfies the user's "package per platform" ask; resolves DD2's cycle by construction (decode primitives sit below both core `smbios` and every per-OS library); resolves DD3 by sharing the one piece of logic that is genuinely OS-agnostic already; each library independently testable per DD4 | More CMake targets than a literal "3" reading of the user's example; requires moving `byte_reader.h`/`smbios_anchor.h` out of core `smbios`'s conceptual ownership | Adopted |
+| **D - Recommended**: 3 per-OS libraries + 1 shared `smbios_legacy` + 1 shared header-only `smbios_source_interface` | Satisfies the user's "package per platform" ask; resolves DD2's cycle by construction (decode primitives sit below both core `smbios` and every per-OS library); resolves DD3 by sharing the one piece of logic that is genuinely OS-agnostic already; each library independently testable per DD4 | More CMake targets than a literal "3" reading of the user's example; requires moving `byte_reader.h`/`smbios_anchor.h` out of core `smbios`'s conceptual ownership | Adopted |
 
 ## Consequences
 
@@ -135,8 +146,8 @@ out the legacy scan (DD3) worthwhile.
 
 ### Negative
 
-- Five CMake targets (`smbios_source_interface`, `smbios_source_legacy`,
-  `smbios_source_windows`, `smbios_source_macos`, `smbios_source_linux`)
+- Five CMake targets (`smbios_source_interface`, `smbios_legacy`,
+  `smbios_windows`, `smbios_macos`, `smbios_linux`)
   plus `smbios` itself is more build-graph surface than today's one
   library - more `CMakeLists.txt` files to keep in sync, and one more
   place (`smbios/src/CMakeLists.txt`'s OS-selection branch) that must be

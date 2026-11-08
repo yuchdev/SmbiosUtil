@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include <smbios/source_linux/linux_sysfs_source.h>
+#include <smbios/linux/linux_sysfs_source.h>
 #include <smbios/source_interface/byte_reader.h>
 #include <smbios/source_interface/smbios_anchor.h>
 #include <smbios/source_interface/smbios_version_fixup.h>

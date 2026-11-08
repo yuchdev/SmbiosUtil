@@ -11,7 +11,7 @@ file(GLOB SOURCES *.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../include/${TARGET}/*.h)
 # platforms with no per-OS library at all (the else() branch below, BSD/
 # Solaris/other *nix) - remove it from the default glob here and re-add it
 # explicitly only in that one branch, so it never coexists in the same
-# build as smbios_source_windows/_macos/_linux's own definition of the
+# build as smbios_windows/smbios_macos/smbios_linux's own definition of the
 # same symbol (which would otherwise be a duplicate-definition link error
 # on every platform that *does* have a per-OS library).
 list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/fallback_source_chain.cpp)
@@ -22,25 +22,25 @@ include_directories(${Boost_INCLUDE_DIRS}
 # Platform-neutral shared libraries (milestone 0005, Story 01.1, ADR 0001):
 # smbios_source_interface (header-only decode primitives + the
 # ISmbiosSource/make_default_source_chain() contract) and
-# smbios_source_legacy (the legacy BIOS physical-memory scan, reused by
+# smbios_legacy (the legacy BIOS physical-memory scan, reused by
 # every platform's chain either directly or as a per-OS library's own
 # internal fallback) are built unconditionally.
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/source_interface)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/source_legacy)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/legacy)
 
 # Exactly one per-OS library is selected at CMake configure time - this
 # replaces the role smbios.cpp's old C++ `#if defined(_WIN32)` used to
-# play (R8); no two of smbios_source_windows/_macos/_linux are ever linked
+# play (R8); no two of smbios_windows/smbios_macos/smbios_linux are ever linked
 # into the same build.
 if(WIN32)
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/source_windows)
-    set(SMBIOS_PLATFORM_SOURCE_LIB smbios_source_windows)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/windows)
+    set(SMBIOS_PLATFORM_SOURCE_LIB smbios_windows)
 elseif(APPLE)
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/source_macos)
-    set(SMBIOS_PLATFORM_SOURCE_LIB smbios_source_macos)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/macos)
+    set(SMBIOS_PLATFORM_SOURCE_LIB smbios_macos)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/source_linux)
-    set(SMBIOS_PLATFORM_SOURCE_LIB smbios_source_linux)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/linux)
+    set(SMBIOS_PLATFORM_SOURCE_LIB smbios_linux)
 else()
     # BSD/Solaris/other *nix: no per-OS library exists for these targets
     # (ADR 0001) - fallback_source_chain.cpp (removed from SOURCES above,
@@ -56,5 +56,5 @@ add_library(${TARGET} ${SOURCES})
 target_compile_options(${TARGET} PRIVATE ${SMBIOS_COMPILE_OPTIONS} ${SMBIOS_WARNING_OPTIONS})
 target_link_options(${TARGET} PRIVATE ${SMBIOS_LINK_OPTIONS})
 
-target_link_libraries(${TARGET} PUBLIC smbios_source_interface smbios_source_legacy ${SMBIOS_PLATFORM_SOURCE_LIB})
+target_link_libraries(${TARGET} PUBLIC smbios_source_interface smbios_legacy ${SMBIOS_PLATFORM_SOURCE_LIB})
 

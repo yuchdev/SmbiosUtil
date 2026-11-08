@@ -3,7 +3,7 @@
 #include <vector>
 
 // Milestone 0005, Story 02.0, Task 02 (ADR 0001): LinuxEfiSource lives in
-// the Linux-only smbios_source_linux library, so this entire file is a
+// the Linux-only smbios_linux library, so this entire file is a
 // no-op translation unit on every other platform - matching how
 // tests/unit/linux_sysfs_source_test.cpp (Task 01's template for this
 // file's structure/guard style) narrows its own coverage to __linux__ for
@@ -15,7 +15,7 @@
 
 #include <unistd.h>
 
-#include <smbios/source_linux/linux_efi_source.h>
+#include <smbios/linux/linux_efi_source.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -29,7 +29,7 @@ namespace {
 /// so `LinuxEfiSource(primary_path, fallback_path)` can be pointed at it
 /// instead of the real `/sys/firmware/efi/systab` / `/proc/efi/systab`
 /// paths (see that constructor's doc comment in
-/// `smbios/include/smbios/source_linux/linux_efi_source.h` for why it
+/// `smbios/include/smbios/linux/linux_efi_source.h` for why it
 /// exists). Only the parsing stage (Stage 1) is exercised here - the
 /// `/dev/mem` mapping stage is an explicit real-hardware manual check per
 /// the task spec, not something a portable fixture can substitute for.

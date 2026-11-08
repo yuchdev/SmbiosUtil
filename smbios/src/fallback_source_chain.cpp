@@ -2,13 +2,13 @@
 #include <vector>
 
 #include <smbios/source_interface/smbios_source_chain.h>
-#include <smbios/source_legacy/legacy_memory_scan_source.h>
+#include <smbios/legacy/legacy_memory_scan_source.h>
 
 // Temporary fallback for BSD/Solaris/other *nix targets that have no
 // dedicated per-OS source library (ADR 0001, milestone 0005 Story 01.1):
 // smbios/src/CMakeLists.txt compiles this translation unit directly into
 // smbios core itself, and only in that one else() branch - no
-// smbios_source_windows/_macos/_linux library is ever added to the same
+// smbios_windows/smbios_macos/smbios_linux library is ever added to the same
 // build alongside it, so there is exactly one definition of
 // make_default_source_chain() per build either way.
 //

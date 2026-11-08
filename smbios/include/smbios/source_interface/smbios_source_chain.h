@@ -14,7 +14,7 @@ namespace smbios {
 /// Declared once, here, in the platform-neutral `smbios_source_interface`
 /// library; *defined* exactly once per build, in whichever library CMake
 /// actually links for this platform (milestone 0005, Story 01.1, ADR 0001):
-/// `smbios_source_windows`, `smbios_source_macos`, or `smbios_source_linux`
+/// `smbios_windows`, `smbios_macos`, or `smbios_linux`
 /// (selected by `smbios/src/CMakeLists.txt`'s `if(WIN32)/elseif(APPLE)/
 /// elseif(... Linux)` branch), or - for BSD/Solaris, which have no per-OS
 /// library - a trivial fallback definition compiled directly into `smbios`

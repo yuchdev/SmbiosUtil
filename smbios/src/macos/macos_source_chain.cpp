@@ -2,8 +2,8 @@
 #include <vector>
 
 #include <smbios/source_interface/smbios_source_chain.h>
-#include <smbios/source_legacy/legacy_memory_scan_source.h>
-#include <smbios/source_macos/macos_uefi_source.h>
+#include <smbios/legacy/legacy_memory_scan_source.h>
+#include <smbios/macos/macos_uefi_source.h>
 
 // Milestone 0005, Story 03.0, Task 02: macOS now has a real native
 // ISmbiosSource (MacOsUefiSource, reading the AppleSMBIOS IORegistry entry

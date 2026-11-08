@@ -1,14 +1,14 @@
-# smbios_source_macos - milestone 0005, Story 01.1 (ADR 0001). Only added
+# smbios_macos - milestone 0005, Story 01.1 (ADR 0001). Only added
 # by smbios/src/CMakeLists.txt's elseif(APPLE) branch. Story 03.0, Task 02
 # adds MacOsUefiSource, macOS's first native ISmbiosSource; macos_source_chain.cpp's
 # make_default_source_chain() is now {MacOsUefiSource, LegacyMemoryScanSource}.
-set(TARGET smbios_source_macos)
+set(TARGET smbios_macos)
 
-file(GLOB SOURCES *.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../include/smbios/source_macos/*.h)
+file(GLOB SOURCES *.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../include/smbios/macos/*.h)
 
 add_library(${TARGET} STATIC ${SOURCES})
 
-target_link_libraries(${TARGET} PUBLIC smbios_source_interface smbios_source_legacy)
+target_link_libraries(${TARGET} PUBLIC smbios_source_interface smbios_legacy)
 
 # Milestone 0005, Story 03.0, Task 01: macos_efi_reader.cpp reads SMBIOS
 # properties off the IORegistry via IOKit/CoreFoundation - system

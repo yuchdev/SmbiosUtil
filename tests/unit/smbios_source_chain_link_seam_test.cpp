@@ -17,7 +17,7 @@ using namespace smbios;
 // suite on.
 //
 // smbios_source_chain.h only *declares* make_default_source_chain(); its
-// *definition* lives in exactly one of smbios_source_windows/_macos/_linux
+// *definition* lives in exactly one of smbios_windows/smbios_macos/smbios_linux
 // (or fallback_source_chain.cpp on BSD/Solaris) - whichever one
 // smbios/src/CMakeLists.txt's if(WIN32)/elseif(APPLE)/elseif(Linux)/else()
 // branch selected at configure time (see that file's own comment). This

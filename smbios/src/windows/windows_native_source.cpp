@@ -3,8 +3,8 @@
 #include <vector>
 
 #include <smbios/source_interface/smbios_source_chain.h>
-#include <smbios/source_legacy/legacy_memory_scan_source.h>
-#include <smbios/source_windows/win_bios.h>
+#include <smbios/legacy/legacy_memory_scan_source.h>
+#include <smbios/windows/win_bios.h>
 
 using namespace smbios;
 
@@ -24,8 +24,8 @@ namespace {
 /// Milestone 0005, Story 01.1 (ADR 0001): relocated verbatim out of the
 /// single, `#if`-guarded `smbios_source_chain.cpp` into this library's own
 /// translation unit - duplicated byte-for-byte in
-/// `smbios/src/source_linux/linux_source_chain.cpp` rather than shared,
-/// since `smbios_source_windows` and `smbios_source_linux` are never linked
+/// `smbios/src/linux/linux_source_chain.cpp` rather than shared,
+/// since `smbios_windows` and `smbios_linux` are never linked
 /// into the same build and sharing it would require a third library for a
 /// ~20-line adapter helper that Story 04.0 (Windows) is expected to replace
 /// outright.

@@ -2,7 +2,7 @@
 #include <vector>
 
 // Milestone 0005, Story 03.0, Task 02 (ADR 0001): MacOsUefiSource lives in
-// the macOS-only smbios_source_macos library, so this entire file is a
+// the macOS-only smbios_macos library, so this entire file is a
 // no-op translation unit on every other platform - matching
 // tests/unit/macos_efi_reader_test.cpp's (Task 01) established
 // no-op-elsewhere convention for this platform.
@@ -14,7 +14,7 @@
 #include <smbios/source_interface/byte_reader.h>
 #include <smbios/source_interface/smbios_anchor.h>
 #include <smbios/source_interface/smbios_version_fixup.h>
-#include <smbios/source_macos/macos_uefi_source.h>
+#include <smbios/macos/macos_uefi_source.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>

@@ -1,5 +1,5 @@
 #if defined(_WIN32) || defined(_WIN64)
-#include <smbios/source_windows/win_system_information.h>
+#include <smbios/windows/win_system_information.h>
 #include <Windows.h>
 #include <tchar.h>
 #include <winternl.h>

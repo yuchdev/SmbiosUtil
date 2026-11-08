@@ -14,8 +14,8 @@
 // is now a CMake-time link-seam (which per-OS library gets linked), not a
 // preprocessor branch. The library boundary this test target would need to
 // substitute a fake source behind is also in place
-// (smbios_source_interface/smbios_source_legacy/smbios_source_windows/
-// _macos/_linux - see docs/adr/0001-per-os-smbios-source-libraries.md).
+// (smbios_source_interface/smbios_legacy/smbios_windows/smbios_macos/
+// smbios_linux - see docs/adr/0001-per-os-smbios-source-libraries.md).
 //
 // What is still missing is not the seam itself but a concrete fake
 // ISmbiosSource to substitute through it - that is Stories 02.0/03.0/04.0's

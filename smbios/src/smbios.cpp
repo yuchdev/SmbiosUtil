@@ -50,7 +50,7 @@ SMBios::SMBios()
     // of C++ entirely. make_default_source_chain() is defined exactly once
     // per build, inside whichever per-OS library smbios/src/CMakeLists.txt's
     // CMake-time `if(WIN32)/elseif(APPLE)/elseif(...Linux)` branch actually
-    // links (smbios_source_windows/_macos/_linux), or a trivial fallback
+    // links (smbios_windows/smbios_macos/smbios_linux), or a trivial fallback
     // compiled into this library directly on BSD/Solaris - never behind a
     // C++ `#if defined(_WIN32)` anywhere in this call chain.
     for (auto& source : make_default_source_chain()) {

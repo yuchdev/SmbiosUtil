@@ -5,8 +5,8 @@
 #include <utility>
 #include <vector>
 
-#include <smbios/source_linux/linux_efi_source.h>
-#include <smbios/source_legacy/physical_memory.h>
+#include <smbios/linux/linux_efi_source.h>
+#include <smbios/legacy/physical_memory.h>
 #include <smbios/source_interface/byte_reader.h>
 #include <smbios/source_interface/smbios_anchor.h>
 #include <smbios/source_interface/smbios_version_fixup.h>
