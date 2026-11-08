@@ -13,6 +13,7 @@
 #include <smbios/tables/system_event_log_entry.h>
 #include <smbios/tables/memory_error_information_32bit_entry.h>
 #include <smbios/tables/memory_error_information_64bit_entry.h>
+#include <smbios/tables/memory_device_mapped_address_entry.h>
 #include <smbios/smbios_entry_factory.h>
 #include <smbios_util/command_line_parser.h>
 

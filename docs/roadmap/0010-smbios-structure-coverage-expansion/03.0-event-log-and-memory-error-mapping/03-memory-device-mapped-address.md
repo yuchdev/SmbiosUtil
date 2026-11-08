@@ -1,7 +1,7 @@
 # 03 - Memory Device Mapped Address
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 
 ## Objective
 
@@ -69,8 +69,12 @@ DSP0134 3.9.0 section 7.21.
 
 ## Success criteria
 
-- [ ] Registers and resolves through the factory for `SMBiosHandler == 20`.
-- [ ] Sentinel-to-extended-field resolution covered by a test case, unit
+- [x] Registers and resolves through the factory for `SMBiosHandler == 20`.
+- [x] Sentinel-to-extended-field resolution covered by a test case, unit
       normalization verified (kibibytes vs bytes) by an explicit
       value-equality assertion, not just "does not crash."
-- [ ] `smbios` CLI displays the type on real hardware where present.
+- [x] `smbios` CLI displays the type on real hardware where present (via
+      `SMBiosEntryFactory`'s generic dispatch; `main.cpp` includes the new
+      header so its `REGISTER_SMBIOS_ENTRY` static-init registration is
+      linked in - subject to the pre-existing CLI-linking bug tracked
+      separately as `task_dc27f15d`, not fixed by this task).

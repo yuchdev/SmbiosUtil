@@ -8,7 +8,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 |-------|---------------------------------------------------------------------|----------------|-------|
 | 01.0  | `tables/` segment reorg                                             | ✅ Complete (2026-11-08) | 166 unit |
 | 02.0  | Board, OEM, and firmware metadata structures                       | ✅ Complete (2026-11-08) | 191 unit |
-| 03.0  | Event log and memory error/mapping structures                      | 🔶 In progress (2/4 tasks, 2026-11-08) | 224 unit |
+| 03.0  | Event log and memory error/mapping structures                      | 🔶 In progress (3/4 tasks, 2026-11-08) | 237 unit |
 | 04.0  | Sensors, probes, and small system-control structures                | ⬜ Not started | -     |
 | 05.0  | Remote/out-of-band management structures                           | ⬜ Not started | -     |
 | 06.0  | Power, onboard-device, and additional-info structures              | ⬜ Not started | -     |
@@ -49,7 +49,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 **Known issue carried forward, not fixed in this story:** the `smbios` CLI never actually links in any entry class's `REGISTER_SMBIOS_ENTRY` static registration (confirmed via `nm`) and so prints raw header IDs instead of decoded content on real hardware - true for all 11 pre-existing types too, not introduced by this story. Flagged as a separate task (`task_dc27f15d`) rather than fixed inline, since it's a CLI-target link-configuration issue orthogonal to adding new entry types.
 
-## Story 03.0 - Event Log and Memory Error/Mapping Structures (🔶 in progress, Tasks 01-02 landed 2026-11-08)
+## Story 03.0 - Event Log and Memory Error/Mapping Structures (🔶 in progress, Tasks 01-03 landed 2026-11-08)
 
 **Task 01 delivered:** `SystemEventLogEntry` (`SMBios::SystemEventLog` = 15, DSP0134 3.9.0 7.16) - fixed header fields (Log Area Length, Log Header/Data Start Offsets, Access Method, Log Status bitmask, Log Change Token, Access Method Address) plus the 2.1+ Log Header Format/descriptor-count(`x`)/descriptor-length(`y`)/trailing-descriptor-list fields, each guarded by both `SMBiosVersion >= {2,1}` and `get_entry_size()`. Explicit scope cutoff (R8) documented in the class doc comment: the actual non-volatile event-log records the structure points to via Access Method Address are out of scope - this codebase has no OS abstraction for indexed-I/O/memory-mapped/GPNV access.
 
@@ -66,3 +66,11 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 **Tests / gate:** `tests/unit/memory_error_information_32bit_entry_test.cpp` and `tests/unit/memory_error_information_64bit_entry_test.cpp` (new, 14 cases each) - full-field decode, every documented Error Type/Granularity/Operation enum value, a distinct known-value and sentinel case for each of Vendor Syndrome/Memory Array Error Address/Device Error Address/Error Resolution, a truncated-structure bounds-guard case, and a factory-resolution case. `smbios_unit_test` 224 cases, 0 failures (up from 196 before this task). All 4 `ctest` targets green.
 
 **CLI:** `smbios/src/main.cpp` includes both new headers for display, mirroring existing precedent; the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
+
+**Task 03 delivered:** `MemoryDeviceMappedAddressEntry` (`SMBios::MemoryDeviceMappedAddress` = 20, DSP0134 3.9.0 7.21, Table 86) - Starting/Ending Address (legacy DWORD, kibibytes, `0xFFFFFFFF` sentinel -> 2.7+ Extended Starting/Ending Address QWORD, bytes), Memory Device Handle, Memory Array Mapped Address Handle, Partition Row Position (0 = reserved, 0xFF = unknown - two distinct states), Interleave Position (0 = non-interleaved - a valid value with a different meaning than Partition Row Position's reserved 0 - 0xFF = unknown). Follows `PhysicalMemoryArrayEntry`'s/`MemoryArrayMappedAddressEntry`'s established sentinel-widening pattern, but additionally normalizes the unit itself: `get_starting_address()`/`get_ending_address()` always return bytes, converting the legacy kibibyte value (`* 1024`) rather than leaving the caller to reconcile two different units across the sentinel branch.
+
+**Spec discrepancy check:** verified Table 86 directly against `docs/standard/DSP0134_3.9.0.md` - field offsets/sentinels/units in the task document matched exactly, including the easily-missed Interleaved Data Depth field at 0x12 (BYTE, 2.1+, between Interleave Position and the 2.7+ extended fields) which the task's own field list omits but which does not shift the extended-field offsets (0x13/0x1B), since the task document's own offsets already accounted for it. No real discrepancy found this task.
+
+**Tests / gate:** `tests/unit/memory_device_mapped_address_entry_test.cpp` (new, 13 cases) - truncated-structure defaults, a 2.1-shaped buffer with an explicit kibibyte-to-byte conversion value-equality assertion (`0x10` KiB -> `0x4000` bytes, `0x20` KiB -> `0x8000` bytes), a 2.7+-shaped buffer with a real non-sentinel legacy address (confirms the legacy value, converted, is used even though non-zero extended fields are present in the buffer), a 2.7+-shaped buffer with the sentinel set (confirms the extended QWORD fields are read instead), a length-insufficient sentinel edge case, three Partition Row Position cases (0/Reserved, 0xFF/Unknown, normal), three Interleave Position cases (0/Non-interleaved, 0xFF/Unknown, normal), a wrong-header-type throw case, and a factory-resolution case. `smbios_unit_test` 237 cases, 0 failures (up from 224 before this task). All 4 `ctest` targets green.
+
+**CLI:** `smbios/src/main.cpp` includes the new header for display, mirroring existing precedent; the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
