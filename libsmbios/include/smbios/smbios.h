@@ -92,6 +92,7 @@ public:
     {
         BIOSInformation = 0,
         SystemInformation = 1,
+        BaseboardInformation = 2,
         SystemEnclosure = 3,
         ProcessorInformation = 4,
         CacheInformation = 7,

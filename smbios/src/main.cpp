@@ -5,6 +5,7 @@
 #include <fstream>
 #include <smbios/smbios.h>
 #include <smbios/tables/memory_device_entry.h>
+#include <smbios/tables/baseboard_information_entry.h>
 #include <smbios/smbios_entry_factory.h>
 #include <smbios_util/command_line_parser.h>
 

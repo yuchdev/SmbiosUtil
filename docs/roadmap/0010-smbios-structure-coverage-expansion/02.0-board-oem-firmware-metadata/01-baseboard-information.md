@@ -1,7 +1,7 @@
 # 01 - Baseboard Information
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 
 ## Objective
 
@@ -72,8 +72,15 @@ Implement `BaseboardInformationEntry` (`SMBiosHandler` value `2`), DSP0134
 
 ## Success criteria
 
-- [ ] Registers and resolves through the factory for `SMBiosHandler == 2`.
-- [ ] Minimum-length (0x08) and full-length buffers both parse correctly.
-- [ ] Feature-flags "not present" case (footnote 1) is distinct from "all
+- [x] Registers and resolves through the factory for `SMBiosHandler == 2`.
+- [x] Minimum-length (0x08) and full-length buffers both parse correctly.
+- [x] Feature-flags "not present" case (footnote 1) is distinct from "all
       bits clear."
-- [ ] `smbios` CLI displays the type on real hardware where present.
+- [x] `smbios` CLI displays the type on real hardware where present (in
+      practice: `smbios`'s display path is fully generic -
+      `SMBiosEntryFactory::create()` + `render_to_description()` in a loop
+      over every header, with no per-type branching anywhere in
+      `main.cpp`/`command_line_parser.cpp` - so every registered type,
+      including this one, is "wired in" by registration alone; see this
+      task's own commit message for a pre-existing, out-of-scope caveat
+      discovered while verifying this on real hardware).
