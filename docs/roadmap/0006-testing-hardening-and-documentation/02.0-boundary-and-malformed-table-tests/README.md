@@ -1,7 +1,7 @@
 # Story 02.0 - Boundary and Malformed-Table Tests
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** 🔶 In progress (2/3 tasks)
+**Status:** ✅ Complete
 **Depends on:** Story 01.0 (`SyntheticTableBuilder`'s `add_raw_bytes`)
 
 ## Scope
@@ -19,7 +19,7 @@ input, not just the hand-picked fixtures that story's own tasks wrote.
 |----|------------------------------------------------------------------|----------------|--------|
 | 01 | [Truncated and oversized length tests](01-truncated-and-oversized-length-tests.md) | ✅ Done        | 03     |
 | 02 | [Fuzz harness](02-fuzz-harness.md)                                | ✅ Done        | 03     |
-| 03 | [Tests](03-tests.md)                                              | ⬜ Not started | -      |
+| 03 | [Tests](03-tests.md)                                              | ✅ Done        | -      |
 
 ## Key constraints
 

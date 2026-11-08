@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                                | Status         | Tests |
 |-------|----------------------------------------|----------------|-------|
 | 01.0  | Hermetic fixture-based test layer     | ✅ Complete (2026-11-08) | 163 unit (smbios_unit_test) |
-| 02.0  | Boundary and malformed-table tests    | 🔶 In progress (2/3 tasks) | 166 unit (smbios_unit_test) |
+| 02.0  | Boundary and malformed-table tests    | ✅ Complete (2026-11-08) | 166 unit (smbios_unit_test) |
 | 03.0  | Documentation and release pass        | ⬜ Not started | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
@@ -251,3 +251,15 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 **Tests / gate:** `smbios_unit_test` 163 cases, 0 failures (up from 159 before this story). All 4 `ctest` targets (`smbios_unit_test`, `smbios_mock_test`, `smbios_perf_test`, `smbios_integration_test`) green on macOS, independently re-verified (not just agent-reported) after each task. No regressions.
 
 **Reconciliation note:** the story's spec file paths (`smbios/test/unit/...`) predate the repo-root library restructuring; actual location is `tests/unit/...` - task specs are otherwise fully consumed as written, no redesign.
+
+## Story 02.0 - Boundary and Malformed-Table Tests (✅ 2026-11-08)
+
+**Delivered:**
+- `tests/unit/malformed_table_test.cpp` (3 cases) - truncated/oversized-length overrun, missing double-NUL terminator, and structure-count mismatch, all asserting memory safety on adversarial input, not a specific recovered parse.
+- **Real finding, recorded as debt not fixed in this story** (test-only scope): `count_smbios_structures()` has no `EndOfTable`-stop special case the way `read_smbios_table()` does, so attacker-controlled bytes after a real terminator can inflate the reported count (3 vs. 1 actually iterable) - safe (bounds-checked, no crash) but a latent correctness gap. No current consumer relies on that count instead of iteration.
+- `tests/fuzz/read_smbios_table_fuzzer.cpp` + `SMBIOS_BUILD_FUZZERS` CMake option (off by default, Clang/AppleClang-only with an explicit configure-time failure otherwise) + `docs/dev/fuzzing.md`. Locally run 1.8M+ executions clean (after excluding one confirmed libc++/ASan annotation false-positive class, independently seen twice in this story).
+- Both tasks' fixtures independently re-verified by me under the project's real `-fsanitize=address,undefined` build (`build/macos-asan-test`), not just agent-reported: 3/3 `MalformedTableUnitTests` cases clean.
+
+**Tests / gate:** `smbios_unit_test` 166 cases, 0 failures (up from 163 after Story 01.0). All 4 `ctest` targets green. Sanitizer build of the new `MalformedTableUnitTests` suite independently confirmed clean.
+
+**Reconciliation note:** Task 02's spec code sample called a `smbios::read_headers_from_buffer()` free function that Story 01.0 never built (deliberately, in favor of the existing `SmbiosTableWalkTestAccess` seam) - the fuzz harness was built against the real seam instead, with a `static SMBios` instance reused per-process to avoid per-iteration hardware-probe construction. Task 03's spec called for CI wiring of the sanitizer run, already satisfied by Story 01.0 Task 03's finding that the `sanitizers` job already runs this suite on every push - no further CI change needed.
