@@ -10,7 +10,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 02.0  | Board, OEM, and firmware metadata structures                       | ✅ Complete (2026-11-08) | 191 unit |
 | 03.0  | Event log and memory error/mapping structures                      | ✅ Complete (2026-11-08) | 237 unit |
 | 04.0  | Sensors, probes, and small system-control structures                | ✅ Complete (2026-11-09) | 317 unit |
-| 05.0  | Remote/out-of-band management structures                           | ⬜ Not started | -     |
+| 05.0  | Remote/out-of-band management structures                           | 🔶 In progress (1/4 tasks) | 324 unit |
 | 06.0  | Power, onboard-device, and additional-info structures              | ⬜ Not started | -     |
 | 07.0  | Security, processor, firmware-inventory, and terminal structures    | ⬜ Not started | -     |
 
@@ -116,3 +116,15 @@ Types 21/22 are not yet added to the consolidated factory-resolution test in `te
 **CLI:** `smbios/src/main.cpp` includes all four new headers for display, mirroring existing precedent; the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
 
 Task 04 added types 21-29 to the consolidated factory-resolution test - all resolve correctly. Full suite: 317 unit cases, 4/4 ctest targets green, independently re-verified after every task. Story 04.0 complete.
+
+## Story 05.0 - Remote/Out-of-Band Management Structures (🔶 in progress, 1/4 tasks)
+
+**Task 01 delivered:** `OutOfBandRemoteAccessEntry` (`SMBios::OutOfBandRemoteAccess` = 30, DSP0134 3.9.0 7.31, Table 103) - Manufacturer Name string plus a Connections bit-field. `BootIntegrityServicesEntry` (`SMBios::BootIntegrityServices` = 31, 7.32) - deliberately content-free; DSP0134 3.9.0 defines no field table for this structure at all (7.32's text only reserves the type number for an external Boot Integrity Services API spec), so the class performs only the usual type check and a `render_to_description()` stating plainly that it carries no DSP0134-defined fields, rather than inventing any.
+
+**Connections bit-layout confirmation (the task's own flagged open question):** this task's own source excerpt redacted Table 103's Connections row, so it was re-read in full directly from `docs/standard/DSP0134_3.9.0.md`'s own 7.31 before any decoding logic was written. Confirmed layout: Bit 0 Inbound Connection Enabled (whether the facility may receive incoming connections for remote operations/problem management); Bit 1 Outbound Connection Enabled (whether the facility may initiate outbound connections to an alert management facility on critical conditions); Bits 7:2 Reserved, set to all zeros.
+
+**Tests / gate:** `tests/unit/out_of_band_remote_access_entry_test.cpp` (new, 5 cases: both Connections bits set, only the Outbound bit set to confirm the two bits decode independently, a minimum-length-buffer defaults case, a wrong-type-throws case, a factory-resolution case) and `tests/unit/boot_integrity_services_entry_test.cpp` (new, 2 cases: a minimal-buffer factory-registration/resolution case - the only shape this content-free structure ever takes - and a wrong-type-throws case). `smbios_unit_test` 324 cases, 0 failures (up from 317 before this task). All 4 `ctest` targets green.
+
+**CLI:** `smbios/src/main.cpp` includes both new headers for display, mirroring existing precedent (display itself is generic, via the factory-dispatch loop); the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
+
+Types 30/31 are not yet added to the consolidated factory-resolution test in `tests/unit/smbios_entry_factory_test.cpp` - deferred to this story's own Task 04 (Tests), matching Stories 03.0/04.0's precedent.

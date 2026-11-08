@@ -117,6 +117,8 @@ public:
         CoolingDevice = 27,
         TemperatureProbe = 28,
         ElectricalCurrentProbe = 29,
+        OutOfBandRemoteAccess = 30,
+        BootIntegrityServices = 31,
         SystemBootInformation = 32,
         MemoryErrorInformation64Bit = 33,
         EndOfTable = 127

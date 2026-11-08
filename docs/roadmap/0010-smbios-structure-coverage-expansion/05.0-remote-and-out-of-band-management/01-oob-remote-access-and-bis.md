@@ -1,7 +1,7 @@
 # 01 - Out-of-Band Remote Access and BIS Entry Point
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 
 ## Objective
 
@@ -65,7 +65,12 @@ constraints and status.md's note).
 
 ## Success criteria
 
-- [ ] Connections bit layout confirmed against the full spec table.
-- [ ] Both types register and resolve through the factory
+- [x] Connections bit layout confirmed against the full spec table: Bit 0
+      Inbound Connection Enabled, Bit 1 Outbound Connection Enabled, Bits
+      7:2 Reserved (DSP0134 3.9.0 7.31, Table 103).
+- [x] Both types register and resolve through the factory
       (`SMBiosHandler` values 30 and 31).
-- [ ] `smbios` CLI displays both types on real hardware where present.
+- [x] `smbios` CLI displays both types on real hardware where present (via
+      the existing generic factory-dispatch loop in `main.cpp`; the
+      CLI-linking bug tracked in `task_dc27f15d` is unchanged by this
+      task).
