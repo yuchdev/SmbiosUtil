@@ -12,7 +12,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 04.0  | Sensors, probes, and small system-control structures                | ✅ Complete (2026-11-09) | 317 unit |
 | 05.0  | Remote/out-of-band management structures                           | ✅ Complete (2026-11-09) | 360 unit |
 | 06.0  | Power, onboard-device, and additional-info structures              | ✅ Complete (2026-11-09) | 381 unit |
-| 07.0  | Security, processor, firmware-inventory, and terminal structures    | 🔶 In progress | 389 unit |
+| 07.0  | Security, processor, firmware-inventory, and terminal structures    | 🔶 In progress | 395 unit |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -199,7 +199,7 @@ Type 41 is not yet added to the consolidated factory-resolution test in `tests/u
 
 Task 04 added types 39, 40, 41 to the consolidated factory-resolution test - all resolve correctly. Full suite: 381 unit cases, 4/4 ctest targets green, independently re-verified after every task. Story 06.0 complete.
 
-## Story 07.0 - Security, Processor, Firmware-Inventory, and Terminal Structures (🔶 in progress, 1/4 tasks)
+## Story 07.0 - Security, Processor, Firmware-Inventory, and Terminal Structures (🔶 in progress, 2/4 tasks)
 
 **Task 01 delivered:** `TpmDeviceEntry` (`SMBios::TpmDevice` = 43, DSP0134 3.9.0 7.44/7.44.1, Table 126/127) - raw 4-byte TCG Vendor ID (0x04), Major/Minor Spec Version (0x08/0x09), Firmware Version 1/2 DWORDs (0x0A/0x0E), a Description DMI string (0x12), a QWORD Characteristics bit-field (0x13, 7.44.1), and OEM-defined (0x1B).
 
@@ -212,6 +212,18 @@ Task 04 added types 39, 40, 41 to the consolidated factory-resolution test - all
 **`bitset_to_properties<uint64_t>()` confirmed working without modification** - this is the project's first QWORD-width bitmask (every prior call site is `uint8_t`). The existing template in `AbstractSMBiosEntry` (`libsmbios/include/smbios/abstract_smbios_entry.h`) is already generic over any integral `T` (`std::is_integral<T>()` static_assert, loop driven by `T current_property = 0x1; current_property; current_property <<= 1`), so it instantiates and compiles cleanly at `uint64_t` with zero changes to the shared template itself. `CharacteristicsBitSetTestCase` (below) confirms correct rendering at this width, not just compilation.
 
 **Tests / gate:** `tests/unit/tpm_device_entry_test.cpp` (new, 8 cases: a TPM 1.2-shaped buffer, a TPM 2.0-shaped buffer with firmware version split across both DWORDs, a 3-character Vendor ID ("ABC" + trailing 0x00, confirmed trimmed to exactly "ABC", length 3), a 4-character Vendor ID ("ABCD", no null terminator, confirmed returned in full, length 4, not over-trimmed), a Characteristics-bits-set case (two of the four decoded bits set simultaneously, confirmed both rendered strings present and the other two decoded strings absent), a truncated-structure bounds-safety case, a wrong-type-throws case, a factory-resolution case). `smbios_unit_test` 389 cases, 0 failures (up from 381 before this task). All 4 `ctest` targets green.
+
+**Task 02 delivered:** `ProcessorAdditionalInformationEntry` (`SMBios::ProcessorAdditionalInformation` = 44, DSP0134 3.9.0 7.45/7.45.1, Table 128/129/130) - Referenced Handle (0x04, WORD, link to a Type 4 Processor Information structure, exposed raw/unresolved) plus a Processor-specific Block (0x06, sub-shaped per 7.45.1): Block Length (+0x00, `N`), Processor Type (+0x01, Table 130 enum), Processor-Specific Data (+0x02, `N` raw opaque bytes).
+
+**Table 130 confirmed in full against the real spec** (the task's own excerpt showed only the `0x00 = Reserved` placeholder row): `01h` IA32 (x86), `02h` x64 (x86-64/Intel64/AMD64/EM64T), `03h` Intel(R) Itanium(R) architecture, `04h` 32-bit ARM (Aarch32), `05h` 64-bit ARM (Aarch64), `06h` 32-bit RISC-V (RV32), `07h` 64-bit RISC-V (RV64), `08h` 128-bit RISC-V (RV128), `09h` 32-bit LoongArch (LoongArch32), `0Ah` 64-bit LoongArch (LoongArch64). Any byte value outside `0x00`-`0x0A` is unassigned as of DSP0134 3.9.0 and reported by `get_processor_type_string()` as "Unknown" rather than guessed.
+
+**Double-length relationship (the task's own explicit success criterion):** the OUTER structure's own DMI header `Length` byte is `6 + Y` (Table 128), where `Y` is the Processor-specific Block's own length; the block itself is `Block Length` byte + `Processor Type` byte + `N` data bytes, so `Y = N + 2`. Substituting gives `Length = 6 + (N + 2) = 8 + N`. `get_block_length()` reads `N` directly from the sub-header's own byte at structure offset 0x06 - never derived from the outer `Length` - and this relationship is documented explicitly in the class's own Doxygen comment and asserted directly in both normal-case unit tests (`header.length == 8 + N` for `N == 1` and `N == 2`).
+
+**Scope cutoff (R8), same pattern as System Event Log (Story 03.0) and Additional Information (Story 06.0):** `get_processor_specific_data()` returns the `N`-byte Processor-Specific Data field as opaque raw bytes only - 7.45.2's own text says the per-architecture payload format (x86 CPUID fields, ARM implementer fields, RISC-V/LoongArch vendor extensions) is "maintained by processor architecture workgroups or vendors in separate documents," outside DSP0134 3.9.0's own scope and this project's decode tables.
+
+**CLI display:** no edit needed to `smbios/src/main.cpp`/`command_line_parser.cpp` - confirmed the existing generic `SMBiosEntryFactory::create()` + `render_to_description()` loop in `main.cpp` already surfaces any registered type, including this one, with zero type-specific code (same finding as Task 01).
+
+**Tests / gate:** `tests/unit/processor_additional_information_entry_test.cpp` (new, 6 cases: an `N == 2` opaque-data buffer with Processor Type `X64`, explicitly asserting `header.length == 8 + N`; an `N == 1` buffer with Processor Type `Arm64`, same length assertion; an unassigned/unknown Processor Type byte reported as "Unknown"; a truncated-data bounds-safety case where the declared `N` exceeds the actual buffer; a wrong-type-throws case; a factory-resolution case). `smbios_unit_test` 395 cases, 0 failures (up from 389 before this task). All 4 `ctest` targets green.
 
 **CLI:** no changes needed to `smbios/src/command_line_parser.cpp`/`main.cpp` - display is already fully generic via the existing factory-dispatch loop in `main.cpp` (`smbios_factory.create(header, ver, table_end)` then `entry->render_to_description()`), which dispatches on the now-registered `SMBios::TpmDevice` handler automatically; the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
 

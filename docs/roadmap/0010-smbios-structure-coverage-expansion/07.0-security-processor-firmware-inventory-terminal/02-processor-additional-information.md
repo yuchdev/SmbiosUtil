@@ -1,7 +1,7 @@
 # 02 - Processor Additional Information
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 
 ## Objective
 
@@ -71,10 +71,13 @@ inside it opaque (see this story's own documented scope cutoff).
 
 ## Success criteria
 
-- [ ] Processor Architecture Types enum confirmed against the full spec
+- [x] Processor Architecture Types enum confirmed against the full spec
       table (not left at the placeholder `0x00 = Reserved` entry alone).
-- [ ] Outer `Length`/inner `Block Length` relationship verified by an
+- [x] Outer `Length`/inner `Block Length` relationship verified by an
       explicit test assertion.
-- [ ] Registers and resolves through the factory for `SMBiosHandler ==
+- [x] Registers and resolves through the factory for `SMBiosHandler ==
       44`.
-- [ ] `smbios` CLI displays the type on real hardware where present.
+- [x] `smbios` CLI displays the type on real hardware where present (via
+      the existing generic factory-driven `render_to_description()` loop
+      in `smbios/src/main.cpp` - no CLI edit needed, same finding as
+      Task 01).
