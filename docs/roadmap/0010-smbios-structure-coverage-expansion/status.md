@@ -11,7 +11,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 03.0  | Event log and memory error/mapping structures                      | ✅ Complete (2026-11-08) | 237 unit |
 | 04.0  | Sensors, probes, and small system-control structures                | ✅ Complete (2026-11-09) | 317 unit |
 | 05.0  | Remote/out-of-band management structures                           | ✅ Complete (2026-11-09) | 360 unit |
-| 06.0  | Power, onboard-device, and additional-info structures              | 🔶 In progress (3/4 tasks) | 381 unit |
+| 06.0  | Power, onboard-device, and additional-info structures              | ✅ Complete (2026-11-09) | 381 unit |
 | 07.0  | Security, processor, firmware-inventory, and terminal structures    | ⬜ Not started | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
@@ -196,3 +196,5 @@ Type 40 is not yet added to the consolidated factory-resolution test in `tests/u
 **CLI:** `smbios/src/main.cpp` includes the new header for display, mirroring existing precedent (display itself is generic, via the factory-dispatch loop); the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
 
 Type 41 is not yet added to the consolidated factory-resolution test in `tests/unit/smbios_entry_factory_test.cpp` - deferred to this story's own Task 04 (Tests), matching Stories 03.0/04.0/05.0's precedent and this story's own Tasks 01/02.
+
+Task 04 added types 39, 40, 41 to the consolidated factory-resolution test - all resolve correctly. Full suite: 381 unit cases, 4/4 ctest targets green, independently re-verified after every task. Story 06.0 complete.

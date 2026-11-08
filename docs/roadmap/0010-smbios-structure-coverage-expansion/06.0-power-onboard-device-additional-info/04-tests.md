@@ -1,7 +1,7 @@
 # 04 - Tests
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Done
 **Depends on:** Tasks 01-03
 
 ## Objective

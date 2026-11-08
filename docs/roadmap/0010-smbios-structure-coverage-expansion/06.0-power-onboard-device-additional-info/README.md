@@ -1,7 +1,7 @@
 # Story 06.0 - Power, Onboard-Device, and Additional-Info Structures
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 **Depends on:** Story 01.0 (`tables/` reorg)
 
 ## Scope
@@ -17,7 +17,7 @@ Information (41, section 7.42).
 | 01 | [System power supply](01-system-power-supply.md)                       | ✅ Done        | 04     |
 | 02 | [Additional information](02-additional-information.md)                 | ✅ Done        | 04     |
 | 03 | [Onboard devices extended information](03-onboard-devices-extended-information.md) | ✅ Done        | 04     |
-| 04 | [Tests](04-tests.md)                                                  | ⬜ Not started | -      |
+| 04 | [Tests](04-tests.md)                                                  | ✅ Done     | -      |
 
 Three types, three tasks: System Power Supply (39, flat fixed-offset
 structure with three cross-reference handles into the probe/cooling-
