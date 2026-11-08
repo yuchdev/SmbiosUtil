@@ -11,7 +11,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 03.0  | Event log and memory error/mapping structures                      | ✅ Complete (2026-11-08) | 237 unit |
 | 04.0  | Sensors, probes, and small system-control structures                | ✅ Complete (2026-11-09) | 317 unit |
 | 05.0  | Remote/out-of-band management structures                           | ✅ Complete (2026-11-09) | 360 unit |
-| 06.0  | Power, onboard-device, and additional-info structures              | 🔶 In progress (2/4 tasks) | 372 unit |
+| 06.0  | Power, onboard-device, and additional-info structures              | 🔶 In progress (3/4 tasks) | 381 unit |
 | 07.0  | Security, processor, firmware-inventory, and terminal structures    | ⬜ Not started | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
@@ -155,7 +155,7 @@ Types 37/38/42 are not yet added to the consolidated factory-resolution test in 
 
 Task 04 added types 30, 31, 34-38, 42 to the consolidated factory-resolution test - all resolve correctly. Full suite: 360 unit cases, 4/4 ctest targets green, independently re-verified after every task. Story 05.0 complete.
 
-## Story 06.0 - Power, Onboard-Device, and Additional-Info Structures (🔶 in progress, 2/4 tasks)
+## Story 06.0 - Power, Onboard-Device, and Additional-Info Structures (🔶 in progress, 3/4 tasks)
 
 **Task 01 delivered:** `SystemPowerSupplyEntry` (`SMBios::SystemPowerSupply` = 39, DSP0134 3.9.0 7.40, Table 116) - Power Unit Group, seven identifying DMI strings (Location/Device Name/Manufacturer/Serial Number/Asset Tag/Model Part Number/Revision Level), Max Power Capacity, a Power Supply Characteristics bit-field (7.40.1, Table 117), and three raw, unresolved cross-reference handles into the probe/cooling-device family Story 04.0 already implemented (Input Voltage Probe Handle → Type 26, Cooling Device Handle → Type 27, Input Current Probe Handle → Type 29).
 
@@ -182,3 +182,17 @@ Type 39 is not yet added to the consolidated factory-resolution test in `tests/u
 **CLI:** `smbios/src/main.cpp` includes the new header for display, mirroring existing precedent (display itself is generic, via the factory-dispatch loop); the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
 
 Type 40 is not yet added to the consolidated factory-resolution test in `tests/unit/smbios_entry_factory_test.cpp` - deferred to this story's own Task 04 (Tests), matching Stories 03.0/04.0/05.0's precedent and this story's own Task 01.
+
+**Task 03 delivered:** `OnboardDevicesExtendedInformationEntry` (`SMBios::OnboardDevicesExtendedInformation` = 41, DSP0134 3.9.0 7.42/7.42.1-7.42.4, Table 120) - the direct 2.6+ replacement for the obsolete Onboard Device Information (Type 10) this milestone deliberately excludes per plan.md's Non-goals: Reference Designation (STRING, 0x04, typically the silkscreen label, 7.42.1), a packed Device Type byte (0x05: bit 7 enabled/disabled, bits 6:0 device type enum, 7.42.2), Device Type Instance (0x06, 7.42.3), and the Segment Group Number/Bus Number/Device-Function Number triple (0x07-0x0A, 7.42.4).
+
+**Device Type byte masking (the task's own CRITICAL constraint):** `is_device_enabled()` masks bit 7 (`& 0x80`) and `get_device_type()` masks bits 6:0 (`& 0x7F`) as two entirely independent accessors over the same raw byte (`get_device_type_byte()`) - never a single combined accessor. `EnabledBitAndDeviceTypeDecodeIndependentlyTestCase` exercises bit 7 set and clear against the exact same set of type values (Other/Video/UFS Controller) to confirm neither accessor's mask leaks into the other.
+
+**Device Type enum confirmed (7.42.2, Table 121):** 16 values, 01h-10h: Other, Unknown, Video, SCSI Controller, Ethernet, Token Ring, Sound, PATA Controller, SATA Controller, SAS Controller, Wireless LAN, Bluetooth, WWAN, eMMC (embedded Multi-Media Controller), NVMe Controller, UFS Controller. All 16 are exercised by `EveryDocumentedDeviceTypeValueDecodesTestCase`; an undocumented bits-6:0 value falls back to "OutOfSpec" (`OutOfSpecDeviceTypeTestCase`).
+
+**Sentinel-convention comparison (the task's own explicit research requirement, 7.42.4 vs. `SystemSlotsEntry`'s own 7.10.8):** both sections' text is near-verbatim identical ("For [slots/devices] that are not of the/types PCI, AGP, PCI-X, or PCI-Express ... that do not have bus/device/function information, 0FFh should be populated in the fields of Segment Group Number, Bus Number, Device/Function Number") - confirmed to be the **same** all-FF/all-FFFF "not applicable" sentinel convention, not a different one. `get_bus_address_string()` therefore legitimately reuses `SystemSlotsEntry::get_bus_address_string()`'s own rendering shape ("Segment:Bus:Device.Function") and sentinel check, confirmed independently against both spec sections rather than copied on the strength of the field shapes matching alone.
+
+**Tests / gate:** `tests/unit/onboard_devices_extended_information_entry_test.cpp` (new, 9 cases: device-enabled/Ethernet, device-disabled/SATA Controller, the independent-bit-decode regression case described above, every one of the 16 documented Device Type enum values, an out-of-spec device-type fallback case, the confirmed all-FF/all-FFFF bus-address "not applicable" sentinel case, a truncated-structure bounds-safety case, a wrong-type-throws case, a factory-resolution case). `smbios_unit_test` 381 cases, 0 failures (up from 372 before this task). All 4 `ctest` targets green.
+
+**CLI:** `smbios/src/main.cpp` includes the new header for display, mirroring existing precedent (display itself is generic, via the factory-dispatch loop); the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
+
+Type 41 is not yet added to the consolidated factory-resolution test in `tests/unit/smbios_entry_factory_test.cpp` - deferred to this story's own Task 04 (Tests), matching Stories 03.0/04.0/05.0's precedent and this story's own Tasks 01/02.

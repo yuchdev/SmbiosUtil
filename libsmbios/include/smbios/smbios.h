@@ -128,6 +128,7 @@ public:
         IpmiDeviceInformation = 38,
         SystemPowerSupply = 39,
         AdditionalInformation = 40,
+        OnboardDevicesExtendedInformation = 41,
         ManagementControllerHostInterface = 42,
         EndOfTable = 127
     };

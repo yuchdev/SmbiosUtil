@@ -1,7 +1,7 @@
 # 03 - Onboard Devices Extended Information
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Done
 
 ## Objective
 
@@ -65,9 +65,24 @@ Implement `OnboardDevicesExtendedInformationEntry` (`SMBiosHandler` value
 
 ## Success criteria
 
-- [ ] Registers and resolves through the factory for `SMBiosHandler ==
+- [x] Registers and resolves through the factory for `SMBiosHandler ==
       41`.
-- [ ] Enabled/disabled bit and device-type bits are verified independently
+- [x] Enabled/disabled bit and device-type bits are verified independently
       (a test where one is set and the other varies, to catch an
       accidental shared-mask bug).
-- [ ] `smbios` CLI displays the type on real hardware where present.
+- [x] `smbios` CLI displays the type on real hardware where present.
+
+## Research notes (resolved during implementation)
+
+- 7.42.4's "not applicable" bus-address sentinel convention was confirmed
+  to match `SystemSlotsEntry`'s own 7.10.8 **exactly** (near-verbatim
+  spec text, "devices" substituted for "slots"): all-FF/all-FFFF across
+  Segment Group Number (0xFFFF)/Bus Number (0xFF)/Device-Function Number
+  (0xFF) simultaneously. `get_bus_address_string()` therefore reuses that
+  class's rendering shape and sentinel check, confirmed independently per
+  the task's own instruction rather than copied blindly.
+- The Device Type enum (7.42.2, Table 121) was confirmed as 16 values,
+  01h-10h: Other, Unknown, Video, SCSI Controller, Ethernet, Token Ring,
+  Sound, PATA Controller, SATA Controller, SAS Controller, Wireless LAN,
+  Bluetooth, WWAN, eMMC (embedded Multi-Media Controller), NVMe
+  Controller, UFS Controller.

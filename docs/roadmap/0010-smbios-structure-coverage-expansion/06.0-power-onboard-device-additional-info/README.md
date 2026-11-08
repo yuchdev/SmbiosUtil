@@ -16,7 +16,7 @@ Information (41, section 7.42).
 |----|----------------------------------------------------------------------|----------------|--------|
 | 01 | [System power supply](01-system-power-supply.md)                       | ✅ Done        | 04     |
 | 02 | [Additional information](02-additional-information.md)                 | ✅ Done        | 04     |
-| 03 | [Onboard devices extended information](03-onboard-devices-extended-information.md) | ⬜ Not started | 04     |
+| 03 | [Onboard devices extended information](03-onboard-devices-extended-information.md) | ✅ Done        | 04     |
 | 04 | [Tests](04-tests.md)                                                  | ⬜ Not started | -      |
 
 Three types, three tasks: System Power Supply (39, flat fixed-offset
