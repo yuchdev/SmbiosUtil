@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                                | Status         | Tests |
 |-------|----------------------------------------|----------------|-------|
 | 01.0  | Hermetic fixture-based test layer     | ✅ Complete (2026-11-08) | 163 unit (smbios_unit_test) |
-| 02.0  | Boundary and malformed-table tests    | ⬜ Not started | -     |
+| 02.0  | Boundary and malformed-table tests    | 🔶 In progress (1/3 tasks) | 166 unit (smbios_unit_test) |
 | 03.0  | Documentation and release pass        | ⬜ Not started | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
@@ -113,6 +113,67 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   maintenance surface. YAML syntax validated (`python3 -c "import
   yaml; yaml.safe_load(...)"`). Full suite re-confirmed green: 163
   `smbios_unit_test` cases, all 4 `ctest` targets pass.
+
+- **2026-11-08, Story 02.0 Task 01 (truncated/oversized-length boundary
+  tests, R4's first three categories) landed - 1/3 tasks of this story:**
+  `tests/unit/malformed_table_test.cpp` (new, 3 cases) drives
+  `SMBios::read_smbios_table()`/`count_smbios_structures()`
+  (`libsmbios/src/smbios.cpp`) through the `SmbiosTableWalkTestAccess` seam
+  with adversarial synthetic buffers built via `SyntheticTableBuilder`.
+  `TruncatedLengthOverrunsBufferTestCase`: three well-formed leading
+  structures followed by a fourth whose header is in-bounds but whose
+  declared `length` (0xFF) overruns the 16-ish-byte buffer - the walk stops
+  cleanly, the three leading structures remain iterable, the malformed one
+  is silently dropped. `MissingDoubleNullTerminatorTestCase`: a structure
+  whose string section never hits `\0\0` before the buffer ends - exercises
+  `read_smbios_table()`'s own string-skip loop (distinct from
+  `AbstractSMBiosEntry::parse_dmi_strings()`, already covered by
+  `dmi_string_parsing_test.cpp` at the entry level) - the walk still finds
+  the one structure and does not hang or read past `table_end`.
+  `StructureCountMismatchTestCase`: **a real, documented correctness
+  finding, not just a passing test** - `count_smbios_structures()` has no
+  special handling for `SMBiosHandler::EndOfTable` at all; it treats the
+  marker as an ordinary type value, counts it, and keeps walking past it
+  into whatever length-valid bytes follow, with no awareness the table has
+  logically ended. `read_smbios_table()`, by contrast, breaks its outer
+  loop the instant it sees `type == EndOfTable` and never looks past it. A
+  synthetic buffer placing a well-formed "fake" structure *after* a real
+  `EndOfTable` marker makes `get_structures_count()` report 3 (real
+  structure + the `EndOfTable` marker itself + the fake trailing structure)
+  while `read_smbios_table()`'s own iterable `headers_list_` yields exactly
+  1 (only the real structure before `EndOfTable`) - the two walkers
+  genuinely disagree (3 vs 1) on this input. This is **safe** (fully
+  bounds-checked, no OOB read, no crash - confirmed under ASan/UBSan, see
+  below) but means `get_structures_count()` can be inflated arbitrarily by
+  attacker-controlled bytes placed after the real `EndOfTable` marker; no
+  consumer in this codebase currently trusts that count instead of
+  `begin()`/`end()`, so there is no live bug today, but the two walkers'
+  pre-existing duplication (flagged, not deduplicated, by milestone 0003's
+  Story 03.0) is confirmed to be more than cosmetic. Left as documented
+  debt per this task's own scope (fixing the duplication is not this
+  task's job). Build: `cmake --build --preset macos` clean, zero new
+  warnings. `ctest --test-dir build/macos --output-on-failure`: all 4
+  targets green, `smbios_unit_test` 166 cases (up from 163), 0 failures.
+  **Sanitizer verification performed, not merely build-only**: built
+  `smbios_unit_test` in the pre-existing `build/macos-asan-test` tree
+  (`-fsanitize=address,undefined -fno-omit-frame-pointer -g`, mirroring
+  `.github/workflows/ci.yml`'s `sanitizers` job) and ran the full 166-case
+  binary directly - the 3 new `MalformedTableUnitTests` cases produced zero
+  ASan/UBSan findings, run alone or as part of the full suite. One
+  unrelated, pre-existing finding was also observed and is explicitly
+  **not** attributed to this task's new file: a
+  `container-overflow`/`std::string::__is_long()` ASan report inside
+  `dmi_string_parsing_test.cpp`'s
+  `ParseDmiStringsWellFormedDoubleNulTerminatedTestCase` (a file this task
+  did not modify) - ASan's own hint output names this exact pattern as a
+  known libc++ short-string-optimization false-positive category
+  (`ASAN_OPTIONS=detect_container_overflow=0` or see the
+  AddressSanitizerContainerOverflow wiki); with that one detector disabled,
+  the full 166-case suite (including all 3 new cases) is clean under
+  ASan+UBSan. Not investigated further or fixed here, since the affected
+  test file is outside this task's change boundary; flagged here for a
+  future task/story to confirm/silence properly rather than left
+  unrecorded. Tasks 02 (fuzz harness) and 03 (tests) of this story remain.
 
 ## Story 01.0 - Hermetic Fixture-Based Test Layer (✅ 2026-11-08)
 

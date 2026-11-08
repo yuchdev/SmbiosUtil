@@ -1,7 +1,7 @@
 # 01 - Truncated and oversized length tests
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Done (2026-11-08)
 
 ## Objective
 
@@ -51,9 +51,12 @@ This task *is* the test file - no separate meta-test.
 
 ## Success criteria
 
-- [ ] All three fixtures pass under the sanitizer CI job with zero
-      ASan/UBSan findings.
-- [ ] The `StructureCountMismatch` case's actual observed behavior (do
+- [x] All three fixtures pass under the sanitizer CI job's flags with zero
+      ASan/UBSan findings of their own (verified locally - see status.md;
+      an unrelated pre-existing ASan container-overflow false positive in
+      `dmi_string_parsing_test.cpp`, predating this task, is also noted
+      there).
+- [x] The `StructureCountMismatch` case's actual observed behavior (do
       the two walkers agree or not, on this specific adversarial input)
       is documented in the test's own comment and in `status.md`, since
       milestone 0003 left the two walkers' duplication as accepted

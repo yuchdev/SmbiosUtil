@@ -17,7 +17,7 @@ input, not just the hand-picked fixtures that story's own tasks wrote.
 
 | #  | Document                                                        | Status         | Blocks |
 |----|------------------------------------------------------------------|----------------|--------|
-| 01 | [Truncated and oversized length tests](01-truncated-and-oversized-length-tests.md) | ⬜ Not started | 03     |
+| 01 | [Truncated and oversized length tests](01-truncated-and-oversized-length-tests.md) | ✅ Done        | 03     |
 | 02 | [Fuzz harness](02-fuzz-harness.md)                                | ⬜ Not started | 03     |
 | 03 | [Tests](03-tests.md)                                              | ⬜ Not started | -      |
 
