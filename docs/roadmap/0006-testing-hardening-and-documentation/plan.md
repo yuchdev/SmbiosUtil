@@ -1,6 +1,6 @@
 # Milestone 0006 - Hermetic Testing, Boundary Hardening and Documentation
 
-**Package:** `smbios` / `smbios_util` | **Module root:** `smbios/test/`, `docs/`
+**Package:** `libsmbios` / `smbios` (core lib / CLI - renamed from `smbios`/`smbios_util` by the later build-layout restructure; see CLAUDE.md) | **Module root:** `smbios/test/`, `docs/`
 
 Closes the program. Every prior milestone's tests leaned on "run against
 real hardware, needs root/admin" (CLAUDE.md's own documented constraint on
@@ -58,8 +58,10 @@ push, which is the actual point of having CI at all.
    continuously in CI by this milestone - a documented, locally-runnable
    harness is sufficient; continuous fuzzing infrastructure is a
    non-goal).
-5. **R5** - Every public class/function across `smbios/include/smbios/`
-   has a complete Doxygen comment (not just a one-line `@brief`) -
+5. **R5** - Every public class/function across every `include/smbios/`
+   tree (now spread across `libsmbios/` and its sibling per-OS/legacy/
+   interface libraries at the repo root - see CLAUDE.md's Architecture
+   section) has a complete Doxygen comment (not just a one-line `@brief`) -
    audited, not assumed, since several existing comments already in the
    codebase (e.g. `BiosInformationEntry`'s enum comments) are good
    examples to match, not just preserve.

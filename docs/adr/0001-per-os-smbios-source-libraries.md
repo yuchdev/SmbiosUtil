@@ -19,6 +19,34 @@
 > header-only interface library keeps its original name,
 > `smbios_source_interface`, unchanged.
 
+> **2026-11-08 addendum (structural, not naming):** two real changes to
+> the shape this ADR originally decided, both at the user's explicit
+> request - unlike the addendum above, these are not cosmetic. (1) Every
+> library described below as a subdirectory of `smbios/src/`/
+> `smbios/include/smbios/` moved to its own top-level directory at the
+> **repo root**, as siblings of `smbios` itself (which was renamed
+> `libsmbios`; the CLI, previously `smbios_util`, was renamed `smbios` -
+> yes, the names swapped roles). (2) `smbios_legacy` - one target in the
+> table below - **split into two**, `libsmbios_win_legacy` and
+> `libsmbios_posix_legacy`, each a complete, interchangeable
+> implementation of the same `PhysicalMemory`/`LegacyMemoryScanSource`
+> contract (merging the old `NativePhysicalMemory`/`PhysicalMemory`
+> PImpl pair into one concrete class per flavor, since CMake's own
+> library selection already hides the platform choice). This duplicates
+> `LegacyMemoryScanSource`'s ~180 lines across the two new libraries -
+> **a deliberate exception to this ADR's own DD3** below, made because
+> the user asked for exactly these two libraries with no third shared
+> one, not because DD3's reasoning stopped applying. `os_interface`
+> (renamed from `smbios_source_interface` by the first addendum above)
+> is unaffected by the split, and `#include <smbios/legacy/...>` is
+> unchanged at every call site either way (both flavors expose it at the
+> identical path). **The table, alternatives, and consequences below
+> describe the original 5-target, single-location decision and are left
+> as the historical record of that reasoning - they are not rewritten to
+> show 6 targets at the repo root, since that shape was never actually
+> weighed against alternatives the way the original 5 were.** See
+> `CLAUDE.md`'s Architecture section for the current, accurate structure.
+
 ## Context
 
 Milestone [0005](/docs/roadmap/0005-uefi-and-native-source-abstraction/plan.md)

@@ -6,7 +6,7 @@
 ## Objective
 
 Audit every public class, method, and free function declared under
-`smbios/include/smbios/` for a complete Doxygen comment (R5) - not merely
+every `include/smbios/` tree (now spread across `libsmbios/` and its sibling per-OS/legacy/interface libraries at the repo root - see CLAUDE.md) for a complete Doxygen comment (R5) - not merely
 present, but complete: a `@brief`, parameter/return documentation where
 non-trivial, and a note of any non-obvious constraint (an offset, a
 sentinel value, a length requirement) - and write a short architecture
@@ -16,7 +16,7 @@ roadmap's design discussions.
 
 ## Files
 
-- **Modify** every header under `smbios/include/smbios/` as needed - most
+- **Modify** every header under every `include/smbios/` tree (now spread across `libsmbios/` and its sibling per-OS/legacy/interface libraries at the repo root - see CLAUDE.md) as needed - most
   already have good `@brief` comments (this codebase's existing style,
   e.g. `BiosInformationEntry`'s enum documentation, is already a good
   model to match); this task's job is finding and fixing the gaps, not
@@ -48,7 +48,7 @@ N/A - documentation only.
 
 ## Success criteria
 
-- [ ] Every public class/method/function under `smbios/include/smbios/`
+- [ ] Every public class/method/function under every `include/smbios/` tree (now spread across `libsmbios/` and its sibling per-OS/legacy/interface libraries at the repo root - see CLAUDE.md)
       has a complete Doxygen comment.
 - [ ] `docs/architecture/overview.md` exists and accurately describes the
       as-built system (cross-checked against the actual code, not just

@@ -22,7 +22,11 @@ makes these submodules safe to carry at all.
 ## Key constraints
 
 - This story is purely additive to repository structure - it does not
-  touch any file under `smbios/`, `smbios_util/`, or `smbios_c/`.
+  touch any file under this project's own build-product directories
+  (`libsmbios/`, `smbios/` [the CLI], `os_interface/`, `libsmbios_win/`,
+  `libsmbios_macos/`, `libsmbios_linux/`, `libsmbios_win_legacy/`,
+  `libsmbios_posix_legacy/`, or `smbios_c/` once it exists - see
+  CLAUDE.md).
 - The existing machine-local symlinks
   (`~/Projects/dmidecode_linux`/`dmidecode_macos`) are the user's own
   working checkouts, outside this repository - this story does not delete

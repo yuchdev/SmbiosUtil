@@ -15,8 +15,11 @@ comment into something that actually blocks a mistake.
 
 - **Create** `scripts/check_cversions_isolation.py` (or a shell
   one-liner, if simpler - decide during implementation): greps every
-  `CMakeLists.txt`, `vcpkg.json`, and `*.h`/`*.cpp`/`*.c` under `smbios/`,
-  `smbios_util/`, and `smbios_c/` for the literal substring
+  `CMakeLists.txt`, `vcpkg.json`, and `*.h`/`*.cpp`/`*.c` under every
+  build-product directory (`libsmbios/`, `smbios/` [the CLI],
+  `os_interface/`, `libsmbios_win/`, `libsmbios_macos/`, `libsmbios_linux/`,
+  `libsmbios_win_legacy/`, `libsmbios_posix_legacy/`, and `smbios_c/` once
+  it exists - see CLAUDE.md) for the literal substring
   `c-versions`, and fails with a clear message if any match is found.
 - **Modify** `.github/workflows/ci.yml` (milestone 0001): add this check
   as an early, fast-failing step, before the actual build.

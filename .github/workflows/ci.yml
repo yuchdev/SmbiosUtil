@@ -73,7 +73,7 @@ jobs:
       # in CI ever ran smbios_unit_test/smbios_mock_test on Windows at all.
       # This is the only automated confirmation that WindowsNativeSource
       # (adapted from the pre-existing SMBiosImpl, see
-      # smbios/src/source_windows/windows_native_source.cpp) builds and its
+      # libsmbios_win/src/windows_native_source.cpp) builds and its
       # own unit coverage passes on a real Windows runner.
       - name: Run unprivileged tests (smbios_unit_test, smbios_mock_test)
         if: matrix.os == 'windows-latest' && steps.build.outcome == 'success'

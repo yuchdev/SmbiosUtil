@@ -23,11 +23,11 @@ own dependencies already are.
 ## Key constraints
 
 - `smbios_c` is a **separate** shared/static library target from
-  `smbios` - a C caller links `smbios_c` only, never `smbios` directly
+  `libsmbios` - a C caller links `smbios_c` only, never `libsmbios` directly
   (which would reintroduce the exact C++-ABI problem this milestone
   exists to avoid).
-- No change to `smbios`/`smbios_util`'s existing CMake targets beyond
-  adding `smbios_c` as a new sibling that depends on `smbios`.
+- No change to `libsmbios`/`smbios` (the CLI)'s existing CMake targets
+  beyond adding `smbios_c` as a new sibling that depends on `libsmbios`.
 
 ## Files or directories created or modified by this story
 

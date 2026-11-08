@@ -47,7 +47,7 @@ submodule is a small follow-up to this milestone, not a redesign of it.
   own `LICENSE` files, already present in the symlinked checkouts). This
   project's own license is unaffected only as long as neither submodule's
   code is ever compiled into, statically or dynamically linked with, or
-  textually copied into any `smbios`/`smbios_util`/`smbios_c` build
+  textually copied into any `libsmbios`/`smbios`/`smbios_c` build
   target - exactly what CLAUDE.md's existing "untracked reference
   material... not part of the build" statement already asserts, now
   enforced structurally (Story 01.0) rather than left as a documentation
@@ -66,9 +66,14 @@ submodule is a small follow-up to this milestone, not a redesign of it.
    to the confirmed URLs above at an explicit commit SHA.
 2. **R2** - A CI check (or pre-commit hook) fails the build if either
    submodule's path is ever referenced from any `CMakeLists.txt`,
-   `vcpkg.json`, or `#include` directive anywhere under `smbios/`,
-   `smbios_util/`, or `smbios_c/` - the structural enforcement of the
-   license-isolation constraint above.
+   `vcpkg.json`, or `#include` directive anywhere under any of this
+   project's own build-product directories: `libsmbios/`, `smbios/`
+   (the CLI), `os_interface/`, `libsmbios_win/`, `libsmbios_macos/`,
+   `libsmbios_linux/`, `libsmbios_win_legacy/`, `libsmbios_posix_legacy/`,
+   or `smbios_c/` once it exists - the full repo-root library set as of
+   the later build-layout restructure (see CLAUDE.md), not just the two
+   named when this milestone was first specced. The structural
+   enforcement of the license-isolation constraint above.
 3. **R3** - A documented procedure exists for bumping a submodule's pinned
    commit: who/what proposes a bump (the Story 03.0 agent, via its
    report), who approves it (a human, via normal PR review - never an
@@ -95,7 +100,7 @@ submodule is a small follow-up to this milestone, not a redesign of it.
 ## Non-goals
 
 - Automatically applying any upstream change to this project's own
-  `smbios`/`smbios_util` source - every finding is a recommendation in a
+  `libsmbios`/`smbios` source - every finding is a recommendation in a
   report, reviewed and ported by a human/another agent in a separate,
   normal change, never an automated merge.
 - A Windows submodule (see "Confirmed upstreams" above).

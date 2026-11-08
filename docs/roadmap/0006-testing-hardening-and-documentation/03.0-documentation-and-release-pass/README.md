@@ -6,7 +6,7 @@
 
 ## Scope
 
-Audit every public Doxygen comment across `smbios/include/smbios/` (R5),
+Audit every public Doxygen comment across every `include/smbios/` tree (now spread across `libsmbios/` and its sibling per-OS/legacy/interface libraries at the repo root - see CLAUDE.md) (R5),
 rewrite CLAUDE.md to describe the system as it exists after milestones
 0001-0005 rather than patch it incrementally (R6), and correct the root
 README's platform-support statement (R7). This is the roadmap's final
@@ -35,7 +35,7 @@ story.
 
 ## Files or directories created or modified by this story
 
-- Every header under `smbios/include/smbios/` - Doxygen audit.
+- Every header under every `include/smbios/` tree (now spread across `libsmbios/` and its sibling per-OS/legacy/interface libraries at the repo root - see CLAUDE.md) - Doxygen audit.
 - `CLAUDE.md` - rewritten.
 - `README.md` (repo root) - platform-support statement corrected.
 - `docs/architecture/` (new, if it does not already exist) - a short

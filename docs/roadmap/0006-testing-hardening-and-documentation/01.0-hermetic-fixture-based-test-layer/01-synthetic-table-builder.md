@@ -48,8 +48,8 @@ satisfying contract R1.
   two were already somewhat conflated; keep the change minimal and
   test-only-facing rather than restructuring `SMBios`'s public API.
 - This is test-support code (`smbios/test/unit/`), not shipped as part of
-  the `smbios` library target - it must not be linked into
-  `smbios`/`smbios_util`'s production binaries.
+  the `libsmbios` library target - it must not be linked into
+  `libsmbios`/`smbios` (the CLI)'s production binaries.
 - `add_raw_bytes` exists specifically so Story 02.0's malformed-table
   tests can construct deliberately-broken input (a structure whose
   `length` overruns the buffer, a missing double-null) without the
