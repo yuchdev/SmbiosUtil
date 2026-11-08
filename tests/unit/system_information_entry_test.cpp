@@ -7,6 +7,8 @@
 #include <smbios/smbios_entry_factory.h>
 #include <smbios/abstract_smbios_entry.h>
 
+#include "synthetic_table_builder.h"
+
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
 
@@ -54,48 +56,38 @@ DMIHeader make_header(const std::vector<uint8_t>& buffer)
     return header;
 }
 
-/// @brief Append a minimal well-formed (empty) DMI string-section
-/// terminator (double NUL) so AbstractSMBiosEntry::parse_dmi_strings() has a
-/// well-formed section to walk and does not run past the buffer.
-void append_string_terminator(std::vector<uint8_t>& buffer)
-{
-    buffer.push_back(0x00);
-    buffer.push_back(0x00);
-}
-
 /// @brief Build a full-length (0x1B) formatted-area buffer with distinct
-/// known byte values at every offset, then truncate to `length` and patch
-/// the header's own length byte accordingly. `length` must be >= 0x04.
+/// known byte values at every offset, then truncate to `length` (via
+/// SyntheticTableBuilder::add_structure(), which computes header.length
+/// automatically from the formatted area's size). `length` must be >= 0x04.
 std::vector<uint8_t> build_buffer(uint8_t length)
 {
-    std::vector<uint8_t> full;
-    full.push_back(SMBios::SystemInformation); // 0x00 type = 1
-    full.push_back(0x00);                      // 0x01 length (patched below)
-    full.push_back(0x01);                      // 0x02 handle low byte
-    full.push_back(0x00);                      // 0x03 handle high byte
-
-    full.push_back(0x01); // 0x04 manufacturer_index
-    full.push_back(0x02); // 0x05 product_name_index
-    full.push_back(0x03); // 0x06 version_index
-    full.push_back(0x04); // 0x07 serial_number_index
+    std::vector<uint8_t> full_formatted_area{
+        0x01, // 0x04 manufacturer_index
+        0x02, // 0x05 product_name_index
+        0x03, // 0x06 version_index
+        0x04, // 0x07 serial_number_index
+    };
 
     // 0x08-0x17 uuid - 16 distinct bytes
     for (uint8_t i = 0; i < 16; ++i) {
-        full.push_back(static_cast<uint8_t>(0x10 + i));
+        full_formatted_area.push_back(static_cast<uint8_t>(0x10 + i));
     }
 
-    full.push_back(static_cast<uint8_t>(SystemInformationEntry::PowerSwitch)); // 0x18 wake_up_type
-    full.push_back(0x05); // 0x19 sku_number_index
-    full.push_back(0x06); // 0x1A family_index
+    full_formatted_area.push_back(static_cast<uint8_t>(SystemInformationEntry::PowerSwitch)); // 0x18 wake_up_type
+    full_formatted_area.push_back(0x05); // 0x19 sku_number_index
+    full_formatted_area.push_back(0x06); // 0x1A family_index
 
-    BOOST_REQUIRE_EQUAL(full.size(), static_cast<size_t>(0x1B));
-    BOOST_REQUIRE_LE(static_cast<size_t>(length), full.size());
+    BOOST_REQUIRE_EQUAL(full_formatted_area.size(), static_cast<size_t>(0x1B - 4));
+    BOOST_REQUIRE_LE(static_cast<size_t>(length), static_cast<size_t>(0x1B));
+    BOOST_REQUIRE_GE(static_cast<size_t>(length), static_cast<size_t>(4));
 
-    std::vector<uint8_t> buffer(full.begin(), full.begin() + length);
-    buffer[1] = length;
+    std::vector<uint8_t> formatted_area(full_formatted_area.begin(),
+                                         full_formatted_area.begin() + (length - 4));
 
-    append_string_terminator(buffer);
-    return buffer;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemInformation, formatted_area);
+    return builder.build();
 }
 
 } // namespace
@@ -214,37 +206,26 @@ DMIHeader make_header(const std::vector<uint8_t>& buffer)
     return header;
 }
 
-void append_string_terminator(std::vector<uint8_t>& buffer)
-{
-    buffer.push_back(0x00);
-    buffer.push_back(0x00);
-}
-
 /// @brief Build a length-0x19 buffer (through wake_up_type) whose UUID
 /// bytes (0x08-0x17) are exactly `uuid_bytes`.
 std::vector<uint8_t> build_uuid_buffer(const std::vector<uint8_t>& uuid_bytes)
 {
     BOOST_REQUIRE_EQUAL(uuid_bytes.size(), static_cast<size_t>(16));
 
-    std::vector<uint8_t> buffer;
-    buffer.push_back(SMBios::SystemInformation); // 0x00 type = 1
-    buffer.push_back(0x19);                      // 0x01 length
-    buffer.push_back(0x01);                      // 0x02 handle low byte
-    buffer.push_back(0x00);                       // 0x03 handle high byte
+    std::vector<uint8_t> formatted_area{
+        0x00, // 0x04 manufacturer_index
+        0x00, // 0x05 product_name_index
+        0x00, // 0x06 version_index
+        0x00, // 0x07 serial_number_index
+    };
+    formatted_area.insert(formatted_area.end(), uuid_bytes.begin(), uuid_bytes.end()); // 0x08-0x17 uuid
+    formatted_area.push_back(SystemInformationEntry::Reserved); // 0x18 wake_up_type
 
-    buffer.push_back(0x00); // 0x04 manufacturer_index
-    buffer.push_back(0x00); // 0x05 product_name_index
-    buffer.push_back(0x00); // 0x06 version_index
-    buffer.push_back(0x00); // 0x07 serial_number_index
+    BOOST_REQUIRE_EQUAL(formatted_area.size(), static_cast<size_t>(0x19 - 4));
 
-    buffer.insert(buffer.end(), uuid_bytes.begin(), uuid_bytes.end()); // 0x08-0x17 uuid
-
-    buffer.push_back(SystemInformationEntry::Reserved); // 0x18 wake_up_type
-
-    BOOST_REQUIRE_EQUAL(buffer.size(), static_cast<size_t>(0x19));
-
-    append_string_terminator(buffer);
-    return buffer;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemInformation, formatted_area);
+    return builder.build();
 }
 
 } // namespace

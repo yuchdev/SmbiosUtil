@@ -5,6 +5,8 @@
 #include <smbios/abstract_smbios_entry.h>
 #include <smbios/smbios.h>
 
+#include "synthetic_table_builder.h"
+
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
 
@@ -56,15 +58,10 @@ DMIHeader make_header(const std::vector<uint8_t>& buffer)
 /// parses both strings in order.
 BOOST_AUTO_TEST_CASE(ParseDmiStringsWellFormedDoubleNulTerminatedTestCase)
 {
-    std::vector<uint8_t> buffer;
-    buffer.push_back(0x00); // type (arbitrary, unused by TestEntry)
-    buffer.push_back(0x04); // length = 4 (header only, no formatted fields)
-    buffer.push_back(0x01); // handle low byte
-    buffer.push_back(0x00); // handle high byte
-
-    const char strings[] = "First\0Second\0";
-    buffer.insert(buffer.end(), strings, strings + sizeof(strings));
-    buffer.push_back(0x00); // final NUL completes the double-NUL terminator
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(0x00 /* type, arbitrary, unused by TestEntry */, std::vector<uint8_t>{},
+                           std::vector<std::string>{"First", "Second"});
+    std::vector<uint8_t> buffer = builder.build();
 
     DMIHeader header = make_header(buffer);
     TestEntry entry(header, buffer.data() + buffer.size());
@@ -85,20 +82,22 @@ BOOST_AUTO_TEST_CASE(ParseDmiStringsWellFormedDoubleNulTerminatedTestCase)
 /// nothing is read past the vector's own end.
 BOOST_AUTO_TEST_CASE(ParseDmiStringsTruncatedBeforeTerminatorStopsAtBoundaryTestCase)
 {
-    std::vector<uint8_t> buffer;
-    buffer.push_back(0x00); // type
-    buffer.push_back(0x04); // length = 4 (header only)
-    buffer.push_back(0x01); // handle low byte
-    buffer.push_back(0x00); // handle high byte
+    // Deliberately malformed (no double-NUL terminator at all), so this
+    // uses SyntheticTableBuilder's add_raw_bytes() escape hatch rather than
+    // add_structure(), which always produces a well-formed string section.
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_raw_bytes(std::vector<uint8_t>{0x00, 0x04, 0x01, 0x00}); // header: type, length=4, handle
 
     // "First" is a complete, NUL-terminated string.
     const char first[] = "First";
-    buffer.insert(buffer.end(), first, first + sizeof(first)); // includes '\0'
+    builder.add_raw_bytes(std::vector<uint8_t>(first, first + sizeof(first))); // includes '\0'
 
     // "Trunc" has NO terminating NUL - the buffer simply ends here, as if
     // the structure table was cut off mid-string by a corrupted/short dump.
     const char truncated[] = {'T', 'r', 'u', 'n', 'c'};
-    buffer.insert(buffer.end(), truncated, truncated + sizeof(truncated));
+    builder.add_raw_bytes(std::vector<uint8_t>(truncated, truncated + sizeof(truncated)));
+
+    std::vector<uint8_t> buffer = builder.build();
 
     DMIHeader header = make_header(buffer);
     const uint8_t* table_end = buffer.data() + buffer.size();
@@ -122,13 +121,9 @@ BOOST_AUTO_TEST_CASE(ParseDmiStringsTruncatedBeforeTerminatorStopsAtBoundaryTest
 /// without reading anything.
 BOOST_AUTO_TEST_CASE(ParseDmiStringsEmptyStringSectionTestCase)
 {
-    std::vector<uint8_t> buffer;
-    buffer.push_back(0x00); // type
-    buffer.push_back(0x04); // length = 4 (header only)
-    buffer.push_back(0x01); // handle low byte
-    buffer.push_back(0x00); // handle high byte
-    buffer.push_back(0x00); // immediate double-NUL: no strings at all
-    buffer.push_back(0x00);
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(0x00 /* type */, std::vector<uint8_t>{}); // no strings -> bare double-NUL
+    std::vector<uint8_t> buffer = builder.build();
 
     DMIHeader header = make_header(buffer);
     TestEntry entry(header, buffer.data() + buffer.size());

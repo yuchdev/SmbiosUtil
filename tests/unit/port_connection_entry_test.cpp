@@ -4,6 +4,8 @@
 #include <smbios/smbios.h>
 #include <smbios/port_connection_entry.h>
 
+#include "synthetic_table_builder.h"
+
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
 
@@ -53,40 +55,30 @@ DMIHeader make_header(const std::vector<uint8_t>& buffer)
     return header;
 }
 
-/// @brief Append a minimal well-formed (empty) DMI string-section
-/// terminator (double NUL) so AbstractSMBiosEntry::parse_dmi_strings() has a
-/// well-formed section to walk and does not run past the buffer.
-void append_string_terminator(std::vector<uint8_t>& buffer)
-{
-    buffer.push_back(0x00);
-    buffer.push_back(0x00);
-}
-
 /// @brief Build a full-length (0x09) formatted-area buffer with known byte
-/// values at every offset, then truncate to `length` and set the header's
-/// own length byte accordingly. `length` must be >= 0x04.
+/// values at every offset, then truncate to `length` (via
+/// SyntheticTableBuilder::add_structure(), which computes header.length
+/// automatically from the formatted area's size). `length` must be >= 0x04.
 std::vector<uint8_t> build_buffer(uint8_t length)
 {
-    std::vector<uint8_t> full;
-    full.push_back(SMBios::PortConnection); // 0x00 type = 8
-    full.push_back(0x00);                   // 0x01 length (patched below)
-    full.push_back(0x01);                   // 0x02 handle low byte
-    full.push_back(0x00);                   // 0x03 handle high byte
+    std::vector<uint8_t> full_formatted_area{
+        0x01,                                 // 0x04 internal_designator_index
+        PortConnectionEntry::PS2,             // 0x05 internal_connection
+        0x02,                                 // 0x06 external_designator_index
+        PortConnectionEntry::RJ45,            // 0x07 external_connection
+        PortConnectionEntry::Keyboard,        // 0x08 port_type
+    };
 
-    full.push_back(0x01);                                   // 0x04 internal_designator_index
-    full.push_back(PortConnectionEntry::PS2);                // 0x05 internal_connection
-    full.push_back(0x02);                                   // 0x06 external_designator_index
-    full.push_back(PortConnectionEntry::RJ45);                // 0x07 external_connection
-    full.push_back(PortConnectionEntry::Keyboard);            // 0x08 port_type
+    BOOST_REQUIRE_EQUAL(full_formatted_area.size(), static_cast<size_t>(0x09 - 4));
+    BOOST_REQUIRE_LE(static_cast<size_t>(length), static_cast<size_t>(0x09));
+    BOOST_REQUIRE_GE(static_cast<size_t>(length), static_cast<size_t>(4));
 
-    BOOST_REQUIRE_EQUAL(full.size(), static_cast<size_t>(0x09));
-    BOOST_REQUIRE_LE(static_cast<size_t>(length), full.size());
+    std::vector<uint8_t> formatted_area(full_formatted_area.begin(),
+                                         full_formatted_area.begin() + (length - 4));
 
-    std::vector<uint8_t> buffer(full.begin(), full.begin() + length);
-    buffer[1] = length;
-
-    append_string_terminator(buffer);
-    return buffer;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::PortConnection, formatted_area);
+    return builder.build();
 }
 
 } // namespace

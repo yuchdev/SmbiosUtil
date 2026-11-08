@@ -47,18 +47,16 @@ BOOST_AUTO_TEST_SUITE(SmbiosTableWalkUnitTests)
 /// gracefully" constraint).
 BOOST_AUTO_TEST_CASE(ReadSmbiosTableStopsCleanlyOnTruncatedLastStructureTestCase)
 {
-    std::vector<uint8_t> buffer = {
-        // Structure 1: type=1 (SystemInformation), length=4, handle=0x0001
-        1, 4, 0x01, 0x00,
-        // string-section terminator (no strings)
-        0, 0,
-        // Structure 2: type=3 (SystemEnclosure), length=4, handle=0x0002
-        3, 4, 0x02, 0x00,
-        0, 0,
-        // Structure 3: header only (4 bytes, in-bounds), but length=0x20
-        // claims a formatted area that runs 28 bytes past the buffer end
-        4, 0x20, 0x03, 0x00
-    };
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(1, std::vector<uint8_t>{}); // SystemInformation, no formatted area
+    builder.add_structure(3, std::vector<uint8_t>{}); // SystemEnclosure, no formatted area
+    // Structure 3: header only (4 bytes, in-bounds), but length=0x20 claims a
+    // formatted area that runs 28 bytes past the buffer end - deliberately
+    // malformed, so add_raw_bytes() is used (and suppresses the automatic
+    // EndOfTable marker, matching this test's original exact-16-byte buffer).
+    builder.add_raw_bytes(std::vector<uint8_t>{4, 0x20, 0x03, 0x00});
+
+    std::vector<uint8_t> buffer = builder.build();
     BOOST_REQUIRE_EQUAL(buffer.size(), static_cast<size_t>(16));
 
     SMBios smbios_instance;
@@ -95,15 +93,14 @@ BOOST_AUTO_TEST_CASE(ReadSmbiosTableStopsCleanlyOnTruncatedLastStructureTestCase
 /// unchanged-by-this-fix behavior (R8), not a new discrepancy.
 BOOST_AUTO_TEST_CASE(ReadSmbiosTableParsesWellFormedTableWithExactBoundaryHeaderTestCase)
 {
-    std::vector<uint8_t> buffer = {
-        1, 4, 0x01, 0x00,
-        0, 0,
-        3, 4, 0x02, 0x00,
-        0, 0,
-        // EndOfTable header starts at offset 12, ends exactly at offset 16
-        // (the buffer's own end) - no bytes left over
-        127, 4, 0x03, 0x00
-    };
+    // Two well-formed structures, then build()'s own automatically-appended
+    // EndOfTable marker (type 127, length 4) starts at offset 12 and ends
+    // exactly at offset 16 (the buffer's own end) - no bytes left over.
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(1, std::vector<uint8_t>{}); // SystemInformation, no formatted area
+    builder.add_structure(3, std::vector<uint8_t>{}); // SystemEnclosure, no formatted area
+
+    std::vector<uint8_t> buffer = builder.build();
     BOOST_REQUIRE_EQUAL(buffer.size(), static_cast<size_t>(16));
 
     SMBios smbios_instance;

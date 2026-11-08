@@ -7,6 +7,8 @@
 #include <smbios/smbios_entry_factory.h>
 #include <smbios/abstract_smbios_entry.h>
 
+#include "synthetic_table_builder.h"
+
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
 
@@ -75,60 +77,47 @@ DMIHeader make_header(const std::vector<uint8_t>& buffer)
     return header;
 }
 
-/// @brief Append a minimal well-formed (empty) DMI string-section
-/// terminator (double NUL) so AbstractSMBiosEntry::parse_dmi_strings() has a
-/// well-formed section to walk and does not run past the buffer.
-void append_string_terminator(std::vector<uint8_t>& buffer)
-{
-    buffer.push_back(0x00);
-    buffer.push_back(0x00);
-}
-
 /// @brief Build a full-length (0x16) formatted-area buffer with distinct
 /// known byte values at every offset and a zero contained-element
 /// count/record-length (so the SKU number sits right at 0x15), then
-/// truncate to `length` and patch the header's own length byte
-/// accordingly. `length` must be >= 0x04.
+/// truncate to `length` (via SyntheticTableBuilder::add_structure(), which
+/// computes header.length automatically from the formatted area's size).
+/// `length` must be >= 0x04.
 std::vector<uint8_t> build_buffer(uint8_t length)
 {
-    std::vector<uint8_t> full;
-    full.push_back(SMBios::SystemEnclosure); // 0x00 type = 3
-    full.push_back(0x00);                    // 0x01 length (patched below)
-    full.push_back(0x01);                    // 0x02 handle low byte
-    full.push_back(0x00);                    // 0x03 handle high byte
+    std::vector<uint8_t> full_formatted_area{
+        0x01, // 0x04 manufacturer_index
+        // 0x05 type byte: bit 7 (lock present) = 1, bits 0-6 = Tower (0x07)
+        static_cast<uint8_t>(0x80 | SystemEnclosureEntry::Tower),
+        0x02, // 0x06 version_index
+        0x03, // 0x07 serial_number_index
+        0x04, // 0x08 asset_tag_index
 
-    full.push_back(0x01); // 0x04 manufacturer_index
-    // 0x05 type byte: bit 7 (lock present) = 1, bits 0-6 = Tower (0x07)
-    full.push_back(static_cast<uint8_t>(0x80 | SystemEnclosureEntry::Tower));
-    full.push_back(0x02); // 0x06 version_index
-    full.push_back(0x03); // 0x07 serial_number_index
-    full.push_back(0x04); // 0x08 asset_tag_index
+        static_cast<uint8_t>(SystemEnclosureEntry::Safe),    // 0x09 boot_up_state
+        static_cast<uint8_t>(SystemEnclosureEntry::Warning), // 0x0A power_supply_state
+        static_cast<uint8_t>(SystemEnclosureEntry::Critical), // 0x0B thermal_state
+        static_cast<uint8_t>(SystemEnclosureEntry::ExternalInterfaceLockedOut), // 0x0C security_status
 
-    full.push_back(static_cast<uint8_t>(SystemEnclosureEntry::Safe));    // 0x09 boot_up_state
-    full.push_back(static_cast<uint8_t>(SystemEnclosureEntry::Warning)); // 0x0A power_supply_state
-    full.push_back(static_cast<uint8_t>(SystemEnclosureEntry::Critical)); // 0x0B thermal_state
-    full.push_back(static_cast<uint8_t>(SystemEnclosureEntry::ExternalInterfaceLockedOut)); // 0x0C security_status
+        // 0x0D-0x10 oem_defined (u32 LE) -> 0xDEADBEEF
+        0xEF, 0xBE, 0xAD, 0xDE,
 
-    // 0x0D-0x10 oem_defined (u32 LE) -> 0xDEADBEEF
-    full.push_back(0xEF);
-    full.push_back(0xBE);
-    full.push_back(0xAD);
-    full.push_back(0xDE);
+        0x02, // 0x11 height
+        0x01, // 0x12 number_of_power_cords
+        0x00, // 0x13 contained_element_count = 0
+        0x00, // 0x14 contained_element_record_length = 0
+        0x05, // 0x15 sku_number_index (offset 0x15 + 0*0)
+    };
 
-    full.push_back(0x02); // 0x11 height
-    full.push_back(0x01); // 0x12 number_of_power_cords
-    full.push_back(0x00); // 0x13 contained_element_count = 0
-    full.push_back(0x00); // 0x14 contained_element_record_length = 0
-    full.push_back(0x05); // 0x15 sku_number_index (offset 0x15 + 0*0)
+    BOOST_REQUIRE_EQUAL(full_formatted_area.size(), static_cast<size_t>(0x16 - 4));
+    BOOST_REQUIRE_LE(static_cast<size_t>(length), static_cast<size_t>(0x16));
+    BOOST_REQUIRE_GE(static_cast<size_t>(length), static_cast<size_t>(4));
 
-    BOOST_REQUIRE_EQUAL(full.size(), static_cast<size_t>(0x16));
-    BOOST_REQUIRE_LE(static_cast<size_t>(length), full.size());
+    std::vector<uint8_t> formatted_area(full_formatted_area.begin(),
+                                         full_formatted_area.begin() + (length - 4));
 
-    std::vector<uint8_t> buffer(full.begin(), full.begin() + length);
-    buffer[1] = length;
-
-    append_string_terminator(buffer);
-    return buffer;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemEnclosure, formatted_area);
+    return builder.build();
 }
 
 } // namespace
@@ -274,41 +263,39 @@ BOOST_AUTO_TEST_CASE(SystemEnclosureEntryFullBufferDecodesSkuNumberAtZeroElement
 /// occupies 0x15-0x1A and sku_number_index sits at 0x1B.
 BOOST_AUTO_TEST_CASE(SystemEnclosureEntrySkuNumberOffsetIsComputedFromContainedElementsTestCase)
 {
-    std::vector<uint8_t> buffer;
-    buffer.push_back(SMBios::SystemEnclosure); // 0x00 type = 3
-    buffer.push_back(0x1C);                    // 0x01 length (patched exact)
-    buffer.push_back(0x01);                    // 0x02 handle low byte
-    buffer.push_back(0x00);                    // 0x03 handle high byte
+    std::vector<uint8_t> formatted_area{
+        0x01, // 0x04 manufacturer_index
+        static_cast<uint8_t>(SystemEnclosureEntry::Tower), // 0x05 type
+        0x02, // 0x06 version_index
+        0x03, // 0x07 serial_number_index
+        0x04, // 0x08 asset_tag_index
 
-    buffer.push_back(0x01); // 0x04 manufacturer_index
-    buffer.push_back(static_cast<uint8_t>(SystemEnclosureEntry::Tower)); // 0x05 type
-    buffer.push_back(0x02); // 0x06 version_index
-    buffer.push_back(0x03); // 0x07 serial_number_index
-    buffer.push_back(0x04); // 0x08 asset_tag_index
+        static_cast<uint8_t>(SystemEnclosureEntry::Safe),    // 0x09
+        static_cast<uint8_t>(SystemEnclosureEntry::Warning), // 0x0A
+        static_cast<uint8_t>(SystemEnclosureEntry::Critical), // 0x0B
+        static_cast<uint8_t>(SystemEnclosureEntry::None),    // 0x0C
 
-    buffer.push_back(static_cast<uint8_t>(SystemEnclosureEntry::Safe));    // 0x09
-    buffer.push_back(static_cast<uint8_t>(SystemEnclosureEntry::Warning)); // 0x0A
-    buffer.push_back(static_cast<uint8_t>(SystemEnclosureEntry::Critical)); // 0x0B
-    buffer.push_back(static_cast<uint8_t>(SystemEnclosureEntry::None));    // 0x0C
+        0x00, 0x00, 0x00, 0x00, // 0x0D-0x10 oem_defined
 
-    buffer.push_back(0x00); buffer.push_back(0x00); buffer.push_back(0x00); buffer.push_back(0x00); // 0x0D-0x10 oem_defined
-
-    buffer.push_back(0x00); // 0x11 height
-    buffer.push_back(0x00); // 0x12 number_of_power_cords
-    buffer.push_back(0x02); // 0x13 contained_element_count = 2
-    buffer.push_back(0x03); // 0x14 contained_element_record_length = 3
+        0x00, // 0x11 height
+        0x00, // 0x12 number_of_power_cords
+        0x02, // 0x13 contained_element_count = 2
+        0x03, // 0x14 contained_element_record_length = 3
+    };
 
     // 0x15-0x1A: 2 contained elements * 3 bytes each = 6 bytes (opaque here,
     // not decoded by this class - see its class-level doc comment)
     for (uint8_t i = 0; i < 6; ++i) {
-        buffer.push_back(static_cast<uint8_t>(0xA0 + i));
+        formatted_area.push_back(static_cast<uint8_t>(0xA0 + i));
     }
 
-    buffer.push_back(0x09); // 0x1B sku_number_index (0x15 + 2*3 == 0x1B)
+    formatted_area.push_back(0x09); // 0x1B sku_number_index (0x15 + 2*3 == 0x1B)
 
-    BOOST_REQUIRE_EQUAL(buffer.size(), static_cast<size_t>(0x1C));
+    BOOST_REQUIRE_EQUAL(formatted_area.size(), static_cast<size_t>(0x1C - 4));
 
-    append_string_terminator(buffer);
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemEnclosure, formatted_area);
+    std::vector<uint8_t> buffer = builder.build();
 
     DMIHeader header = make_header(buffer);
     SystemEnclosureEntry entry(header, SMBiosVersion{2, 7}, buffer.data() + buffer.size());
@@ -324,38 +311,36 @@ BOOST_AUTO_TEST_CASE(SystemEnclosureEntrySkuNumberOffsetIsComputedFromContainedE
 /// area.
 BOOST_AUTO_TEST_CASE(SystemEnclosureEntrySkuNumberDefaultsWhenComputedOffsetExceedsLengthTestCase)
 {
-    std::vector<uint8_t> buffer;
-    buffer.push_back(SMBios::SystemEnclosure); // 0x00 type = 3
-    buffer.push_back(0x1B);                    // 0x01 length - one short of 0x1C
-    buffer.push_back(0x01);                    // 0x02 handle low byte
-    buffer.push_back(0x00);                    // 0x03 handle high byte
+    std::vector<uint8_t> formatted_area{
+        0x01, // 0x04 manufacturer_index
+        static_cast<uint8_t>(SystemEnclosureEntry::Tower), // 0x05 type
+        0x02, // 0x06 version_index
+        0x03, // 0x07 serial_number_index
+        0x04, // 0x08 asset_tag_index
 
-    buffer.push_back(0x01); // 0x04 manufacturer_index
-    buffer.push_back(static_cast<uint8_t>(SystemEnclosureEntry::Tower)); // 0x05 type
-    buffer.push_back(0x02); // 0x06 version_index
-    buffer.push_back(0x03); // 0x07 serial_number_index
-    buffer.push_back(0x04); // 0x08 asset_tag_index
+        static_cast<uint8_t>(SystemEnclosureEntry::Safe),
+        static_cast<uint8_t>(SystemEnclosureEntry::Warning),
+        static_cast<uint8_t>(SystemEnclosureEntry::Critical),
+        static_cast<uint8_t>(SystemEnclosureEntry::None),
 
-    buffer.push_back(static_cast<uint8_t>(SystemEnclosureEntry::Safe));
-    buffer.push_back(static_cast<uint8_t>(SystemEnclosureEntry::Warning));
-    buffer.push_back(static_cast<uint8_t>(SystemEnclosureEntry::Critical));
-    buffer.push_back(static_cast<uint8_t>(SystemEnclosureEntry::None));
+        0x00, 0x00, 0x00, 0x00,
 
-    buffer.push_back(0x00); buffer.push_back(0x00); buffer.push_back(0x00); buffer.push_back(0x00);
-
-    buffer.push_back(0x00); // 0x11 height
-    buffer.push_back(0x00); // 0x12 number_of_power_cords
-    buffer.push_back(0x02); // 0x13 contained_element_count = 2
-    buffer.push_back(0x03); // 0x14 contained_element_record_length = 3
+        0x00, // 0x11 height
+        0x00, // 0x12 number_of_power_cords
+        0x02, // 0x13 contained_element_count = 2
+        0x03, // 0x14 contained_element_record_length = 3
+    };
 
     for (uint8_t i = 0; i < 6; ++i) {
-        buffer.push_back(static_cast<uint8_t>(0xA0 + i));
+        formatted_area.push_back(static_cast<uint8_t>(0xA0 + i));
     }
     // deliberately no sku_number_index byte appended - length stops at 0x1B
 
-    BOOST_REQUIRE_EQUAL(buffer.size(), static_cast<size_t>(0x1B));
+    BOOST_REQUIRE_EQUAL(formatted_area.size(), static_cast<size_t>(0x1B - 4));
 
-    append_string_terminator(buffer);
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemEnclosure, formatted_area);
+    std::vector<uint8_t> buffer = builder.build();
 
     DMIHeader header = make_header(buffer);
     SystemEnclosureEntry entry(header, SMBiosVersion{2, 7}, buffer.data() + buffer.size());

@@ -7,6 +7,8 @@
 #include <smbios/smbios_entry_factory.h>
 #include <smbios/abstract_smbios_entry.h>
 
+#include "synthetic_table_builder.h"
+
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
 
@@ -57,53 +59,43 @@ DMIHeader make_header(const std::vector<uint8_t>& buffer)
     return header;
 }
 
-/// @brief Append a minimal well-formed (empty) DMI string-section
-/// terminator (double NUL) so AbstractSMBiosEntry::parse_dmi_strings() has a
-/// well-formed section to walk and does not run past the buffer.
-void append_string_terminator(std::vector<uint8_t>& buffer)
-{
-    buffer.push_back(0x00);
-    buffer.push_back(0x00);
-}
-
 /// @brief Build a full-length (0x17) formatted-area buffer with distinct
-/// known byte values at every offset, then truncate to `length` and patch
-/// the header's own length byte accordingly. `maximum_capacity` is
+/// known byte values at every offset, then truncate to `length` (via
+/// SyntheticTableBuilder::add_structure(), which computes header.length
+/// automatically from the formatted area's size). `maximum_capacity` is
 /// overridable (little-endian DWORD) so each test case can drive the exact
 /// sentinel branch it needs; `length` must be >= 0x04.
 std::vector<uint8_t> build_buffer(uint8_t length, uint32_t maximum_capacity = 0x00100000 /* 1 GB in kB */)
 {
-    std::vector<uint8_t> full;
-    full.push_back(SMBios::PhysicalMemoryArray); // 0x00 type = 16
-    full.push_back(0x00);                        // 0x01 length (patched below)
-    full.push_back(0x01);                        // 0x02 handle low byte
-    full.push_back(0x00);                        // 0x03 handle high byte
+    std::vector<uint8_t> full_formatted_area{
+        PhysicalMemoryArrayEntry::SystemBoardOrMotherboard, // 0x04 location
+        PhysicalMemoryArrayEntry::SystemMemory,             // 0x05 use
+        PhysicalMemoryArrayEntry::MultiBitECC,              // 0x06 memory_error_correction
 
-    full.push_back(PhysicalMemoryArrayEntry::SystemBoardOrMotherboard); // 0x04 location
-    full.push_back(PhysicalMemoryArrayEntry::SystemMemory);             // 0x05 use
-    full.push_back(PhysicalMemoryArrayEntry::MultiBitECC);              // 0x06 memory_error_correction
+        // 0x07 maximum_capacity (little-endian DWORD)
+        static_cast<uint8_t>(maximum_capacity & 0xFF),
+        static_cast<uint8_t>((maximum_capacity >> 8) & 0xFF),
+        static_cast<uint8_t>((maximum_capacity >> 16) & 0xFF),
+        static_cast<uint8_t>((maximum_capacity >> 24) & 0xFF),
 
-    // 0x07 maximum_capacity (little-endian DWORD)
-    full.push_back(static_cast<uint8_t>(maximum_capacity & 0xFF));
-    full.push_back(static_cast<uint8_t>((maximum_capacity >> 8) & 0xFF));
-    full.push_back(static_cast<uint8_t>((maximum_capacity >> 16) & 0xFF));
-    full.push_back(static_cast<uint8_t>((maximum_capacity >> 24) & 0xFF));
+        0xFF, 0xFF, // 0x0B memory_error_information_handle = No Error
+        0x04, 0x00, // 0x0D number_of_memory_devices = 4
 
-    full.push_back(0xFF); full.push_back(0xFF); // 0x0B memory_error_information_handle = No Error
-    full.push_back(0x04); full.push_back(0x00); // 0x0D number_of_memory_devices = 4
+        // 0x0F extended_maximum_capacity (little-endian QWORD) = 0x100000000 bytes (4 GB)
+        0x00, 0x00, 0x00, 0x00,
+        0x01, 0x00, 0x00, 0x00,
+    };
 
-    // 0x0F extended_maximum_capacity (little-endian QWORD) = 0x100000000 bytes (4 GB)
-    full.push_back(0x00); full.push_back(0x00); full.push_back(0x00); full.push_back(0x00);
-    full.push_back(0x01); full.push_back(0x00); full.push_back(0x00); full.push_back(0x00);
+    BOOST_REQUIRE_EQUAL(full_formatted_area.size(), static_cast<size_t>(0x17 - 4));
+    BOOST_REQUIRE_LE(static_cast<size_t>(length), static_cast<size_t>(0x17));
+    BOOST_REQUIRE_GE(static_cast<size_t>(length), static_cast<size_t>(4));
 
-    BOOST_REQUIRE_EQUAL(full.size(), static_cast<size_t>(0x17));
-    BOOST_REQUIRE_LE(static_cast<size_t>(length), full.size());
+    std::vector<uint8_t> formatted_area(full_formatted_area.begin(),
+                                         full_formatted_area.begin() + (length - 4));
 
-    std::vector<uint8_t> buffer(full.begin(), full.begin() + length);
-    buffer[1] = length;
-
-    append_string_terminator(buffer);
-    return buffer;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::PhysicalMemoryArray, formatted_area);
+    return builder.build();
 }
 
 } // namespace

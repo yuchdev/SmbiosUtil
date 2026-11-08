@@ -6,7 +6,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 | Story | Name                                | Status         | Tests |
 |-------|----------------------------------------|----------------|-------|
-| 01.0  | Hermetic fixture-based test layer     | 🔶 In progress (1/3 tasks) | 163 unit (smbios_unit_test) |
+| 01.0  | Hermetic fixture-based test layer     | 🔶 In progress (2/3 tasks) | 163 unit (smbios_unit_test) |
 | 02.0  | Boundary and malformed-table tests    | ⬜ Not started | -     |
 | 03.0  | Documentation and release pass        | ⬜ Not started | -     |
 
@@ -59,3 +59,41 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   all 4 `ctest` targets green. Task 02 (migrating
   `build_port_connection_buffer()` and friends onto the builder) and
   Task 03 remain.
+- **2026-11-08, Story 01.0 Task 02 (migrate ad hoc buffers onto
+  `SyntheticTableBuilder`) landed:** every hand-rolled synthetic-buffer
+  construction under `tests/unit/` that assembled a well-formed DMI
+  structure or table by hand (header push_backs + manual double-NUL
+  string terminator) now goes through
+  `smbios::test::SyntheticTableBuilder::add_structure()`/`build()` instead
+  - 13 files: the 10 `*_entry_test.cpp` field-table test files
+  (`bios_information`, `memory_device`, `port_connection`,
+  `system_information` (both its own suite and its UUID-formatting
+  fixture), `system_enclosure`, `processor_information`,
+  `cache_information`, `system_slots`, `physical_memory_array`,
+  `memory_array_mapped_address`, `system_boot_information`),
+  `dmi_string_parsing_test.cpp` (including its deliberately-malformed
+  missing-terminator case, now via `add_raw_bytes()`),
+  `smbios_table_walk_test.cpp`'s own two multi-structure literals, and
+  `unit_tests.cpp`'s `build_port_connection_buffer()` (named explicitly by
+  this task despite predating the spec's own file list). Per-file
+  `append_string_terminator()` duplicate helpers (13 near-identical
+  copies) are gone; `DMIHeader`-from-buffer construction (`make_header()`)
+  is unchanged, since that is unaffected by how the underlying buffer was
+  assembled. No assertion/expected-value changed - every migrated test's
+  own byte layout was re-derived from the builder's `add_structure()`
+  (header + formatted area verbatim + auto-terminated strings), which
+  matches the original hand-rolled layout byte-for-byte, so no bug was
+  exposed. Left alone (genuinely out of scope, not full-table/structure
+  construction): `linux_sysfs_source_test.cpp`,
+  `smbios_source_chain_test.cpp` (fake `ISmbiosSource` payload bytes, not
+  DMI structures), `byte_reader_test.cpp`,
+  `smbios_entry_factory_test.cpp`'s/`smbios_version_fixup_test.cpp`'s/
+  `smbios_legacy_link_test.cpp`'s/`smbios_source_chain_link_seam_test.cpp`'s
+  narrow non-table byte usage, and the builder's own
+  `synthetic_table_builder.{h,cpp,_test.cpp}`. Full suite: still 163
+  `smbios_unit_test` cases pass (same count as the Task 01 baseline), all
+  4 `ctest` targets green. The spec's own proxy grep
+  (`std::vector<uint8_t>.*{0x`) only moves 9 -> 10 (it was never a
+  reliable signal for this codebase's push_back-style construction); the
+  real signal is `grep -rl synthetic_table_builder.h tests/unit/*.cpp`:
+  3 files before this task, 16 after. Task 03 remains.

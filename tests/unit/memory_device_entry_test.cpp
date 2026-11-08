@@ -4,6 +4,8 @@
 #include <smbios/smbios.h>
 #include <smbios/memory_device_entry.h>
 
+#include "synthetic_table_builder.h"
+
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
 
@@ -78,59 +80,49 @@ DMIHeader make_header(const std::vector<uint8_t>& buffer)
     return header;
 }
 
-/// @brief Append a minimal well-formed (empty) DMI string-section
-/// terminator (double NUL) so AbstractSMBiosEntry::parse_dmi_strings()
-/// has a well-formed section to walk and does not run past the buffer.
-void append_string_terminator(std::vector<uint8_t>& buffer)
-{
-    buffer.push_back(0x00);
-    buffer.push_back(0x00);
-}
-
 /// @brief Build a full-length (0x28) formatted-area buffer with distinct
-/// known byte values at every offset, then truncate to `length` and set
-/// the header's own length byte accordingly. `length` must be >= 0x04.
+/// known byte values at every offset, then truncate to `length` (via
+/// SyntheticTableBuilder::add_structure(), which computes header.length
+/// automatically from the formatted area's size). `length` must be >= 0x04.
 std::vector<uint8_t> build_buffer(uint8_t length)
 {
-    std::vector<uint8_t> full;
-    full.push_back(SMBios::MemoryDevice); // 0x00 type = 17
-    full.push_back(0x00);                 // 0x01 length (patched below)
-    full.push_back(0x01);                 // 0x02 handle low byte
-    full.push_back(0x00);                 // 0x03 handle high byte
+    std::vector<uint8_t> full_formatted_area{
+        0x01, 0x00, // 0x04-0x05 array_handle = 0x0001
+        0xFF, 0xFF, // 0x06-0x07 array_error_handle = NoError
+        0x48, 0x00, // 0x08-0x09 total_width = 72
+        0x40, 0x00, // 0x0A-0x0B data_width = 64
+        0x00, 0x20, // 0x0C-0x0D device_size = 0x2000
+        0x09,       // 0x0E form_factor = DIMM
+        0x00,       // 0x0F device_set = None
+        0x01,       // 0x10 device_locator_index
+        0x02,       // 0x11 bank_locator_index
+        0x1A,       // 0x12 device_type = DDR4
+        0x80, 0x00, // 0x13-0x14 type_detail = Synchronous
 
-    full.push_back(0x01); full.push_back(0x00); // 0x04-0x05 array_handle = 0x0001
-    full.push_back(0xFF); full.push_back(0xFF); // 0x06-0x07 array_error_handle = NoError
-    full.push_back(0x48); full.push_back(0x00); // 0x08-0x09 total_width = 72
-    full.push_back(0x40); full.push_back(0x00); // 0x0A-0x0B data_width = 64
-    full.push_back(0x00); full.push_back(0x20); // 0x0C-0x0D device_size = 0x2000
-    full.push_back(0x09);                        // 0x0E form_factor = DIMM
-    full.push_back(0x00);                        // 0x0F device_set = None
-    full.push_back(0x01);                        // 0x10 device_locator_index
-    full.push_back(0x02);                        // 0x11 bank_locator_index
-    full.push_back(0x1A);                        // 0x12 device_type = DDR4
-    full.push_back(0x80); full.push_back(0x00); // 0x13-0x14 type_detail = Synchronous
+        0x60, 0x09, // 0x15-0x16 device_speed = 2400
+        0x03,       // 0x17 manufacturer_index
+        0x04,       // 0x18 serial_number_index
+        0x05,       // 0x19 asset_tag_index
+        0x06,       // 0x1A part_number_index
+        0x04,       // 0x1B device_rank
 
-    full.push_back(0x60); full.push_back(0x09); // 0x15-0x16 device_speed = 2400
-    full.push_back(0x03);                        // 0x17 manufacturer_index
-    full.push_back(0x04);                        // 0x18 serial_number_index
-    full.push_back(0x05);                        // 0x19 asset_tag_index
-    full.push_back(0x06);                        // 0x1A part_number_index
-    full.push_back(0x04);                        // 0x1B device_rank
+        0x00, 0x00, 0x02, 0x00, // 0x1C-0x1F extended_size = 0x00020000
+        0x75, 0x0B, // 0x20-0x21 memory_clock_speed = 2933
+        0xB0, 0x04, // 0x22-0x23 minimum_voltage = 1200
+        0x46, 0x05, // 0x24-0x25 maximum_voltage = 1350
+        0xB0, 0x04, // 0x26-0x27 configured_voltage = 1200
+    };
 
-    full.push_back(0x00); full.push_back(0x00); full.push_back(0x02); full.push_back(0x00); // 0x1C-0x1F extended_size = 0x00020000
-    full.push_back(0x75); full.push_back(0x0B); // 0x20-0x21 memory_clock_speed = 2933
-    full.push_back(0xB0); full.push_back(0x04); // 0x22-0x23 minimum_voltage = 1200
-    full.push_back(0x46); full.push_back(0x05); // 0x24-0x25 maximum_voltage = 1350
-    full.push_back(0xB0); full.push_back(0x04); // 0x26-0x27 configured_voltage = 1200
+    BOOST_REQUIRE_EQUAL(full_formatted_area.size(), static_cast<size_t>(0x28 - 4));
+    BOOST_REQUIRE_LE(static_cast<size_t>(length), static_cast<size_t>(0x28));
+    BOOST_REQUIRE_GE(static_cast<size_t>(length), static_cast<size_t>(4));
 
-    BOOST_REQUIRE_EQUAL(full.size(), static_cast<size_t>(0x28));
-    BOOST_REQUIRE_LE(static_cast<size_t>(length), full.size());
+    std::vector<uint8_t> formatted_area(full_formatted_area.begin(),
+                                         full_formatted_area.begin() + (length - 4));
 
-    std::vector<uint8_t> buffer(full.begin(), full.begin() + length);
-    buffer[1] = length;
-
-    append_string_terminator(buffer);
-    return buffer;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::MemoryDevice, formatted_area);
+    return builder.build();
 }
 
 } // namespace

@@ -4,6 +4,8 @@
 #include <smbios/smbios.h>
 #include <smbios/bios_information_entry.h>
 
+#include "synthetic_table_builder.h"
+
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
 
@@ -57,27 +59,13 @@ DMIHeader make_header(const std::vector<uint8_t>& buffer)
     return header;
 }
 
-/// @brief Append a minimal well-formed (empty) DMI string-section
-/// terminator (double NUL) so AbstractSMBiosEntry::parse_dmi_strings()
-/// has a well-formed section to walk and does not run past the buffer.
-void append_string_terminator(std::vector<uint8_t>& buffer)
-{
-    buffer.push_back(0x00);
-    buffer.push_back(0x00);
-}
-
 /// @brief Tier 1: header.length < 0x12 - header-only, no formatted fields
 /// at all, so every length-guarded getter must return its default (0).
 std::vector<uint8_t> build_tier1_buffer()
 {
-    std::vector<uint8_t> buffer;
-    buffer.push_back(SMBios::BIOSInformation); // type = 0
-    buffer.push_back(0x04);                    // length = 4 (header only)
-    buffer.push_back(0x01);                    // handle low byte
-    buffer.push_back(0x00);                    // handle high byte
-
-    append_string_terminator(buffer);
-    return buffer;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::BIOSInformation, std::vector<uint8_t>{});
+    return builder.build();
 }
 
 /// @brief Tier 2: header.length == 0x18 - every field through
@@ -85,42 +73,26 @@ std::vector<uint8_t> build_tier1_buffer()
 /// (0x18 + sizeof(uint16_t) > 0x18).
 std::vector<uint8_t> build_tier2_buffer()
 {
-    std::vector<uint8_t> buffer;
-    buffer.push_back(SMBios::BIOSInformation); // 0x00 type = 0
-    buffer.push_back(0x18);                    // 0x01 length = 24
-    buffer.push_back(0x01);                    // 0x02 handle low byte
-    buffer.push_back(0x00);                    // 0x03 handle high byte
+    std::vector<uint8_t> formatted_area{
+        0x02,                                           // 0x04 vendor_index
+        0x03,                                           // 0x05 version_index
+        0x00, 0xF0,                                     // 0x06 starting_segment (0xF000)
+        0x04,                                           // 0x08 release_date_index
+        0x01,                                           // 0x09 rom_size (not 0xFF)
+        // 0x0A..0x11 properties (u64 LE) -> 0xFEDCBA9876543210
+        0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE,
+        0x05,                                           // 0x12 properties_extension1
+        0x06,                                           // 0x13 properties_extension2
+        0x07,                                           // 0x14 bios_major_release
+        0x08,                                           // 0x15 bios_minor_release
+        0x09,                                           // 0x16 firmware_major_release
+        0x0A,                                           // 0x17 firmware_minor_release
+    };
+    BOOST_REQUIRE_EQUAL(formatted_area.size(), static_cast<size_t>(0x18 - 4));
 
-    buffer.push_back(0x02);                    // 0x04 vendor_index
-    buffer.push_back(0x03);                    // 0x05 version_index
-
-    buffer.push_back(0x00);                    // 0x06 starting_segment low
-    buffer.push_back(0xF0);                    // 0x07 starting_segment high (0xF000)
-
-    buffer.push_back(0x04);                    // 0x08 release_date_index
-    buffer.push_back(0x01);                    // 0x09 rom_size (not 0xFF)
-
-    // 0x0A..0x11 properties (u64 LE) -> 0xFEDCBA9876543210
-    buffer.push_back(0x10);
-    buffer.push_back(0x32);
-    buffer.push_back(0x54);
-    buffer.push_back(0x76);
-    buffer.push_back(0x98);
-    buffer.push_back(0xBA);
-    buffer.push_back(0xDC);
-    buffer.push_back(0xFE);
-
-    buffer.push_back(0x05);                    // 0x12 properties_extension1
-    buffer.push_back(0x06);                    // 0x13 properties_extension2
-    buffer.push_back(0x07);                    // 0x14 bios_major_release
-    buffer.push_back(0x08);                    // 0x15 bios_minor_release
-    buffer.push_back(0x09);                    // 0x16 firmware_major_release
-    buffer.push_back(0x0A);                    // 0x17 firmware_minor_release
-
-    BOOST_REQUIRE_EQUAL(buffer.size(), static_cast<size_t>(0x18));
-
-    append_string_terminator(buffer);
-    return buffer;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::BIOSInformation, formatted_area);
+    return builder.build();
 }
 
 /// @brief Tier 3: header.length == 0x1A (> 0x18) - extended_rom_size (0x18)
@@ -128,45 +100,27 @@ std::vector<uint8_t> build_tier2_buffer()
 /// "see extended ROM size instead" sentinel path alongside it.
 std::vector<uint8_t> build_tier3_buffer()
 {
-    std::vector<uint8_t> buffer;
-    buffer.push_back(SMBios::BIOSInformation); // 0x00 type = 0
-    buffer.push_back(0x1A);                    // 0x01 length = 26
-    buffer.push_back(0x02);                    // 0x02 handle low byte
-    buffer.push_back(0x00);                    // 0x03 handle high byte
+    std::vector<uint8_t> formatted_area{
+        0x0B,                                           // 0x04 vendor_index
+        0x0C,                                           // 0x05 version_index
+        0x00, 0xE0,                                     // 0x06 starting_segment (0xE000)
+        0x0D,                                           // 0x08 release_date_index
+        0xFF,                                           // 0x09 rom_size sentinel
+        // 0x0A..0x11 properties (u64 LE) -> 0xEFCDAB8967452301
+        0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
+        0x0E,                                           // 0x12 properties_extension1
+        0x0F,                                           // 0x13 properties_extension2
+        0x10,                                           // 0x14 bios_major_release
+        0x11,                                           // 0x15 bios_minor_release
+        0x12,                                           // 0x16 firmware_major_release
+        0x13,                                           // 0x17 firmware_minor_release
+        0x32, 0x00,                                     // 0x18 extended_rom_size (50)
+    };
+    BOOST_REQUIRE_EQUAL(formatted_area.size(), static_cast<size_t>(0x1A - 4));
 
-    buffer.push_back(0x0B);                    // 0x04 vendor_index
-    buffer.push_back(0x0C);                    // 0x05 version_index
-
-    buffer.push_back(0x00);                    // 0x06 starting_segment low
-    buffer.push_back(0xE0);                    // 0x07 starting_segment high (0xE000)
-
-    buffer.push_back(0x0D);                    // 0x08 release_date_index
-    buffer.push_back(0xFF);                    // 0x09 rom_size sentinel
-
-    // 0x0A..0x11 properties (u64 LE) -> 0xEFCDAB8967452301
-    buffer.push_back(0x01);
-    buffer.push_back(0x23);
-    buffer.push_back(0x45);
-    buffer.push_back(0x67);
-    buffer.push_back(0x89);
-    buffer.push_back(0xAB);
-    buffer.push_back(0xCD);
-    buffer.push_back(0xEF);
-
-    buffer.push_back(0x0E);                    // 0x12 properties_extension1
-    buffer.push_back(0x0F);                    // 0x13 properties_extension2
-    buffer.push_back(0x10);                    // 0x14 bios_major_release
-    buffer.push_back(0x11);                    // 0x15 bios_minor_release
-    buffer.push_back(0x12);                    // 0x16 firmware_major_release
-    buffer.push_back(0x13);                    // 0x17 firmware_minor_release
-
-    buffer.push_back(0x32);                    // 0x18 extended_rom_size low
-    buffer.push_back(0x00);                    // 0x19 extended_rom_size high (50)
-
-    BOOST_REQUIRE_EQUAL(buffer.size(), static_cast<size_t>(0x1A));
-
-    append_string_terminator(buffer);
-    return buffer;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::BIOSInformation, formatted_area);
+    return builder.build();
 }
 
 } // namespace

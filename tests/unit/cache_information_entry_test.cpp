@@ -7,6 +7,8 @@
 #include <smbios/smbios_entry_factory.h>
 #include <smbios/abstract_smbios_entry.h>
 
+#include "synthetic_table_builder.h"
+
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
 
@@ -64,15 +66,6 @@ DMIHeader make_header(const std::vector<uint8_t>& buffer)
     return header;
 }
 
-/// @brief Append a minimal well-formed (empty) DMI string-section
-/// terminator (double NUL) so AbstractSMBiosEntry::parse_dmi_strings() has a
-/// well-formed section to walk and does not run past the buffer.
-void append_string_terminator(std::vector<uint8_t>& buffer)
-{
-    buffer.push_back(0x00);
-    buffer.push_back(0x00);
-}
-
 void push_u16(std::vector<uint8_t>& buffer, uint16_t value)
 {
     buffer.push_back(static_cast<uint8_t>(value & 0xFF));
@@ -88,11 +81,12 @@ void push_u32(std::vector<uint8_t>& buffer, uint32_t value)
 }
 
 /// @brief Build a full-length (0x1B) formatted-area buffer with distinct
-/// known byte values at every offset, then truncate to `length` and patch
-/// the header's own length byte accordingly. The legacy (0x07/0x09) and
-/// widened (0x13/0x17) size fields are overridable so tests can drive the
-/// legacy-vs-widened and granularity-branch cases precisely; `length` must
-/// be >= 0x04.
+/// known byte values at every offset, then truncate to `length` (via
+/// SyntheticTableBuilder::add_structure(), which computes header.length
+/// automatically from the formatted area's size). The legacy (0x07/0x09)
+/// and widened (0x13/0x17) size fields are overridable so tests can drive
+/// the legacy-vs-widened and granularity-branch cases precisely; `length`
+/// must be >= 0x04.
 std::vector<uint8_t> build_buffer(uint8_t length,
                                    uint16_t cache_configuration = 0x0082, // enabled, level 3, Internal
                                    uint16_t legacy_max_size = 0x0010,     // 16 KB, 1 KB granularity
@@ -100,35 +94,32 @@ std::vector<uint8_t> build_buffer(uint8_t length,
                                    uint32_t widened_max_size = 0x00000020,   // 32 KB, 1 KB granularity
                                    uint32_t widened_installed_size = 0x00000010) // 16 KB, 1 KB granularity
 {
-    std::vector<uint8_t> full;
-    full.push_back(SMBios::CacheInformation); // 0x00 type = 7
-    full.push_back(0x00);                     // 0x01 length (patched below)
-    full.push_back(0x01);                     // 0x02 handle low byte
-    full.push_back(0x00);                     // 0x03 handle high byte
+    std::vector<uint8_t> full_formatted_area;
+    full_formatted_area.push_back(0x01);                      // 0x04 socket_designation_index
+    push_u16(full_formatted_area, cache_configuration);       // 0x05 cache_configuration
+    push_u16(full_formatted_area, legacy_max_size);           // 0x07 max_cache_size (legacy)
+    push_u16(full_formatted_area, legacy_installed_size);     // 0x09 installed_size (legacy)
+    push_u16(full_formatted_area, CacheInformationEntry::Burst | CacheInformationEntry::Synchronous);   // 0x0B supported_sram_type
+    push_u16(full_formatted_area, CacheInformationEntry::Synchronous);                                  // 0x0D installed_sram_type
 
-    full.push_back(0x01);                      // 0x04 socket_designation_index
-    push_u16(full, cache_configuration);       // 0x05 cache_configuration
-    push_u16(full, legacy_max_size);           // 0x07 max_cache_size (legacy)
-    push_u16(full, legacy_installed_size);     // 0x09 installed_size (legacy)
-    push_u16(full, CacheInformationEntry::Burst | CacheInformationEntry::Synchronous);   // 0x0B supported_sram_type
-    push_u16(full, CacheInformationEntry::Synchronous);                                  // 0x0D installed_sram_type
+    full_formatted_area.push_back(0x0A); // 0x0F cache_speed = 10 ns
+    full_formatted_area.push_back(CacheInformationEntry::SingleBitECC); // 0x10 error_correction_type
+    full_formatted_area.push_back(CacheInformationEntry::Unified);      // 0x11 system_cache_type
+    full_formatted_area.push_back(CacheInformationEntry::EightWaySetAssociative); // 0x12 associativity
 
-    full.push_back(0x0A); // 0x0F cache_speed = 10 ns
-    full.push_back(CacheInformationEntry::SingleBitECC); // 0x10 error_correction_type
-    full.push_back(CacheInformationEntry::Unified);      // 0x11 system_cache_type
-    full.push_back(CacheInformationEntry::EightWaySetAssociative); // 0x12 associativity
+    push_u32(full_formatted_area, widened_max_size);       // 0x13 max_cache_size_2 (widened)
+    push_u32(full_formatted_area, widened_installed_size); // 0x17 installed_size_2 (widened)
 
-    push_u32(full, widened_max_size);       // 0x13 max_cache_size_2 (widened)
-    push_u32(full, widened_installed_size); // 0x17 installed_size_2 (widened)
+    BOOST_REQUIRE_EQUAL(full_formatted_area.size(), static_cast<size_t>(0x1B - 4));
+    BOOST_REQUIRE_LE(static_cast<size_t>(length), static_cast<size_t>(0x1B));
+    BOOST_REQUIRE_GE(static_cast<size_t>(length), static_cast<size_t>(4));
 
-    BOOST_REQUIRE_EQUAL(full.size(), static_cast<size_t>(0x1B));
-    BOOST_REQUIRE_LE(static_cast<size_t>(length), full.size());
+    std::vector<uint8_t> formatted_area(full_formatted_area.begin(),
+                                         full_formatted_area.begin() + (length - 4));
 
-    std::vector<uint8_t> buffer(full.begin(), full.begin() + length);
-    buffer[1] = length;
-
-    append_string_terminator(buffer);
-    return buffer;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::CacheInformation, formatted_area);
+    return builder.build();
 }
 
 } // namespace

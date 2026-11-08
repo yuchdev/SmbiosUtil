@@ -7,6 +7,8 @@
 #include <smbios/smbios_entry_factory.h>
 #include <smbios/abstract_smbios_entry.h>
 
+#include "synthetic_table_builder.h"
+
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
 
@@ -57,56 +59,44 @@ DMIHeader make_header(const std::vector<uint8_t>& buffer)
     return header;
 }
 
-/// @brief Append a minimal well-formed (empty) DMI string-section
-/// terminator (double NUL) so AbstractSMBiosEntry::parse_dmi_strings() has a
-/// well-formed section to walk and does not run past the buffer.
-void append_string_terminator(std::vector<uint8_t>& buffer)
-{
-    buffer.push_back(0x00);
-    buffer.push_back(0x00);
-}
-
 /// @brief Build a full-length (0x1F) formatted-area buffer with distinct
-/// known byte values at every offset, then truncate to `length` and patch
-/// the header's own length byte accordingly. `starting_address` is
+/// known byte values at every offset, then truncate to `length` (via
+/// SyntheticTableBuilder::add_structure(), which computes header.length
+/// automatically from the formatted area's size). `starting_address` is
 /// overridable (little-endian DWORD) so each test case can drive the exact
 /// sentinel branch it needs; `length` must be >= 0x04.
 std::vector<uint8_t> build_buffer(uint8_t length, uint32_t starting_address = 0x00001000)
 {
-    std::vector<uint8_t> full;
-    full.push_back(SMBios::MemoryArrayMappedAddress); // 0x00 type = 19
-    full.push_back(0x00);                             // 0x01 length (patched below)
-    full.push_back(0x01);                              // 0x02 handle low byte
-    full.push_back(0x00);                              // 0x03 handle high byte
+    std::vector<uint8_t> full_formatted_area{
+        // 0x04 starting_address (little-endian DWORD)
+        static_cast<uint8_t>(starting_address & 0xFF),
+        static_cast<uint8_t>((starting_address >> 8) & 0xFF),
+        static_cast<uint8_t>((starting_address >> 16) & 0xFF),
+        static_cast<uint8_t>((starting_address >> 24) & 0xFF),
 
-    // 0x04 starting_address (little-endian DWORD)
-    full.push_back(static_cast<uint8_t>(starting_address & 0xFF));
-    full.push_back(static_cast<uint8_t>((starting_address >> 8) & 0xFF));
-    full.push_back(static_cast<uint8_t>((starting_address >> 16) & 0xFF));
-    full.push_back(static_cast<uint8_t>((starting_address >> 24) & 0xFF));
+        // 0x08 ending_address (little-endian DWORD) = 0x00002000
+        0x00, 0x20, 0x00, 0x00,
 
-    // 0x08 ending_address (little-endian DWORD) = 0x00002000
-    full.push_back(0x00); full.push_back(0x20); full.push_back(0x00); full.push_back(0x00);
+        0x05, 0x00, // 0x0C memory_array_handle = 0x0005
+        0x08,       // 0x0E partition_width = 8
 
-    full.push_back(0x05); full.push_back(0x00); // 0x0C memory_array_handle = 0x0005
-    full.push_back(0x08);                        // 0x0E partition_width = 8
+        // 0x0F extended_starting_address (little-endian QWORD) = 0x200000000
+        0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
 
-    // 0x0F extended_starting_address (little-endian QWORD) = 0x200000000
-    full.push_back(0x00); full.push_back(0x00); full.push_back(0x00); full.push_back(0x00);
-    full.push_back(0x02); full.push_back(0x00); full.push_back(0x00); full.push_back(0x00);
+        // 0x17 extended_ending_address (little-endian QWORD) = 0x300000000
+        0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
+    };
 
-    // 0x17 extended_ending_address (little-endian QWORD) = 0x300000000
-    full.push_back(0x00); full.push_back(0x00); full.push_back(0x00); full.push_back(0x00);
-    full.push_back(0x03); full.push_back(0x00); full.push_back(0x00); full.push_back(0x00);
+    BOOST_REQUIRE_EQUAL(full_formatted_area.size(), static_cast<size_t>(0x1F - 4));
+    BOOST_REQUIRE_LE(static_cast<size_t>(length), static_cast<size_t>(0x1F));
+    BOOST_REQUIRE_GE(static_cast<size_t>(length), static_cast<size_t>(4));
 
-    BOOST_REQUIRE_EQUAL(full.size(), static_cast<size_t>(0x1F));
-    BOOST_REQUIRE_LE(static_cast<size_t>(length), full.size());
+    std::vector<uint8_t> formatted_area(full_formatted_area.begin(),
+                                         full_formatted_area.begin() + (length - 4));
 
-    std::vector<uint8_t> buffer(full.begin(), full.begin() + length);
-    buffer[1] = length;
-
-    append_string_terminator(buffer);
-    return buffer;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::MemoryArrayMappedAddress, formatted_area);
+    return builder.build();
 }
 
 } // namespace

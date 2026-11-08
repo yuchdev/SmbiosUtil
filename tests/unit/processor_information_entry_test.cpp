@@ -7,6 +7,8 @@
 #include <smbios/smbios_entry_factory.h>
 #include <smbios/abstract_smbios_entry.h>
 
+#include "synthetic_table_builder.h"
+
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
 
@@ -83,18 +85,10 @@ DMIHeader make_header(const std::vector<uint8_t>& buffer)
     return header;
 }
 
-/// @brief Append a minimal well-formed (empty) DMI string-section
-/// terminator (double NUL) so AbstractSMBiosEntry::parse_dmi_strings() has a
-/// well-formed section to walk and does not run past the buffer.
-void append_string_terminator(std::vector<uint8_t>& buffer)
-{
-    buffer.push_back(0x00);
-    buffer.push_back(0x00);
-}
-
 /// @brief Build a full-length (0x32) formatted-area buffer with distinct
-/// known byte values at every offset, then truncate to `length` and patch
-/// the header's own length byte accordingly. The four sentinel-governed
+/// known byte values at every offset, then truncate to `length` (via
+/// SyntheticTableBuilder::add_structure(), which computes header.length
+/// automatically from the formatted area's size). The four sentinel-governed
 /// bytes (processor_family at 0x06, core_count at 0x23, core_enabled at
 /// 0x24, thread_count at 0x25) and voltage/status are overridable so each
 /// test case can drive the exact branch it needs; `length` must be >= 0x04.
@@ -106,59 +100,56 @@ std::vector<uint8_t> build_buffer(uint8_t length,
                                    uint8_t voltage_byte = 0x00,
                                    uint8_t status_byte = 0x41) // populated, Enabled
 {
-    std::vector<uint8_t> full;
-    full.push_back(SMBios::ProcessorInformation); // 0x00 type = 4
-    full.push_back(0x00);                         // 0x01 length (patched below)
-    full.push_back(0x01);                         // 0x02 handle low byte
-    full.push_back(0x00);                         // 0x03 handle high byte
+    std::vector<uint8_t> full_formatted_area{
+        0x01,                                         // 0x04 socket_designation_index
+        ProcessorInformationEntry::CentralProcessor,  // 0x05 processor_type
+        processor_family_byte,                        // 0x06 processor_family
+        0x02,                                         // 0x07 manufacturer_index
 
-    full.push_back(0x01);                   // 0x04 socket_designation_index
-    full.push_back(ProcessorInformationEntry::CentralProcessor); // 0x05 processor_type
-    full.push_back(processor_family_byte);  // 0x06 processor_family
-    full.push_back(0x02);                   // 0x07 manufacturer_index
+        // 0x08-0x0F processor_id (8 bytes, LE) -> recognizable pattern
+        0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11,
 
-    // 0x08-0x0F processor_id (8 bytes, LE) -> recognizable pattern
-    full.push_back(0x88); full.push_back(0x77); full.push_back(0x66); full.push_back(0x55);
-    full.push_back(0x44); full.push_back(0x33); full.push_back(0x22); full.push_back(0x11);
+        0x03,          // 0x10 version_index
+        voltage_byte,  // 0x11 voltage
 
-    full.push_back(0x03);          // 0x10 version_index
-    full.push_back(voltage_byte);  // 0x11 voltage
+        0x64, 0x00, // 0x12 external_clock = 100
+        0xB8, 0x0B, // 0x14 max_speed = 3000
+        0xC4, 0x09, // 0x16 current_speed = 2500
 
-    full.push_back(0x64); full.push_back(0x00); // 0x12 external_clock = 100
-    full.push_back(0xB8); full.push_back(0x0B); // 0x14 max_speed = 3000
-    full.push_back(0xC4); full.push_back(0x09); // 0x16 current_speed = 2500
+        status_byte, // 0x18 status
+        0x31,        // 0x19 processor_upgrade = Socket AM4
 
-    full.push_back(status_byte); // 0x18 status
-    full.push_back(0x31);        // 0x19 processor_upgrade = Socket AM4
+        0x01, 0x00, // 0x1A l1_cache_handle = 0x0001
+        0x02, 0x00, // 0x1C l2_cache_handle = 0x0002
+        0xFF, 0xFF, // 0x1E l3_cache_handle = 0xFFFF (absent)
 
-    full.push_back(0x01); full.push_back(0x00); // 0x1A l1_cache_handle = 0x0001
-    full.push_back(0x02); full.push_back(0x00); // 0x1C l2_cache_handle = 0x0002
-    full.push_back(0xFF); full.push_back(0xFF); // 0x1E l3_cache_handle = 0xFFFF (absent)
+        0x04, // 0x20 serial_number_index
+        0x05, // 0x21 asset_tag_index
+        0x06, // 0x22 part_number_index
 
-    full.push_back(0x04); // 0x20 serial_number_index
-    full.push_back(0x05); // 0x21 asset_tag_index
-    full.push_back(0x06); // 0x22 part_number_index
+        core_count_byte,   // 0x23 core_count
+        core_enabled_byte, // 0x24 core_enabled
+        thread_count_byte, // 0x25 thread_count
 
-    full.push_back(core_count_byte);   // 0x23 core_count
-    full.push_back(core_enabled_byte); // 0x24 core_enabled
-    full.push_back(thread_count_byte); // 0x25 thread_count
+        0x0C, 0x00, // 0x26 characteristics = Capable64Bit | MultiCore
 
-    full.push_back(0x0C); full.push_back(0x00); // 0x26 characteristics = Capable64Bit | MultiCore
+        0x00, 0x01, // 0x28 processor_family_2 = 0x0100 (ARMv7)
+        0x30, 0x00, // 0x2A core_count_2 = 48
+        0x28, 0x00, // 0x2C core_enabled_2 = 40
+        0x60, 0x00, // 0x2E thread_count_2 = 96
+        0x50, 0x00, // 0x30 thread_enabled = 80
+    };
 
-    full.push_back(0x00); full.push_back(0x01); // 0x28 processor_family_2 = 0x0100 (ARMv7)
-    full.push_back(0x30); full.push_back(0x00); // 0x2A core_count_2 = 48
-    full.push_back(0x28); full.push_back(0x00); // 0x2C core_enabled_2 = 40
-    full.push_back(0x60); full.push_back(0x00); // 0x2E thread_count_2 = 96
-    full.push_back(0x50); full.push_back(0x00); // 0x30 thread_enabled = 80
+    BOOST_REQUIRE_EQUAL(full_formatted_area.size(), static_cast<size_t>(0x32 - 4));
+    BOOST_REQUIRE_LE(static_cast<size_t>(length), static_cast<size_t>(0x32));
+    BOOST_REQUIRE_GE(static_cast<size_t>(length), static_cast<size_t>(4));
 
-    BOOST_REQUIRE_EQUAL(full.size(), static_cast<size_t>(0x32));
-    BOOST_REQUIRE_LE(static_cast<size_t>(length), full.size());
+    std::vector<uint8_t> formatted_area(full_formatted_area.begin(),
+                                         full_formatted_area.begin() + (length - 4));
 
-    std::vector<uint8_t> buffer(full.begin(), full.begin() + length);
-    buffer[1] = length;
-
-    append_string_terminator(buffer);
-    return buffer;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::ProcessorInformation, formatted_area);
+    return builder.build();
 }
 
 } // namespace

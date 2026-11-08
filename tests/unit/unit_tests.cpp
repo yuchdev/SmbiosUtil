@@ -8,6 +8,8 @@
 #include <smbios/smbios_entry_factory.h>
 #include <smbios/port_connection_entry.h>
 
+#include "synthetic_table_builder.h"
+
 #define BOOST_AUTO_TEST_MAIN
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -110,7 +112,9 @@ BOOST_AUTO_TEST_CASE(SMBiosVersionLessSameMajorMinorDecidesTestCase)
 
 namespace {
 
-/// @brief Build a raw SMBIOS "Port Connection" structure (type 8) buffer
+/// @brief Build a raw SMBIOS "Port Connection" structure (type 8) buffer, via
+/// SyntheticTableBuilder::add_structure() (milestone 0006, Story 01.0,
+/// Task 02 - previously hand-rolled byte-by-byte).
 std::vector<uint8_t> build_port_connection_buffer(
     uint8_t internal_designator,
     uint8_t internal_connection,
@@ -118,27 +122,17 @@ std::vector<uint8_t> build_port_connection_buffer(
     uint8_t external_connection,
     uint8_t port_type)
 {
-    std::vector<uint8_t> buffer;
+    std::vector<uint8_t> formatted_area{
+        internal_designator,
+        internal_connection,
+        external_designator,
+        external_connection,
+        port_type,
+    };
 
-    // 4-byte header: type, length, handle (little-endian uint16_t)
-    buffer.push_back(SMBios::PortConnection); // type = 8
-    buffer.push_back(0x09);                   // length = 9 (formatted area)
-    buffer.push_back(0x01);                   // handle low byte
-    buffer.push_back(0x00);                   // handle high byte
-
-    // formatted area
-    buffer.push_back(internal_designator);
-    buffer.push_back(internal_connection);
-    buffer.push_back(external_designator);
-    buffer.push_back(external_connection);
-    buffer.push_back(port_type);
-
-    // string section: two DMI strings, terminated with a double NUL
-    const char strings[] = "Mouse\0Keyboard\0";
-    buffer.insert(buffer.end(), strings, strings + sizeof(strings));
-    buffer.push_back(0x00); // final terminating NUL completes the double-NUL
-
-    return buffer;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::PortConnection, formatted_area, std::vector<std::string>{"Mouse", "Keyboard"});
+    return builder.build();
 }
 
 DMIHeader make_header(const std::vector<uint8_t>& buffer)

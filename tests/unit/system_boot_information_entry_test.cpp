@@ -7,6 +7,8 @@
 #include <smbios/smbios_entry_factory.h>
 #include <smbios/abstract_smbios_entry.h>
 
+#include "synthetic_table_builder.h"
+
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
 
@@ -53,43 +55,27 @@ DMIHeader make_header(const std::vector<uint8_t>& buffer)
     return header;
 }
 
-/// @brief Append a minimal well-formed (empty) DMI string-section
-/// terminator (double NUL) so AbstractSMBiosEntry::parse_dmi_strings() has a
-/// well-formed section to walk and does not run past the buffer.
-void append_string_terminator(std::vector<uint8_t>& buffer)
-{
-    buffer.push_back(0x00);
-    buffer.push_back(0x00);
-}
-
 /// @brief Build a formatted-area buffer: 6 reserved bytes, a boot_status
 /// byte, then `payload_size` trailing payload bytes with a recognizable
-/// ascending pattern (0xC0, 0xC1, 0xC2, ...). `boot_status` is overridable
-/// so each test case can drive the exact BootStatus/range branch it needs.
+/// ascending pattern (0xC0, 0xC1, 0xC2, ...), via
+/// SyntheticTableBuilder::add_structure() (which computes header.length
+/// automatically from the formatted area's size). `boot_status` is
+/// overridable so each test case can drive the exact BootStatus/range
+/// branch it needs.
 std::vector<uint8_t> build_buffer(uint8_t boot_status, size_t payload_size)
 {
-    std::vector<uint8_t> buffer;
-    buffer.push_back(SMBios::SystemBootInformation); // 0x00 type = 32
-    buffer.push_back(0x00);                          // 0x01 length (patched below)
-    buffer.push_back(0x01);                          // 0x02 handle low byte
-    buffer.push_back(0x00);                          // 0x03 handle high byte
-
-    // 0x04-0x09 reserved, 6 bytes
-    for (int i = 0; i < 6; ++i) {
-        buffer.push_back(0x00);
-    }
-
-    buffer.push_back(boot_status); // 0x0A boot_status
+    std::vector<uint8_t> formatted_area(6, 0x00); // 0x04-0x09 reserved, 6 bytes
+    formatted_area.push_back(boot_status);         // 0x0A boot_status
 
     for (size_t i = 0; i < payload_size; ++i) {
-        buffer.push_back(static_cast<uint8_t>(0xC0 + i)); // 0x0B.. payload
+        formatted_area.push_back(static_cast<uint8_t>(0xC0 + i)); // 0x0B.. payload
     }
 
-    BOOST_REQUIRE_LE(buffer.size(), static_cast<size_t>(0xFF));
-    buffer[1] = static_cast<uint8_t>(buffer.size());
+    BOOST_REQUIRE_LE(formatted_area.size() + 4, static_cast<size_t>(0xFF));
 
-    append_string_terminator(buffer);
-    return buffer;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemBootInformation, formatted_area);
+    return builder.build();
 }
 
 } // namespace
@@ -98,10 +84,11 @@ std::vector<uint8_t> build_buffer(uint8_t boot_status, size_t payload_size)
 /// byte is not actually present, so it must default.
 BOOST_AUTO_TEST_CASE(SystemBootInformationEntryTruncatedBelow0x0BDefaultsBootStatusTestCase)
 {
-    std::vector<uint8_t> buffer = build_buffer(SystemBootInformationEntry::SystemWatchdogTimerExpired, 0);
-    buffer.resize(4); // truncate to below 0x0B entirely (reserved bytes only)
-    buffer[1] = 0x04;
-    append_string_terminator(buffer);
+    // truncate to below 0x0B entirely (header only, no reserved/boot_status
+    // bytes at all)
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemBootInformation, std::vector<uint8_t>{});
+    std::vector<uint8_t> buffer = builder.build();
     DMIHeader header = make_header(buffer);
 
     SystemBootInformationEntry entry(header, SMBiosVersion{2, 3}, buffer.data() + buffer.size());

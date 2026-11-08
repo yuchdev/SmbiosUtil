@@ -7,6 +7,8 @@
 #include <smbios/smbios_entry_factory.h>
 #include <smbios/abstract_smbios_entry.h>
 
+#include "synthetic_table_builder.h"
+
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
 
@@ -63,18 +65,10 @@ DMIHeader make_header(const std::vector<uint8_t>& buffer)
     return header;
 }
 
-/// @brief Append a minimal well-formed (empty) DMI string-section
-/// terminator (double NUL) so AbstractSMBiosEntry::parse_dmi_strings() has a
-/// well-formed section to walk and does not run past the buffer.
-void append_string_terminator(std::vector<uint8_t>& buffer)
-{
-    buffer.push_back(0x00);
-    buffer.push_back(0x00);
-}
-
 /// @brief Build a full-length (0x11) formatted-area buffer with distinct
-/// known byte values at every offset, then truncate to `length` and patch
-/// the header's own length byte accordingly. characteristics1/
+/// known byte values at every offset, then truncate to `length` (via
+/// SyntheticTableBuilder::add_structure(), which computes header.length
+/// automatically from the formatted area's size). characteristics1/
 /// characteristics2/segment/bus/device_function are overridable so each
 /// test case can drive the exact branch it needs; `length` must be >= 0x04.
 std::vector<uint8_t> build_buffer(uint8_t length,
@@ -84,35 +78,33 @@ std::vector<uint8_t> build_buffer(uint8_t length,
                                    uint8_t bus = 0x01,
                                    uint8_t device_function = 0x13) // device 2, function 3
 {
-    std::vector<uint8_t> full;
-    full.push_back(SMBios::SystemSlots); // 0x00 type = 9
-    full.push_back(0x00);                // 0x01 length (patched below)
-    full.push_back(0x01);                // 0x02 handle low byte
-    full.push_back(0x00);                // 0x03 handle high byte
+    std::vector<uint8_t> full_formatted_area{
+        0x01,                                      // 0x04 designation_index
+        0x06,                                      // 0x05 slot_type = 0x06 (PCI)
+        SystemSlotsEntry::DataBusWidth32Bit,        // 0x06 data_bus_width
+        SystemSlotsEntry::Available,                // 0x07 current_usage
+        SystemSlotsEntry::Long,                     // 0x08 slot_length
+        0x07,                                       // 0x09 slot_id_low
+        0x00,                                       // 0x0A slot_id_high
+        characteristics1,                           // 0x0B characteristics1
+        characteristics2,                           // 0x0C characteristics2
 
-    full.push_back(0x01);                                         // 0x04 designation_index
-    full.push_back(0x06);                                          // 0x05 slot_type = 0x06 (PCI)
-    full.push_back(SystemSlotsEntry::DataBusWidth32Bit);           // 0x06 data_bus_width
-    full.push_back(SystemSlotsEntry::Available);                   // 0x07 current_usage
-    full.push_back(SystemSlotsEntry::Long);                        // 0x08 slot_length
-    full.push_back(0x07);                                          // 0x09 slot_id_low
-    full.push_back(0x00);                                          // 0x0A slot_id_high
-    full.push_back(characteristics1);                              // 0x0B characteristics1
-    full.push_back(characteristics2);                              // 0x0C characteristics2
+        static_cast<uint8_t>(segment & 0xFF),       // 0x0D segment_group_number low
+        static_cast<uint8_t>(segment >> 8),         // 0x0E segment_group_number high
+        bus,                                        // 0x0F bus_number
+        device_function,                            // 0x10 device_function_number
+    };
 
-    full.push_back(static_cast<uint8_t>(segment & 0xFF));          // 0x0D segment_group_number low
-    full.push_back(static_cast<uint8_t>(segment >> 8));            // 0x0E segment_group_number high
-    full.push_back(bus);                                           // 0x0F bus_number
-    full.push_back(device_function);                               // 0x10 device_function_number
+    BOOST_REQUIRE_EQUAL(full_formatted_area.size(), static_cast<size_t>(0x11 - 4));
+    BOOST_REQUIRE_LE(static_cast<size_t>(length), static_cast<size_t>(0x11));
+    BOOST_REQUIRE_GE(static_cast<size_t>(length), static_cast<size_t>(4));
 
-    BOOST_REQUIRE_EQUAL(full.size(), static_cast<size_t>(0x11));
-    BOOST_REQUIRE_LE(static_cast<size_t>(length), full.size());
+    std::vector<uint8_t> formatted_area(full_formatted_area.begin(),
+                                         full_formatted_area.begin() + (length - 4));
 
-    std::vector<uint8_t> buffer(full.begin(), full.begin() + length);
-    buffer[1] = length;
-
-    append_string_terminator(buffer);
-    return buffer;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemSlots, formatted_area);
+    return builder.build();
 }
 
 } // namespace
