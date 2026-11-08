@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                                                             | Status         | Tests |
 |-------|---------------------------------------------------------------------|----------------|-------|
 | 01.0  | `tables/` segment reorg                                             | ✅ Complete (2026-11-08) | 166 unit |
-| 02.0  | Board, OEM, and firmware metadata structures                       | 🔶 In progress (3/4 tasks) | 191 unit |
+| 02.0  | Board, OEM, and firmware metadata structures                       | ✅ Complete (2026-11-08) | 191 unit |
 | 03.0  | Event log and memory error/mapping structures                      | ⬜ Not started | -     |
 | 04.0  | Sensors, probes, and small system-control structures                | ⬜ Not started | -     |
 | 05.0  | Remote/out-of-band management structures                           | ⬜ Not started | -     |
@@ -38,3 +38,13 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   fields beyond what Annex 4.10's checksum/entry-point validation notes
   describe. Documented here ahead of implementation so this is not
   mistaken for an oversight when Story 05.0 lands.
+
+## Story 02.0 - Board, OEM, and Firmware Metadata Structures (✅ 2026-11-08)
+
+**Delivered:** 5 new entry types registered and verified through the factory - `BaseboardInformationEntry` (2), `OemStringsEntry` (11), `SystemConfigurationOptionsEntry` (12), `FirmwareLanguageInformationEntry` (13), `GroupAssociationsEntry` (14). Each added its own symbolic `SMBios::SMBiosHandler` enumerator (no raw literals), full Doxygen coverage, and per-type synthetic-buffer tests via `SyntheticTableBuilder`. Task 04 added all 5 to the existing consolidated `CreateResolvesEveryRealSMBiosHandlerExceptEndOfTableTestCase` in `tests/unit/smbios_entry_factory_test.cpp` - confirmed resolving with a header-only (Length=4) minimal buffer, same as the original 11 types.
+
+**Spec discrepancies found and corrected against the real spec (not task-doc reproductions):** Task 01 found the "minimum length" test case's string-field count was off by one byte vs. the real 7.3 byte layout. Task 02 found Firmware Language Information's trailing language-string list does NOT start after `Current Language`'s own index as the task doc implied - `Current Language` is itself a 1-based index INTO that same string list, confirmed against the spec's own worked examples. Task 03's spec reproduction was accurate (no discrepancy).
+
+**Tests / gate:** `smbios_unit_test` 191 cases, 0 failures (up from 166 before this story). All 4 `ctest` targets green throughout, independently re-verified after every task.
+
+**Known issue carried forward, not fixed in this story:** the `smbios` CLI never actually links in any entry class's `REGISTER_SMBIOS_ENTRY` static registration (confirmed via `nm`) and so prints raw header IDs instead of decoded content on real hardware - true for all 11 pre-existing types too, not introduced by this story. Flagged as a separate task (`task_dc27f15d`) rather than fixed inline, since it's a CLI-target link-configuration issue orthogonal to adding new entry types.

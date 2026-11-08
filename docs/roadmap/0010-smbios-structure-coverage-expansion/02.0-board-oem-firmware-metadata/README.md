@@ -1,7 +1,7 @@
 # Story 02.0 - Board, OEM, and Firmware Metadata Structures
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** 🔶 In progress (3/4 tasks)
+**Status:** ✅ Complete
 **Depends on:** Story 01.0 (`tables/` reorg)
 
 ## Scope
@@ -21,7 +21,7 @@ via `REGISTER_SMBIOS_ENTRY`.
 | 01 | [Baseboard information](01-baseboard-information.md)                   | ✅ Complete | 04     |
 | 02 | [OEM strings, config options, firmware language](02-oem-strings-config-options-firmware-language.md) | ✅ Complete | 04     |
 | 03 | [Group associations](03-group-associations.md)                         | ✅ Complete | 04     |
-| 04 | [Tests](04-tests.md)                                                  | ⬜ Not started | -      |
+| 04 | [Tests](04-tests.md)                                                  | ✅ Done     | -      |
 
 Task 01 is split out alone because Baseboard Information (2) is the only
 one of the 5 with a flags enum and a contained-object-handles trailing
