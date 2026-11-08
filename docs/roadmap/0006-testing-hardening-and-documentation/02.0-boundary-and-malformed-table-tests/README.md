@@ -1,7 +1,7 @@
 # Story 02.0 - Boundary and Malformed-Table Tests
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** 🔶 In progress (2/3 tasks)
 **Depends on:** Story 01.0 (`SyntheticTableBuilder`'s `add_raw_bytes`)
 
 ## Scope
@@ -18,7 +18,7 @@ input, not just the hand-picked fixtures that story's own tasks wrote.
 | #  | Document                                                        | Status         | Blocks |
 |----|------------------------------------------------------------------|----------------|--------|
 | 01 | [Truncated and oversized length tests](01-truncated-and-oversized-length-tests.md) | ✅ Done        | 03     |
-| 02 | [Fuzz harness](02-fuzz-harness.md)                                | ⬜ Not started | 03     |
+| 02 | [Fuzz harness](02-fuzz-harness.md)                                | ✅ Done        | 03     |
 | 03 | [Tests](03-tests.md)                                              | ⬜ Not started | -      |
 
 ## Key constraints
@@ -34,7 +34,9 @@ input, not just the hand-picked fixtures that story's own tasks wrote.
 ## Files or directories created or modified by this story
 
 - `tests/unit/malformed_table_test.cpp` (new).
-- `smbios/test/fuzz/read_smbios_table_fuzzer.cpp` (new) - libFuzzer-style
-  entry point, built only when an explicit CMake option
-  (`-DSMBIOS_BUILD_FUZZERS=ON`, off by default) is set, so it never
-  affects the default build.
+- `tests/fuzz/read_smbios_table_fuzzer.cpp` (new - actual test-tree root is
+  `tests/`, not `smbios/test/` as this story's own Scope text and Task 02's
+  spec file originally assumed) - libFuzzer-style entry point, built only
+  when an explicit CMake option (`-DSMBIOS_BUILD_FUZZERS=ON`, off by
+  default) is set, so it never affects the default build. See
+  `docs/dev/fuzzing.md` for the local build/run workflow.

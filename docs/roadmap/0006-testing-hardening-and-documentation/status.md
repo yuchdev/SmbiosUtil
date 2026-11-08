@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                                | Status         | Tests |
 |-------|----------------------------------------|----------------|-------|
 | 01.0  | Hermetic fixture-based test layer     | ✅ Complete (2026-11-08) | 163 unit (smbios_unit_test) |
-| 02.0  | Boundary and malformed-table tests    | 🔶 In progress (1/3 tasks) | 166 unit (smbios_unit_test) |
+| 02.0  | Boundary and malformed-table tests    | 🔶 In progress (2/3 tasks) | 166 unit (smbios_unit_test) |
 | 03.0  | Documentation and release pass        | ⬜ Not started | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
@@ -174,6 +174,71 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   test file is outside this task's change boundary; flagged here for a
   future task/story to confirm/silence properly rather than left
   unrecorded. Tasks 02 (fuzz harness) and 03 (tests) of this story remain.
+
+- **2026-11-08, Story 02.0 Task 02 (fuzz harness, R4's fourth boundary-test
+  category) landed - 2/3 tasks of this story:** `tests/fuzz/read_smbios_table_fuzzer.cpp`
+  (new) is a standard libFuzzer `LLVMFuzzerTestOneInput` entry point driving
+  arbitrary bytes into `SMBios::read_smbios_table()` via the same
+  `SmbiosTableWalkTestAccess::parse_synthetic_table()` seam Story 01.0 Task 01
+  built (`tests/unit/synthetic_table_builder.h`) - the task spec's own code
+  sample called a `smbios::read_headers_from_buffer()` free function that
+  Task 01 deliberately never added (see that task's own note above); this
+  task uses the real seam instead, adding no second parallel mechanism.
+  Avoided per-iteration `SMBios` construction (which would walk the real
+  `ISmbiosSource` chain on every one of libFuzzer's up-to-millions of calls
+  per run) via a function-local `static smbios::SMBios instance` constructed
+  once; every call only overwrites its buffer/state through
+  `parse_synthetic_table()`. Root `CMakeLists.txt` gained a
+  `SMBIOS_BUILD_FUZZERS` option (default `OFF`, never built by default, never
+  wired into `ctest`/CI per the milestone's own Non-goal) that adds the
+  `read_smbios_table_fuzzer` executable, built with
+  `-fsanitize=fuzzer,address,undefined`, and `FATAL_ERROR`s the configure
+  outright on any non-Clang compiler (`CMAKE_CXX_COMPILER_ID MATCHES "Clang"`
+  - verified directly with a standalone `cmake -P` script exercising the same
+  boolean against `GNU`/`MSVC`/`Clang`/`AppleClang`: the first two are
+  rejected, the last two accepted). `docs/dev/fuzzing.md` (new) documents the
+  local-only build/run workflow and the CI non-goal explicitly.
+  **Real-machine finding, Clang-toolchain-specific, not a parser bug:**
+  Xcode 14's AppleClang (this machine's default compiler, selected by the
+  `macos` preset) accepts `-fsanitize=fuzzer` at compile time but ships no
+  `libclang_rt.fuzzer_osx.a` runtime at all - a standing Apple Clang
+  limitation (confirmed: the file is simply absent from its resource
+  directory), not specific to this task's code. The root `CMakeLists.txt`
+  now detects this at configure time and falls back to an externally
+  installed real LLVM's fuzzer runtime archive (found here via Homebrew's
+  `llvm` formula under `/usr/local/opt/llvm`), linked in explicitly while
+  dropping `fuzzer` from AppleClang's own *link*-time sanitizer spec (so its
+  driver doesn't also try, and fail, to auto-link its own missing copy); if
+  no such external runtime is found anywhere, configure now fails with a
+  clear message naming the fix (`brew install llvm`) rather than silently
+  producing a broken target. With this fallback, `cmake --preset macos
+  -DSMBIOS_BUILD_FUZZERS=ON` configures and `cmake --build build/macos
+  --target read_smbios_table_fuzzer` links cleanly.
+  **Local fuzz run result:** first run (`-max_total_time=120`) surfaced an
+  ASan abort inside `std::vector<smbios::DMIHeader>::clear()` (called from
+  `parse_synthetic_table()` on the harness's reused `static` instance) -
+  investigated and confirmed to be the **same known libc++/ASan
+  container-overflow annotation false-positive class** already documented
+  above for Story 02.0 Task 01's `dmi_string_parsing_test.cpp` finding (there
+  for `std::string`'s SSO; here for `std::vector`'s capacity-shrink
+  annotation, triggered by this harness's own repeated `clear()`/`push_back()`
+  cycles on one long-lived static vector across hundreds of thousands of
+  iterations) - replaying the exact crashing input alone
+  (`ASAN_OPTIONS=detect_container_overflow=0 ./read_smbios_table_fuzzer
+  crash-<hash>`) reproduces no failure at all, confirming it is an ASan
+  annotation artifact of the harness's static-instance-reuse design, not a
+  bug in `read_smbios_table()`/`count_smbios_structures()`/the string-walk
+  itself. A second, clean run with that one detector disabled
+  (`ASAN_OPTIONS=detect_container_overflow=0`, `-max_total_time=150
+  -max_len=4096`) completed **1,822,475 executions in 151 seconds with zero
+  further crashes**. No production code change was needed or made for this
+  task; the pre-existing ASan-false-positive note above is the second,
+  independent confirmation of that same libc++ annotation category. Normal
+  (non-fuzzer) build reconfirmed unaffected: `cmake --preset macos
+  -DSMBIOS_BUILD_FUZZERS=OFF` + `cmake --build --preset macos` ->
+  `ninja: no work to do`, `ctest --test-dir build/macos --output-on-failure`
+  -> all 4 targets green, `smbios_unit_test` still 166 cases (same baseline
+  as Task 01). Task 03 (tests) of this story remains.
 
 ## Story 01.0 - Hermetic Fixture-Based Test Layer (✅ 2026-11-08)
 

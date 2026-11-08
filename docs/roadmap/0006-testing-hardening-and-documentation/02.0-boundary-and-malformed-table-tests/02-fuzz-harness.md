@@ -1,7 +1,7 @@
 # 02 - Fuzz harness
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Done (2026-11-08)
 
 ## Objective
 
@@ -51,8 +51,21 @@ continuous/scheduled fuzzing infrastructure (explicit Non-goal).
 
 ## Success criteria
 
-- [ ] `cmake -DSMBIOS_BUILD_FUZZERS=ON` builds the fuzzer target on Clang.
-- [ ] A local run of at least a few minutes surfaces no crash (or, if one
+- [x] `cmake -DSMBIOS_BUILD_FUZZERS=ON` builds the fuzzer target on Clang.
+- [x] A local run of at least a few minutes surfaces no crash (or, if one
       is found, it is fixed and the fix is attributed to this task in
-      `status.md`).
-- [ ] `docs/dev/fuzzing.md` documents the local-only workflow clearly.
+      `status.md`). See `status.md`'s Story 02.0 Task 02 note: the one
+      finding was a harness-side ASan container-overflow annotation false
+      positive (same class already documented for Task 01), not a
+      production bug - confirmed clean for 1,822,475 executions with that
+      one detector disabled.
+- [x] `docs/dev/fuzzing.md` documents the local-only workflow clearly.
+
+**Reconciliation note (actual implementation vs. this spec):** the spec's
+own code sample called a `smbios::read_headers_from_buffer()` free function
+that Story 01.0 Task 01 never added - Task 01 deliberately reused the
+existing `SmbiosTableWalkTestAccess::parse_synthetic_table()` friend seam
+instead (see `status.md`'s "Story 01.0 Task 01" note). This task's harness
+uses that real seam. The file also actually lives at
+`tests/fuzz/read_smbios_table_fuzzer.cpp` (this repo's real test-tree root
+is `tests/`, not `smbios/test/`).

@@ -9,6 +9,21 @@ set(Boost_USE_STATIC_LIBS ON)
 
 option("GIT_TAG" GIT_TAG OFF)
 
+# Milestone 0006, Story 02.0, Task 02 (R4's fourth boundary-test category):
+# a locally-runnable libFuzzer harness, off by default and never built by
+# CI (see docs/dev/fuzzing.md). libFuzzer is a Clang/LLVM-only feature, so
+# this option is rejected outright on any other compiler rather than
+# silently skipped or silently miscompiled.
+option("SMBIOS_BUILD_FUZZERS" SMBIOS_BUILD_FUZZERS OFF)
+
+if(SMBIOS_BUILD_FUZZERS AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    message(FATAL_ERROR
+        "SMBIOS_BUILD_FUZZERS=ON requires Clang or AppleClang (libFuzzer is "
+        "a Clang/LLVM-only feature); detected compiler is "
+        "'${CMAKE_CXX_COMPILER_ID}'. Re-configure with a Clang toolchain, or "
+        "leave SMBIOS_BUILD_FUZZERS off.")
+endif()
+
 find_package(Boost ${BOOST_MIN_VERSION} REQUIRED)
 
 # Language standard: C++20, strictly (no GNU/MS extensions), uniformly for
@@ -147,5 +162,96 @@ endif()
 add_subdirectory(libsmbios)
 add_subdirectory(smbios)
 add_subdirectory(tests)
+
+# Milestone 0006, Story 02.0, Task 02: the fuzz harness target itself, built
+# only when explicitly requested (see docs/dev/fuzzing.md). Defined here
+# rather than via a tests/fuzz/CMakeLists.txt subdirectory, since it is not
+# one of tests/CMakeLists.txt's four always-registered ctest categories
+# (unit/mock/perf/integration) and must stay entirely out of the default
+# build graph. parse_synthetic_table() (the only symbol this target needs
+# from tests/unit/synthetic_table_builder.h) is defined inline in that
+# header, so this target needs no dependency on the smbios_unit_test
+# sources themselves - only the header's include path and libsmbios to link
+# against.
+if(SMBIOS_BUILD_FUZZERS)
+    set(SMBIOS_FUZZER_TARGET read_smbios_table_fuzzer)
+
+    add_executable(${SMBIOS_FUZZER_TARGET}
+        tests/fuzz/read_smbios_table_fuzzer.cpp)
+
+    target_include_directories(${SMBIOS_FUZZER_TARGET} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/libsmbios/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit)
+
+    target_compile_options(${SMBIOS_FUZZER_TARGET} PRIVATE
+        ${SMBIOS_COMPILE_OPTIONS}
+        -fsanitize=fuzzer,address,undefined
+        -g)
+
+    # Apple's own Clang (CMAKE_CXX_COMPILER_ID "AppleClang", the default
+    # compiler selected by the "macos" preset) accepts "-fsanitize=fuzzer"
+    # at *compile* time (it only adds SanitizerCoverage instrumentation
+    # hooks) but never ships libclang_rt.fuzzer_osx.a - the actual libFuzzer
+    # runtime/driver - in its own resource directory, so passing "fuzzer" to
+    # its *link* step fails with a plain "file not found" (confirmed on this
+    # project's own dev machine: Xcode 14 / AppleClang 14 has no fuzzer
+    # runtime at all; this is a standing Apple Clang limitation, not a
+    # version-specific bug). Detect this and, if found, fall back to an
+    # externally-installed real LLVM's runtime archive (e.g. Homebrew's
+    # `llvm` formula - `brew install llvm`) linked in explicitly, with
+    # "fuzzer" dropped from the *link*-time sanitizer spec so AppleClang's
+    # own driver does not also try (and fail) to auto-link its own missing
+    # copy. Any other Clang (mainline LLVM on Linux, etc.) ships its own
+    # runtime and uses the straightforward path.
+    set(SMBIOS_FUZZER_RUNTIME "")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+        execute_process(
+            COMMAND ${CMAKE_CXX_COMPILER} -print-resource-dir
+            OUTPUT_VARIABLE SMBIOS_APPLECLANG_RESOURCE_DIR
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+        find_file(SMBIOS_FUZZER_RUNTIME libclang_rt.fuzzer_osx.a
+            PATHS ${SMBIOS_APPLECLANG_RESOURCE_DIR}/lib/darwin
+            NO_DEFAULT_PATH)
+
+        if(NOT SMBIOS_FUZZER_RUNTIME)
+            # AppleClang has no fuzzer runtime of its own (expected) - look
+            # for a separately-installed real LLVM that does, in the
+            # locations Homebrew's `llvm` formula is known to use.
+            file(GLOB SMBIOS_EXTERNAL_LLVM_RESOURCE_DIRS
+                /usr/local/opt/llvm/lib/clang/*
+                /opt/homebrew/opt/llvm/lib/clang/*)
+            foreach(SMBIOS_CANDIDATE_DIR ${SMBIOS_EXTERNAL_LLVM_RESOURCE_DIRS})
+                if(EXISTS ${SMBIOS_CANDIDATE_DIR}/lib/darwin/libclang_rt.fuzzer_osx.a)
+                    set(SMBIOS_FUZZER_RUNTIME
+                        ${SMBIOS_CANDIDATE_DIR}/lib/darwin/libclang_rt.fuzzer_osx.a)
+                endif()
+            endforeach()
+        endif()
+
+        if(NOT SMBIOS_FUZZER_RUNTIME)
+            message(FATAL_ERROR
+                "SMBIOS_BUILD_FUZZERS=ON: AppleClang (the compiler selected "
+                "by this configure) does not ship a libFuzzer runtime, and "
+                "no externally-installed LLVM with one "
+                "(libclang_rt.fuzzer_osx.a) was found under "
+                "/usr/local/opt/llvm or /opt/homebrew/opt/llvm. Install a "
+                "real LLVM (e.g. 'brew install llvm') and re-configure, or "
+                "build on Linux with mainline Clang instead.")
+        endif()
+
+        target_link_options(${SMBIOS_FUZZER_TARGET} PRIVATE
+            ${SMBIOS_LINK_OPTIONS}
+            -fsanitize=address,undefined)
+        target_link_libraries(${SMBIOS_FUZZER_TARGET} PRIVATE ${SMBIOS_FUZZER_RUNTIME})
+    else()
+        target_link_options(${SMBIOS_FUZZER_TARGET} PRIVATE
+            ${SMBIOS_LINK_OPTIONS}
+            -fsanitize=fuzzer,address,undefined)
+    endif()
+
+    target_link_libraries(${SMBIOS_FUZZER_TARGET} PRIVATE libsmbios)
+
+    set_target_properties(${SMBIOS_FUZZER_TARGET} PROPERTIES FOLDER "Tests")
+endif()
 
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
