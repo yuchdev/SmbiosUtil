@@ -1,7 +1,7 @@
 # 01 - Relocate Headers and Update Build
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Done
 
 ## Objective
 
@@ -61,11 +61,11 @@ new tests of its own, since it changes no behavior to test.
 
 ## Success criteria
 
-- [ ] All 11 headers exist only under `libsmbios/include/smbios/tables/`;
+- [x] All 11 headers exist only under `libsmbios/include/smbios/tables/`;
       no stale copy remains at the old flat path.
-- [ ] `cmake --build` succeeds cleanly on at least one platform with no new
+- [x] `cmake --build` succeeds cleanly on at least one platform with no new
       warnings.
-- [ ] `grep -rn '#include <smbios/[a-z_]*_entry\.h>' .` (excluding the new
+- [x] `grep -rn '#include <smbios/[a-z_]*_entry\.h>' .` (excluding the new
       `tables/` directory itself) returns zero matches outside
       `libsmbios/include/smbios/tables/` and `libsmbios/src/` (whose `.cpp`
       files now say `#include <smbios/tables/...>`).

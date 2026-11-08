@@ -1,4 +1,4 @@
-#include <smbios/memory_array_mapped_address_entry.h>
+#include <smbios/tables/memory_array_mapped_address_entry.h>
 #include <smbios/smbios.h>
 #include <smbios/os_interface/byte_reader.h>
 #include <smbios/smbios_entry_factory.h>

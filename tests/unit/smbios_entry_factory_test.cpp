@@ -6,8 +6,8 @@
 #include <smbios/smbios.h>
 #include <smbios/smbios_entry_factory.h>
 #include <smbios/abstract_smbios_entry.h>
-#include <smbios/bios_information_entry.h>
-#include <smbios/memory_device_entry.h>
+#include <smbios/tables/bios_information_entry.h>
+#include <smbios/tables/memory_device_entry.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>

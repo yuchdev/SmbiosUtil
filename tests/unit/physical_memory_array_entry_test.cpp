@@ -3,7 +3,7 @@
 #include <vector>
 
 #include <smbios/smbios.h>
-#include <smbios/physical_memory_array_entry.h>
+#include <smbios/tables/physical_memory_array_entry.h>
 #include <smbios/smbios_entry_factory.h>
 #include <smbios/abstract_smbios_entry.h>
 

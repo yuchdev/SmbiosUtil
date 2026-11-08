@@ -3,7 +3,7 @@
 #include <vector>
 
 #include <smbios/smbios.h>
-#include <smbios/system_information_entry.h>
+#include <smbios/tables/system_information_entry.h>
 #include <smbios/smbios_entry_factory.h>
 #include <smbios/abstract_smbios_entry.h>
 

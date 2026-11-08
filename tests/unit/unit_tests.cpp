@@ -6,7 +6,7 @@
 
 #include <smbios/smbios.h>
 #include <smbios/smbios_entry_factory.h>
-#include <smbios/port_connection_entry.h>
+#include <smbios/tables/port_connection_entry.h>
 
 #include "synthetic_table_builder.h"
 

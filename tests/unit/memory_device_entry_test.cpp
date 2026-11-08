@@ -2,7 +2,7 @@
 #include <vector>
 
 #include <smbios/smbios.h>
-#include <smbios/memory_device_entry.h>
+#include <smbios/tables/memory_device_entry.h>
 
 #include "synthetic_table_builder.h"
 

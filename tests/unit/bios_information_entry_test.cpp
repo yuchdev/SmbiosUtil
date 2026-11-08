@@ -2,7 +2,7 @@
 #include <vector>
 
 #include <smbios/smbios.h>
-#include <smbios/bios_information_entry.h>
+#include <smbios/tables/bios_information_entry.h>
 
 #include "synthetic_table_builder.h"
 
