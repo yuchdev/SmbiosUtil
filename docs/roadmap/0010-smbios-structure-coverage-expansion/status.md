@@ -11,7 +11,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 03.0  | Event log and memory error/mapping structures                      | ✅ Complete (2026-11-08) | 237 unit |
 | 04.0  | Sensors, probes, and small system-control structures                | ✅ Complete (2026-11-09) | 317 unit |
 | 05.0  | Remote/out-of-band management structures                           | ✅ Complete (2026-11-09) | 360 unit |
-| 06.0  | Power, onboard-device, and additional-info structures              | 🔶 In progress (1/4 tasks) | 366 unit |
+| 06.0  | Power, onboard-device, and additional-info structures              | 🔶 In progress (2/4 tasks) | 372 unit |
 | 07.0  | Security, processor, firmware-inventory, and terminal structures    | ⬜ Not started | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
@@ -155,7 +155,7 @@ Types 37/38/42 are not yet added to the consolidated factory-resolution test in 
 
 Task 04 added types 30, 31, 34-38, 42 to the consolidated factory-resolution test - all resolve correctly. Full suite: 360 unit cases, 4/4 ctest targets green, independently re-verified after every task. Story 05.0 complete.
 
-## Story 06.0 - Power, Onboard-Device, and Additional-Info Structures (🔶 in progress, 1/4 tasks)
+## Story 06.0 - Power, Onboard-Device, and Additional-Info Structures (🔶 in progress, 2/4 tasks)
 
 **Task 01 delivered:** `SystemPowerSupplyEntry` (`SMBios::SystemPowerSupply` = 39, DSP0134 3.9.0 7.40, Table 116) - Power Unit Group, seven identifying DMI strings (Location/Device Name/Manufacturer/Serial Number/Asset Tag/Model Part Number/Revision Level), Max Power Capacity, a Power Supply Characteristics bit-field (7.40.1, Table 117), and three raw, unresolved cross-reference handles into the probe/cooling-device family Story 04.0 already implemented (Input Voltage Probe Handle → Type 26, Cooling Device Handle → Type 27, Input Current Probe Handle → Type 29).
 
@@ -170,3 +170,15 @@ Task 04 added types 30, 31, 34-38, 42 to the consolidated factory-resolution tes
 **CLI:** `smbios/src/main.cpp` includes the new header for display, mirroring existing precedent (display itself is generic, via the factory-dispatch loop); the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
 
 Type 39 is not yet added to the consolidated factory-resolution test in `tests/unit/smbios_entry_factory_test.cpp` - deferred to this story's own Task 04 (Tests), matching Stories 03.0/04.0/05.0's precedent.
+
+**Task 02 delivered:** `AdditionalInformationEntry` (`SMBios::AdditionalInformation` = 40, DSP0134 3.9.0 7.41/7.41.1, Table 118/119) - the Number of Additional Information entries field (0x04, an explicit count `n`, read directly rather than derived from Length, since each entry is itself variable-length and there is no fixed-stride formula), and a per-entry accessor set (`get_entry_length_at`/`get_referenced_handle_at`/`get_referenced_offset_at`/`get_string_index_at`+`get_string_at`/`get_value_bytes_at`) walking the Additional Information entries array (0x05..) by summing each preceding entry's own Entry Length.
+
+**Caching design:** every accessor needs the same walk, so it is performed exactly once, in the constructor, via `cache_entry_offsets()`, which populates `entry_offsets_` (a `std::vector<size_t>`) with each successfully-walked entry's start offset; every accessor then indexes directly into this cache. The walk independently bounds-guards every step against `get_entry_size()` (both the Entry Length byte's own position and the full entry's extent implied by that length), so a malformed structure whose declared `n` or any individual entry's Entry Length would overrun the buffer simply yields `entry_offsets_.size() < n`, and every accessor's index bound check uses `entry_offsets_.size()` (via the new `get_entry_offsets_count()`), not the raw declared `n` - a malformed/truncated buffer stops the walk cleanly rather than reading out of bounds.
+
+**Raw-bytes scope cutoff (R8, the story's own flagged constraint):** `get_value_bytes_at(size_t index)` returns the Value field (0x05.. of that entry, width = `Entry Length - 5`) as raw `std::vector<uint8_t>` bytes only. Table 119's own field description states the Value field "is the same type and size as the field being referenced by this Additional Information Entry" - decoding that type would require generic cross-structure reflection this codebase has no mechanism for, so this class deliberately does not attempt to interpret the bytes as any specific C++ integer width; `Entry Length - 5` already *is* the complete, correct width at this structure's own level of information.
+
+**Tests / gate:** `tests/unit/additional_information_entry_test.cpp` (new, 6 cases: 0 entries, exactly 1 entry, 3 entries of three *different* Entry Length values (6/9/6) proving the per-entry-length walk correctly advances by each entry's own length rather than a hardcoded fixed stride, a malformed-length case where the last entry's declared Entry Length (0xFF) would overrun `get_entry_size()` - confirmed to stop cleanly with `entry_offsets_count() == 1` (only the well-formed first entry) rather than reading out of bounds, a wrong-type-throws case, a factory-resolution case). `smbios_unit_test` 372 cases, 0 failures (up from 366 before this task). All 4 `ctest` targets green.
+
+**CLI:** `smbios/src/main.cpp` includes the new header for display, mirroring existing precedent (display itself is generic, via the factory-dispatch loop); the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
+
+Type 40 is not yet added to the consolidated factory-resolution test in `tests/unit/smbios_entry_factory_test.cpp` - deferred to this story's own Task 04 (Tests), matching Stories 03.0/04.0/05.0's precedent and this story's own Task 01.

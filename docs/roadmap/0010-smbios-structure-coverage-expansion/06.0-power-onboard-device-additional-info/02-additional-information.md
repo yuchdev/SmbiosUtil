@@ -1,7 +1,7 @@
 # 02 - Additional Information
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Done
 
 ## Objective
 
@@ -80,9 +80,9 @@ Information Entry array (7.41.1).
 
 ## Success criteria
 
-- [ ] Registers and resolves through the factory for `SMBiosHandler ==
+- [x] Registers and resolves through the factory for `SMBiosHandler ==
       40`.
-- [ ] Variable-per-entry-length walk verified with at least one buffer
+- [x] Variable-per-entry-length walk verified with at least one buffer
       containing entries of two different lengths.
-- [ ] Malformed-length case does not read past `get_entry_size()`.
-- [ ] `smbios` CLI displays the type on real hardware where present.
+- [x] Malformed-length case does not read past `get_entry_size()`.
+- [x] `smbios` CLI displays the type on real hardware where present.

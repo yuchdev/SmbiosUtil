@@ -127,6 +127,7 @@ public:
         MemoryChannel = 37,
         IpmiDeviceInformation = 38,
         SystemPowerSupply = 39,
+        AdditionalInformation = 40,
         ManagementControllerHostInterface = 42,
         EndOfTable = 127
     };
