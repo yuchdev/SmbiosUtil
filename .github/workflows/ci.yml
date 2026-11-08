@@ -95,7 +95,11 @@ jobs:
       # privilege one, unlike every other best-effort step in this file.
       - name: Run integration test (best-effort - a virtualized CI runner's firmware may not expose a real SMBIOS table)
         if: matrix.os == 'windows-latest' && steps.build.outcome == 'success'
-        run: ctest --test-dir build/${{ matrix.preset }} -C Debug --output-on-failure -R "smbios_integration_test" || echo "::warning::smbios_integration_test failed on Windows - WindowsNativeSource needs no privilege, so this likely means the CI runner's (possibly virtualized) firmware doesn't expose a usable SMBIOS table, not a privilege issue. See docs/roadmap/0005-uefi-and-native-source-abstraction/status.md's Story 04.0 entry."
+        # smbios_perf_test is bundled in here too: it has no hard timing
+        # threshold (just BOOST_TEST_MESSAGE-logs enumeration time), so it
+        # carries the same "real SMBios construction" risk/reward as
+        # smbios_integration_test with no flakiness risk of its own.
+        run: ctest --test-dir build/${{ matrix.preset }} -C Debug --output-on-failure -R "smbios_integration_test|smbios_perf_test" || echo "::warning::smbios_integration_test/smbios_perf_test failed on Windows - WindowsNativeSource needs no privilege, so this likely means the CI runner's (possibly virtualized) firmware doesn't expose a usable SMBIOS table, not a privilege issue. See docs/roadmap/0005-uefi-and-native-source-abstraction/status.md's Story 04.0 entry."
         continue-on-error: true
 
   sanitizers:
