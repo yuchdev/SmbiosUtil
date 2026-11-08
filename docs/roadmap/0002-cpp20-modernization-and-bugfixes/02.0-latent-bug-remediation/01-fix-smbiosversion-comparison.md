@@ -6,7 +6,7 @@
 ## Objective
 
 Replace `smbios::operator>` and `smbios::operator<` for `SMBiosVersion`
-([smbios.cpp:20-40](/smbios/src/smbios.cpp)) with a correct lexicographic
+([smbios.cpp:20-40](/libsmbios/src/smbios.cpp)) with a correct lexicographic
 comparison: major version is decisive unless equal, in which case minor
 version decides. The current implementation checks `major_version >
 rhs.major_version` and **independently** `minor_version > rhs.minor_version`

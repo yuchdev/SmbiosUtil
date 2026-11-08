@@ -11,9 +11,9 @@
 #include <iostream>
 #include <string>
 
-#include <smbios/source_interface/byte_reader.h>
-#include <smbios/source_interface/smbios_anchor.h>
-#include <smbios/source_interface/smbios_version_fixup.h>
+#include <smbios/os_interface/byte_reader.h>
+#include <smbios/os_interface/smbios_anchor.h>
+#include <smbios/os_interface/smbios_version_fixup.h>
 #include <smbios/macos/macos_uefi_source.h>
 
 #include <boost/test/unit_test.hpp>

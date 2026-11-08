@@ -12,8 +12,8 @@ option("GIT_TAG" GIT_TAG OFF)
 find_package(Boost ${BOOST_MIN_VERSION} REQUIRED)
 
 # Language standard: C++20, strictly (no GNU/MS extensions), uniformly for
-# every target configured below (smbios, smbios_util, and the tests/*
-# executables). Setting these as directory-scope variables before the
+# every target configured below (libsmbios, its per-OS/legacy libraries,
+# the smbios CLI, and the tests/* executables). Setting these as directory-scope variables before the
 # add_subdirectory() calls below makes them the default CXX_STANDARD /
 # CXX_STANDARD_REQUIRED / CXX_EXTENSIONS target properties for every target
 # created in this directory and its subdirectories.
@@ -121,8 +121,31 @@ execute_process(COMMAND ${GIT_EXECUTABLE} tag ${MY_VERSION}.${MY_MAJOR_REVISION}
 endif()
 # GIT_TAG
 
+add_subdirectory(os_interface)
+
+if(WIN32)
+    add_subdirectory(libsmbios_win_legacy)
+    add_subdirectory(libsmbios_win)
+    set(SMBIOS_LEGACY_LIB libsmbios_win_legacy)
+    set(SMBIOS_PLATFORM_LIB libsmbios_win)
+elseif(APPLE)
+    add_subdirectory(libsmbios_posix_legacy)
+    add_subdirectory(libsmbios_macos)
+    set(SMBIOS_LEGACY_LIB libsmbios_posix_legacy)
+    set(SMBIOS_PLATFORM_LIB libsmbios_macos)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_subdirectory(libsmbios_posix_legacy)
+    add_subdirectory(libsmbios_linux)
+    set(SMBIOS_LEGACY_LIB libsmbios_posix_legacy)
+    set(SMBIOS_PLATFORM_LIB libsmbios_linux)
+else()
+    add_subdirectory(libsmbios_posix_legacy)
+    set(SMBIOS_LEGACY_LIB libsmbios_posix_legacy)
+    set(SMBIOS_PLATFORM_LIB "")
+endif()
+
+add_subdirectory(libsmbios)
 add_subdirectory(smbios)
-add_subdirectory(smbios_util)
 add_subdirectory(tests)
 
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)

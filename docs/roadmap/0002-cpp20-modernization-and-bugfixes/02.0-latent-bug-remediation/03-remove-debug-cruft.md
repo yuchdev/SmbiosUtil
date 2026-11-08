@@ -6,7 +6,7 @@
 ## Objective
 
 Remove the `// DEBUG` / `#include <iostream>` pair at the top of
-`smbios.cpp` ([smbios.cpp:14-15](/smbios/src/smbios.cpp)), which CLAUDE.md
+`smbios.cpp` ([smbios.cpp:14-15](/libsmbios/src/smbios.cpp)), which CLAUDE.md
 itself already flags as a known rough edge, and sweep for any other
 leftover debug-only includes or commented-out code in the files this
 milestone otherwise touches (`smbios.cpp`, `unix_bios.cpp`, `win_bios.cpp`).

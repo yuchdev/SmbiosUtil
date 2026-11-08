@@ -8,9 +8,9 @@
 
 Add the bounds checks contract **C3** describes to
 `SMBios::read_smbios_table()`/`count_smbios_structures()`
-([smbios.cpp:155-229](/smbios/src/smbios.cpp)) and to
+([smbios.cpp:155-229](/libsmbios/src/smbios.cpp)) and to
 `AbstractSMBiosEntry::parse_dmi_strings()`
-([abstract_smbios_entry.cpp:16-30](/smbios/src/abstract_smbios_entry.cpp)),
+([abstract_smbios_entry.cpp:16-30](/libsmbios/src/abstract_smbios_entry.cpp)),
 so a truncated or corrupted SMBIOS table degrades to a clear stop condition
 instead of reading past the mapped buffer.
 

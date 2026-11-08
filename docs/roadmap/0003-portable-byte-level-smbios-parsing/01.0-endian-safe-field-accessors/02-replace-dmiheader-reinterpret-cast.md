@@ -8,7 +8,7 @@
 
 `SMBios::read_smbios_table()` currently does
 `DMIHeader header = *reinterpret_cast<const DMIHeader*>(current_structure_begin);`
-([smbios.cpp:167](/smbios/src/smbios.cpp)) to pull `type` (1 byte),
+([smbios.cpp:167](/libsmbios/src/smbios.cpp)) to pull `type` (1 byte),
 `length` (1 byte) and `handle` (2 bytes) out of the raw table. Replace this
 with explicit field reads via `read_u8`/`read_u16`, proving the pattern on
 the header every downstream entry type already relies on.

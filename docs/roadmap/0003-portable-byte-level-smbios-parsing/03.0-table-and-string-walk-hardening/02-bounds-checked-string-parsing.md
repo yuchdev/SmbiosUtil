@@ -6,7 +6,7 @@
 ## Objective
 
 `AbstractSMBiosEntry::parse_dmi_strings()`
-([abstract_smbios_entry.cpp:16-30](/smbios/src/abstract_smbios_entry.cpp))
+([abstract_smbios_entry.cpp:16-30](/libsmbios/src/abstract_smbios_entry.cpp))
 walks `string_section` by repeatedly calling
 `std::string(reinterpret_cast<const char*>(string_section))` - which reads
 until the next `\0` with no upper bound at all - and its loop condition

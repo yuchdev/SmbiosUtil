@@ -23,7 +23,7 @@ returns `nullptr` for.
 ## Rationale
 
 `SMBiosEntryFactory`'s constructor
-([smbios_entry_factory.cpp:8-13](/smbios/src/smbios_entry_factory.cpp))
+([smbios_entry_factory.cpp:8-13](/libsmbios/src/smbios_entry_factory.cpp))
 hand-wires three `entries_factory_[...] = boost::bind(boost::factory<T*>(),
 _1, _2);` lines. Every new entry type means editing this one constructor -
 workable at three types, increasingly central-chokepoint-ish at eleven

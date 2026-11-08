@@ -12,7 +12,7 @@
 
 #include <iostream>
 
-#include <smbios/source_interface/smbios_anchor.h>
+#include <smbios/os_interface/smbios_anchor.h>
 #include <smbios/macos/macos_efi_reader.h>
 
 #include <boost/test/unit_test.hpp>

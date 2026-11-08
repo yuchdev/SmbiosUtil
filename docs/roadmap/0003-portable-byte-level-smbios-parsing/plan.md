@@ -132,7 +132,7 @@ plus one length check plus one `read_uN` call - no class hierarchy.
 dereferencing a prospective header, and must check
 `current_structure_begin + header.length <= table_end` before trusting
 `header.length` to skip ahead - both checks are currently absent (see
-[smbios.cpp:165-229](/smbios/src/smbios.cpp)).
+[smbios.cpp:165-229](/libsmbios/src/smbios.cpp)).
 
 ## Non-goals
 

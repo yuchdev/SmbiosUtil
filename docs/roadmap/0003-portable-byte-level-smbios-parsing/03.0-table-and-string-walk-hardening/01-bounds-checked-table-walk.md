@@ -11,7 +11,7 @@ table_end`, which permits dereferencing a 4-byte header starting at
 `count_smbios_structures()`'s inner `while` loop dereferences
 `*reinterpret_cast<const uint16_t*>(offset)` with only `offset < end_table`
 checked **after** the dereference in the loop condition - both at
-[smbios.cpp:165,219](/smbios/src/smbios.cpp). Add the missing
+[smbios.cpp:165,219](/libsmbios/src/smbios.cpp). Add the missing
 pre-dereference checks from contract **C3**.
 
 ## Files

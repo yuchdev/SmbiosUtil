@@ -1,6 +1,6 @@
 #include <cstddef>
 
-#include <smbios/source_interface/smbios_version_fixup.h>
+#include <smbios/os_interface/smbios_version_fixup.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>

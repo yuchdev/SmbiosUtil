@@ -1,7 +1,7 @@
 #include <memory>
 #include <vector>
 
-#include <smbios/source_interface/smbios_source_chain.h>
+#include <smbios/os_interface/smbios_source_chain.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>

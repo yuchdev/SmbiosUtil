@@ -1,0 +1,297 @@
+#include <smbios/bios_information_entry.h>
+#include <smbios/smbios.h>
+#include <smbios/os_interface/byte_reader.h>
+#include <smbios/smbios_entry_factory.h>
+
+#include <sstream>
+#include <cassert>
+
+using namespace smbios;
+
+// Self-register against SMBios::BIOSInformation at static-init time; see
+// REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.h) for why this
+// lives here rather than in the header.
+REGISTER_SMBIOS_ENTRY(SMBios::BIOSInformation, BiosInformationEntry)
+
+BiosInformationEntry::BiosInformationEntry(const DMIHeader& header, const SMBiosVersion& /*version*/, const uint8_t* table_end)
+    : AbstractSMBiosEntry(header, table_end)
+{
+    if (header.type != SMBios::BIOSInformation) {
+        std::stringstream err;
+        err << "Wrong entry type, expected BIOS Information, called Type = " << header.type;
+        throw std::runtime_error(err.str().c_str());
+    }
+
+    // Every field below is distinguished by header.length alone (R2); no
+    // SMBiosVersion-only field exists in the BIOS Information structure
+    // through spec 3.x (confirmed against c-versions/dmidecode_linux's own
+    // dmi_decode() for type 0, which gates purely on h->length as well).
+    init_string_values();
+}
+
+std::string BiosInformationEntry::get_type() const
+{
+    return "BIOS Information";
+}
+
+std::string BiosInformationEntry::render_to_description() const
+{
+    std::stringstream decsription;
+    decsription << "Header type: " << get_type() << '\n';
+    decsription << "Vendor: " << get_vendor_string() << '\n';
+    decsription << "Version: " << get_version_string() << '\n';
+    decsription << "Address: " << get_starting_address_string() << '\n';
+    decsription << "Runtime size: " << get_runtime_size_string() << '\n';
+    decsription << "Release Date: " << get_release_date_string() << '\n';
+    decsription << "ROM Size: " << get_rom_size_string() << '\n';
+    decsription << "BIOS properties: " << '\n' << get_properties_string();
+    decsription << "BIOS properties extend1: " << '\n' << get_properties_extension1_string();
+    decsription << "BIOS properties extend2: " << '\n' << get_properties_extension2_string();
+    decsription << "BIOS Revision: " << get_bios_version_string() << '\n';
+    decsription << "Firmware Revision: " << get_firmware_version_string() << '\n';
+
+    return decsription.str();
+}
+
+uint8_t BiosInformationEntry::get_vendor_index() const
+{
+    constexpr size_t offset = 0x04;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
+}
+
+uint8_t BiosInformationEntry::get_version_index() const
+{
+    constexpr size_t offset = 0x05;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
+}
+
+uint16_t BiosInformationEntry::get_starting_address() const
+{
+    constexpr size_t offset = 0x06;
+    if (get_entry_size() < offset + sizeof(uint16_t)) return 0;
+    return read_u16(raw_data(), offset);
+}
+
+uint32_t BiosInformationEntry::get_runtime_size() const
+{
+    constexpr size_t offset = 0x06; // starting_segment, same offset as get_starting_address
+    if (get_entry_size() < offset + sizeof(uint16_t)) return 0;
+    const uint16_t starting_segment = read_u16(raw_data(), offset);
+    return static_cast<uint32_t>((0x10000 - starting_segment) << 4); // unchanged formula
+}
+
+uint8_t BiosInformationEntry::get_release_date_index() const
+{
+    constexpr size_t offset = 0x08;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
+}
+
+uint8_t BiosInformationEntry::get_rom_size() const
+{
+    constexpr size_t offset = 0x09;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+
+    const uint8_t rom_size = read_u8(raw_data(), offset);
+
+    // see get_extended_rom_size() then
+    if (0xFF == rom_size) {
+        return 0;
+    }
+
+    return (rom_size + 1) << 6;
+}
+
+uint64_t BiosInformationEntry::get_properties() const
+{
+    constexpr size_t offset = 0x0A;
+    if (get_entry_size() < offset + sizeof(uint64_t)) return 0;
+    return read_u64(raw_data(), offset);
+}
+
+uint8_t BiosInformationEntry::get_properties_extension1() const
+{
+    constexpr size_t offset = 0x12;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
+}
+
+uint8_t BiosInformationEntry::get_properties_extension2() const
+{
+    constexpr size_t offset = 0x13;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
+}
+
+uint8_t BiosInformationEntry::get_bios_major_release() const
+{
+    constexpr size_t offset = 0x14;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
+}
+
+uint8_t BiosInformationEntry::get_bios_minor_release() const
+{
+    constexpr size_t offset = 0x15;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
+}
+
+uint8_t BiosInformationEntry::get_firmware_major_release() const
+{
+    constexpr size_t offset = 0x16;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
+}
+
+uint8_t BiosInformationEntry::get_firmware_minor_release() const
+{
+    constexpr size_t offset = 0x17;
+    if (get_entry_size() < offset + sizeof(uint8_t)) return 0;
+    return read_u8(raw_data(), offset);
+}
+
+uint16_t BiosInformationEntry::get_extended_rom_size() const
+{
+    constexpr size_t offset = 0x18;
+    if (get_entry_size() < offset + sizeof(uint16_t)) return 0;
+    return read_u16(raw_data(), offset);
+}
+
+void BiosInformationEntry::init_string_values()
+{
+    properties_map_[BiosPropertiesOutOfSpec] = "OutOfSpec";
+    properties_map_[Reserved1] = "Reserved";
+    properties_map_[Reserved2] = "Reserved";
+    properties_map_[Unknown] = "Unknown";
+    properties_map_[NotSupported] = "BIOS characteristics not supported";
+    properties_map_[ISASupported] = "ISA is supported";
+    properties_map_[MCASupported] = "MCA is supported";
+    properties_map_[EISASupported] = "EISA is supported";
+    properties_map_[PCISupported] = "PCI is supported";
+    properties_map_[PCMCIASupported] = "PC Card (PCMCIA) is supported";
+    properties_map_[PnPSupported] = "PNP is supported";
+    properties_map_[APMSupported] = "APM is supported";
+    properties_map_[BIOSUpgradeable] = "BIOS is upgradeable";
+    properties_map_[BIOSShadowingAllowed] = "BIOS shadowing is allowed";
+    properties_map_[VLVESASupported] = "VLB is supported";
+    properties_map_[ESCDSupported] = "ESCD support is available";
+    properties_map_[BootFromCDSupported] = "Boot from CD is supported";
+    properties_map_[SelectableBootSupported] = "Selectable boot is supported";
+    properties_map_[BIOSROMSocketed] = "BIOS ROM is socketed";
+    properties_map_[BootFromPCMCIASupported] = "Boot from PC Card (PCMCIA) is supported";
+    properties_map_[EDDSpecificationSupported] = "EDD is supported";
+    properties_map_[FloppyNECSupported] = "Japanese floppy for NEC 9800 1.2 MB is supported (int 13h)";
+    properties_map_[FloppyToshibaSupported] = "Japanese floppy for Toshiba 1.2 MB is supported (int 13h)";
+    properties_map_[Floppy360kSupported] = "5.25\"/360 kB floppy services are supported (int 13h)";
+    properties_map_[Floppy12MSupported] = "5.25\"/1.2 MB floppy services are supported (int 13h)";
+    properties_map_[Floppy720kSupported] = "3.5\"/720 kB floppy services are supported (int 13h)";
+    properties_map_[Floppy28MSupported] = "3.5\"/2.88 MB floppy services are supported (int 13h)";
+    properties_map_[PrintScreenSupported] = "Print screen service is supported (int 5h)";
+    properties_map_[KeyboardServicesSupported] = "8042 keyboard services are supported (int 9h)";
+    properties_map_[SerialServicesSupported] = "Serial services are supported (int 14h)";
+    properties_map_[PrinterServicesSupported] = "Printer services are supported (int 17h)";
+    properties_map_[MonoVideoSupported] = "CGA/mono video services are supported (int 10h)";
+    properties_map_[NECPC] = "NEC PC-98";
+
+    properties_extensions1_map_[BiosPropertiesEx1OutOfSpec] = "OutOfSpec";
+    properties_extensions1_map_[ACPISupported] = "ACPI is supported";
+    properties_extensions1_map_[USBLegacySupported] = "USB Legacy is supported";
+    properties_extensions1_map_[AGPSupported] = "AGP is supported";
+    properties_extensions1_map_[I2OBootSupported] = "I2O boot is supported";
+    properties_extensions1_map_[SuperDiskBootSupported] = "LS-120 SuperDisk boot is supported";
+    properties_extensions1_map_[ZIPDriveBootSupported] = "ATAPI ZIP drive boot is supported";
+    properties_extensions1_map_[IEEE1394BootSupported] = "1394 boot is supported";
+    properties_extensions1_map_[SmartBatterySupported] = "Smart battery is supported";
+
+    properties_extensions2_map_[BiosPropertiesEx2OutOfSpec] = "OutOfSpec";
+    properties_extensions2_map_[BootSpecificationSupported] = "BIOS Boot Specification is supported";
+    properties_extensions2_map_[KeyInitiatedNetworkBoot] = "Function key-initiated network service boot is supported";
+    properties_extensions2_map_[TargetedContentDistribution] = "Enable targeted content distribution";
+    properties_extensions2_map_[UEFISpecificationSupported] = "UEFI Specification is supported";
+    properties_extensions2_map_[VirtualMachine] = "SMBIOS table describes a virtual machine";
+}
+
+
+std::string BiosInformationEntry::get_vendor_string() const
+{
+    return AbstractSMBiosEntry::dmi_string(get_vendor_index());
+}
+
+std::string BiosInformationEntry::get_version_string() const
+{
+    return AbstractSMBiosEntry::dmi_string(get_version_index());
+}
+
+std::string BiosInformationEntry::get_starting_address_string() const
+{
+    return AbstractSMBiosEntry::address_string(get_starting_address());
+}
+
+std::string BiosInformationEntry::get_release_date_string() const
+{
+    return AbstractSMBiosEntry::dmi_string(get_release_date_index());
+}
+
+std::string BiosInformationEntry::get_rom_size_string() const
+{
+    std::string rom_size = std::to_string(static_cast<unsigned>(get_rom_size()));
+    rom_size += " kB";
+    return rom_size;
+}
+
+std::string BiosInformationEntry::get_runtime_size_string() const
+{
+    uint32_t runtime_size = get_runtime_size();
+    std::string runtime_size_string;
+    if (get_runtime_size() & 0x000003FF) {
+        runtime_size_string = std::to_string(runtime_size);
+        runtime_size_string += " bytes";
+    }
+    else {
+        runtime_size_string = std::to_string(runtime_size >> 10);
+        runtime_size_string += " kB";
+    }
+    return runtime_size_string;
+}
+
+std::string BiosInformationEntry::get_properties_string() const
+{
+    assert(!properties_map_.empty());
+    const uint64_t properties = get_properties();
+    return AbstractSMBiosEntry::bitset_to_properties<uint64_t>(properties, properties_map_);
+}
+
+std::string BiosInformationEntry::get_properties_extension1_string() const
+{
+    assert(!properties_extensions1_map_.empty());
+    const uint8_t properties = get_properties_extension1();
+    return AbstractSMBiosEntry::bitset_to_properties<uint8_t>(properties, properties_extensions1_map_);
+}
+
+std::string BiosInformationEntry::get_properties_extension2_string() const
+{
+    assert(!properties_extensions2_map_.empty());
+    const uint8_t properties = get_properties_extension2();
+    return AbstractSMBiosEntry::bitset_to_properties<uint8_t>(properties, properties_extensions2_map_);
+}
+
+std::string BiosInformationEntry::get_bios_version_string() const
+{
+    return stream_to_version(get_bios_major_release(), get_bios_minor_release());
+}
+
+std::string BiosInformationEntry::get_firmware_version_string() const
+{
+    return stream_to_version(get_firmware_major_release(), get_firmware_minor_release());
+}
+
+std::string BiosInformationEntry::stream_to_version(uint16_t major, uint16_t minor) const
+{
+    std::stringstream version_stream;
+    version_stream << major << '.' << minor;
+    return version_stream.str();
+}
+

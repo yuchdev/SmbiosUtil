@@ -1,6 +1,6 @@
 #include <cstdint>
 
-#include <smbios/source_interface/byte_reader.h>
+#include <smbios/os_interface/byte_reader.h>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>

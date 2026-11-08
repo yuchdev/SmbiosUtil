@@ -5,7 +5,7 @@
 Today, `smbios_util` has exactly one output path:
 `main.cpp` calls `entry->render_to_description()` per structure and writes
 the resulting free-form, human-readable text straight to `std::cout`
-([main.cpp:84-92](/smbios_util/src/main.cpp)). That string is meant for a
+([main.cpp:84-92](/smbios/src/main.cpp)). That string is meant for a
 person to read, not a program to parse - which is precisely the complaint
 behind every third-party `dmidecode`-output scraper that has ever had to
 regex a vendor string out of indented text. This milestone adds a real

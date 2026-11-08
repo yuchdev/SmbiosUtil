@@ -45,7 +45,7 @@ breakdown.
 
 ## Rationale
 
-Today, `SMBios`'s constructor ([smbios.cpp:43-89](/smbios/src/smbios.cpp))
+Today, `SMBios`'s constructor ([smbios.cpp:43-89](/libsmbios/src/smbios.cpp))
 calls exactly one compile-time-selected `SMBiosImpl`, and falls back to a
 raw legacy BIOS shadow-ROM scan (0xF0000-0xFFFFF) if that fails. On Windows
 this is a real native API and the fallback is rarely exercised. On every

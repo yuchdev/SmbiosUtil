@@ -8,7 +8,7 @@
 Add the `read_u8`/`read_u16`/`read_u32`/`read_u64` little-endian byte
 accessors (contract **C1**) and convert `SMBios::read_smbios_table()`'s own
 `DMIHeader` extraction - currently `*reinterpret_cast<const
-DMIHeader*>(current_structure_begin)` at [smbios.cpp:167](/smbios/src/smbios.cpp) -
+DMIHeader*>(current_structure_begin)` at [smbios.cpp:167](/libsmbios/src/smbios.cpp) -
 to use them for `type`/`length`/`handle`, proving the technique on the one
 header type every entry already depends on before Story 02.0 converts the
 three concrete entry classes.

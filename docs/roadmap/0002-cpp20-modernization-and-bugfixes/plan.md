@@ -21,7 +21,7 @@ promoted to errors so they cannot silently return.
 
 Identified while analyzing the current prototype:
 
-1. **`SMBiosVersion::operator>` / `operator<`** ([smbios.cpp](/smbios/src/smbios.cpp))
+1. **`SMBiosVersion::operator>` / `operator<`** ([smbios.cpp](/libsmbios/src/smbios.cpp))
    compare `major_version` and `minor_version` **independently** rather than
    lexicographically, so `SMBiosVersion{3,0} > SMBiosVersion{2,8}` evaluates
    incorrectly (`3 > 2` is true, but the minor-version branch is checked

@@ -8,7 +8,7 @@
 
 Add one `REGISTER_SMBIOS_ENTRY(...)` line to each of the three existing
 entry classes' headers, and delete the old hand-populated constructor body
-in `smbios_entry_factory.cpp` ([smbios_entry_factory.cpp:8-13](/smbios/src/smbios_entry_factory.cpp))
+in `smbios_entry_factory.cpp` ([smbios_entry_factory.cpp:8-13](/libsmbios/src/smbios_entry_factory.cpp))
 along with the `boost::bind`/`boost::factory`/`boost::functional` includes
 it required.
 
