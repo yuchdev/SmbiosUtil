@@ -105,8 +105,10 @@ public:
         SystemEventLog = 15,
         PhysicalMemoryArray = 16,
         MemoryDevice = 17,
+        MemoryErrorInformation32Bit = 18,
         MemoryArrayMappedAddress = 19,
         SystemBootInformation = 32,
+        MemoryErrorInformation64Bit = 33,
         EndOfTable = 127
     };
 

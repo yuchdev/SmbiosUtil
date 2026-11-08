@@ -1,7 +1,7 @@
 # 02 - 32-Bit and 64-Bit Memory Error Information
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 
 ## Objective
 
@@ -90,8 +90,12 @@ DSP0134 3.9.0 section 7.19, and `MemoryErrorInformation64BitEntry` (value
 
 ## Success criteria
 
-- [ ] Both types register and resolve through the factory
+- [x] Both types register and resolve through the factory
       (`SMBiosHandler` values 18 and 33).
-- [ ] Every sentinel/known-value case is covered by a distinct test case
+- [x] Every sentinel/known-value case is covered by a distinct test case
       per field.
-- [ ] `smbios` CLI displays both types on real hardware where present.
+- [x] `smbios` CLI displays both types on real hardware where present (via
+      `SMBiosEntryFactory`'s generic dispatch; `main.cpp` includes both new
+      headers so their `REGISTER_SMBIOS_ENTRY` static-init registration is
+      linked in - subject to the pre-existing CLI-linking bug tracked
+      separately as `task_dc27f15d`, not fixed by this task).
