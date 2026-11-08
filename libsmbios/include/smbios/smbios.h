@@ -13,19 +13,25 @@ namespace smbios {
 /// @brief Each SMBIOS structure begins with that four-byte header
 struct DMIHeader
 {
-    // Specifies the type of structure. Types 0 through 127 (7Fh) are reserved for and
-    // defined by this specification. Types 128 through 256 (80h to FFh) are available for
-    // system- and OEM-specific information
+    ///< Specifies the type of structure. Types 0 through 127 (7Fh) are
+    ///< reserved for and defined by this specification (see
+    ///< `SMBios::SMBiosHandler`). Types 128 through 256 (80h to FFh) are
+    ///< available for system- and OEM-specific information.
     uint8_t type;
 
-    // Specifies the length of the formatted area of the structure, starting at the Type field
+    ///< Specifies the length of the formatted area of the structure,
+    ///< starting at the Type field (string section not included).
     uint8_t length;
 
-    // Specifies the structure's handle, a unique 16-bit number in the range 0 to 0FFFEh
-    // If the system configuration changes, a previously assigned handle might no longer exist!
+    ///< Specifies the structure's handle, a unique 16-bit number in the
+    ///< range 0 to 0FFFEh. If the system configuration changes, a
+    ///< previously assigned handle might no longer exist!
     uint16_t handle;
 
-    // Pointer to the entry beginning
+    ///< Pointer to the entry's own formatted-area bytes (the Type field's
+    ///< own address). Non-owning: it is a view into the `SMBios` object's
+    ///< `table_buffer_` and is only valid for as long as that buffer (and
+    ///< the owning `SMBios` instance) is alive.
     const uint8_t *data;
 
     /// @brief Printable size
@@ -37,16 +43,32 @@ struct DMIHeader
 
 #pragma pack(pop)
 
-/// @brief Easily check version so that correctly map structure fields and real memory dump
+/// @brief The SMBIOS specification version a table was produced against;
+/// entry classes use this to decide which later-revision fields are safe to
+/// read (e.g. `BiosInformationEntry`'s 2.4-vs-3.1 field set).
 struct SMBiosVersion
 {
+    ///< Major SMBIOS specification revision number (e.g. `3` for "3.1").
     uint16_t major_version;
+
+    ///< Minor SMBIOS specification revision number (e.g. `1` for "3.1").
     uint16_t minor_version;
 };
 
-// == != does not make sense, SMBIOS is backward compatible 
-// so we may need to know whether version more or less than provided
+/// @brief Greater-than comparison, major then minor (e.g. `{3, 0} > {2, 8}`
+/// and `{2, 8} > {2, 7}`). `==`/`!=` are intentionally not provided: SMBIOS
+/// is backward compatible, so callers need to know whether a table's
+/// version is at least a given revision, not whether it is exactly equal.
+/// @param lhs version to compare.
+/// @param rhs version to compare against.
+/// @return `true` if `lhs` is a strictly later SMBIOS revision than `rhs`.
 bool operator >(const SMBiosVersion& lhs, const SMBiosVersion& rhs);
+
+/// @brief Less-than comparison, major then minor; see `operator>` for why
+/// `==`/`!=` are omitted.
+/// @param lhs version to compare.
+/// @param rhs version to compare against.
+/// @return `true` if `lhs` is a strictly earlier SMBIOS revision than `rhs`.
 bool operator <(const SMBiosVersion& lhs, const SMBiosVersion& rhs);
 
 /// @brief Class owns system-independent SMBIOS table 
@@ -58,11 +80,14 @@ class SMBios
 {
 public:
 
-    // SMBios header type
-    // Stored in the DMIHeader::handle field
-    // See SMBIOS specification
-    // http://www.dmtf.org/standards/smbios
-    // Table called 'Required structures and data'
+    /// @brief Structure type codes stored in `DMIHeader::type` (the name
+    /// `SMBiosHandler` is this project's own, not the spec's). See the
+    /// SMBIOS specification (http://www.dmtf.org/standards/smbios), table
+    /// "Required structures and data", for the full registry; only the
+    /// subset this project implements an `AbstractSMBiosEntry` subclass for
+    /// is listed here. `EndOfTable` is the sentinel `read_smbios_table()`
+    /// stops its walk at - see `SMBiosEntryFactory::create()` for how a
+    /// value here maps to a concrete entry class.
     enum SMBiosHandler : uint8_t
     {
         BIOSInformation = 0,
@@ -79,16 +104,36 @@ public:
         EndOfTable = 127
     };
 
-    /// @brief Read SMBIOS table using native OS-specific method
+    /// @brief Reads the live machine's SMBIOS table by walking this
+    /// platform's `make_default_source_chain()` in order, stopping at the
+    /// first source that is both available and successfully reads a table.
+    /// If no source in the chain succeeds, this object is left with an
+    /// empty table (`get_structures_count() == 0`, `begin() == end()`) and
+    /// `source_name_` empty, rather than throwing - callers should check
+    /// `get_structures_count()` if they need to distinguish "no SMBIOS
+    /// data available" from "machine genuinely has zero structures".
     SMBios();
-    
-    /// @brief Should be exist to satisfy compiler
+
+    /// @brief Destructor; empty body - every member is a self-managed
+    /// `std::vector`/`std::string` with no manual cleanup needed.
     ~SMBios();
 
     /// @brief Get SMBIOS version
     SMBiosVersion get_smbios_version() const;
 
-    /// @brief Get SMBIOS structures stored in class
+    /// @brief Count of structures found by `count_smbios_structures()`'s own
+    /// independent walk of `table_buffer_`, computed once at construction.
+    /// @note This walk has no special handling for `SMBiosHandler::EndOfTable`
+    /// - it counts the marker itself and keeps counting any (possibly
+    /// attacker-controlled) well-formed-looking bytes that follow it,
+    /// unlike `read_smbios_table()`'s own walk (which populates
+    /// `begin()`/`end()` and stops the instant it sees `EndOfTable`). The
+    /// two can disagree on malformed/adversarial input - do not use this
+    /// count as a substitute for `std::distance(begin(), end())` when the
+    /// input's trustworthiness is not guaranteed.
+    /// @return the raw structure count from this class's own walk, which
+    /// may exceed the number of structures actually reachable via
+    /// `begin()`/`end()`.
     size_t get_structures_count() const;
 
     /// @brief Actual table base (offset from header beginning)
@@ -97,7 +142,9 @@ public:
     /// @brief Actual table size from table beginning (without header)
     size_t get_table_size()  const;
 
-    /// Display SMBIOS description
+    /// @brief Renders a human-readable summary of this table (version,
+    /// structure count, source name, and every structure's own
+    /// `render_to_description()`) into a single multi-line string.
     std::string render_to_description() const;
 
     /// @brief Implement bidirectional iterator for STL-style processing

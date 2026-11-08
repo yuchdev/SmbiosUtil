@@ -126,27 +126,35 @@ public:
     // Byte values
 
     /// @brief 0x05 offset
-    /// String index for Internal Reference Designator
+    /// Internal Connector Type code; see ConnectorType enum for values.
+    /// Note: despite the "Reference Designator" naming in the DMTF chapter
+    /// this structure belongs to, this accessor reads the connector-type
+    /// code byte, not a DMI string index - the Internal/External Reference
+    /// Designator string indices (0x04/0x06) have no accessor in this class.
     uint8_t get_internal_connection_type() const;
 
     /// @brief 0x07 offset
-    /// String index for the External Reference Designation
+    /// External Connector Type code; see ConnectorType enum for values.
+    /// Same "code, not string index" note as get_internal_connection_type().
     uint8_t get_external_connection_type() const;
 
     /// @brief 0x08 offset
-    /// return PortType enum value
+    /// Port Type code; see PortType enum for values
     uint8_t get_port_type() const;
 
 
     //////////////////////////////////////////////////////////////////////////
     // String values
 
-    /// String for Internal Reference Designator
-    /// EXAMPLE : 'J101', 0
+    /// @brief Internal Connector Type string representation (e.g. "PS/2",
+    /// "DB-25 Pin Male"), looked up from get_internal_connection_type() via
+    /// ConnectorType - not the Internal Reference Designator DMI string
+    /// (e.g. "J101"), which this class does not expose.
     std::string get_internal_connection_string() const;
 
-    /// String for the External Reference Designation
-    /// EXAMPLE : 'COM A', 0
+    /// @brief External Connector Type string representation, see
+    /// get_internal_connection_string() for the same "type code, not
+    /// Reference Designator string" caveat.
     std::string get_external_connection_string() const;
 
     /// @brief Port Type string value

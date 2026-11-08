@@ -14,7 +14,13 @@ namespace smbios {
 struct DMIHeader;
 struct SMBiosVersion;
 
-/// @brief Class-wrapper under raw memory structures
+/// @brief The Memory Device structure (7.18) - one populated or unpopulated
+/// memory socket/DIMM belonging to a Physical Memory Array: handle of the
+/// owning array, associated error handle, total/data width, size (with the
+/// 0x7FFF sentinel meaning "see the Extended Size field instead"), form
+/// factor, device set, locator/bank-locator/manufacturer/serial/asset-tag/
+/// part-number string indices, device type and type-detail bitmask, speed,
+/// rank, and the configured/min/max voltages.
 class MemoryDeviceEntry : public AbstractSMBiosEntry {
 public:
 
@@ -122,6 +128,8 @@ public:
         LRDIMM = 0x1u << 15
     };
 
+    // @brief special values for the maximum capable Device Speed
+    // (get_device_speed()): uint16 - offset 0x15, in MHz
     enum DeviceSpeed : uint16_t {
         DeviceSpeedUnknown = 0x0,
         DeviceSpeedReserved = 0xFFFF

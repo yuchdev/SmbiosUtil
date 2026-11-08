@@ -8,7 +8,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 |-------|----------------------------------------|----------------|-------|
 | 01.0  | Hermetic fixture-based test layer     | ✅ Complete (2026-11-08) | 163 unit (smbios_unit_test) |
 | 02.0  | Boundary and malformed-table tests    | ✅ Complete (2026-11-08) | 166 unit (smbios_unit_test) |
-| 03.0  | Documentation and release pass        | ⬜ Not started | -     |
+| 03.0  | Documentation and release pass        | 🔶 In progress (1/3 tasks) | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -263,3 +263,56 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 **Tests / gate:** `smbios_unit_test` 166 cases, 0 failures (up from 163 after Story 01.0). All 4 `ctest` targets green. Sanitizer build of the new `MalformedTableUnitTests` suite independently confirmed clean.
 
 **Reconciliation note:** Task 02's spec code sample called a `smbios::read_headers_from_buffer()` free function that Story 01.0 never built (deliberately, in favor of the existing `SmbiosTableWalkTestAccess` seam) - the fuzz harness was built against the real seam instead, with a `static SMBios` instance reused per-process to avoid per-iteration hardware-probe construction. Task 03's spec called for CI wiring of the sanitizer run, already satisfied by Story 01.0 Task 03's finding that the `sanitizers` job already runs this suite on every push - no further CI change needed.
+
+- **2026-11-08, Story 03.0 Task 01 (Doxygen and architecture docs, R5)
+  landed - 1/3 tasks of this story:** audited every header under every
+  `include/smbios/` tree across all 7 repo-root libraries (`libsmbios`,
+  `libsmbios_linux`, `libsmbios_macos`, `libsmbios_posix_legacy`,
+  `libsmbios_win`, `libsmbios_win_legacy`, `os_interface`) - 29 header
+  files, ~140 classes/structs/enums/functions/templates. Most of
+  `libsmbios/include/smbios/` (the 10 entry classes, `smbios_entry_factory.h`,
+  `smbios_entry_interface.h`, `abstract_smbios_entry.h`) and all of
+  `os_interface/`'s `ismbios_source.h`/`smbios_source_chain.h`/
+  `smbios_version_fixup.h`, plus both macOS headers and both Linux
+  headers, were already complete per the skill's contract and left
+  untouched (confirming the task spec's own expectation that
+  `BiosInformationEntry`-style comments are already the norm, not the
+  exception). Comment-only gaps closed in 9 files: `smbios.h` (undocumented
+  `DMIHeader`/`SMBiosVersion` fields and `operator>`/`operator<`, a vague
+  `SMBiosHandler` block comment, `get_structures_count()`'s undocumented
+  disagreement with `read_smbios_table()` on malformed input - see Story
+  02.0's own finding - and a "make compiler happy"-style destructor
+  comment), `memory_device_entry.h` (a reworded-name class brief, one
+  wholly undocumented enum), `port_connection_entry.h` (a genuine
+  **comment-vs-code mismatch, fixed as documentation per this agent's own
+  "trust the code over the comment" rule, not a logic change**:
+  `get_internal_connection_type()`/`get_external_connection_type()`/
+  `get_internal_connection_string()`/`get_external_connection_string()`
+  were documented as reading/rendering the Internal/External *Reference
+  Designator* DMI string, but actually read/render the Connector *Type*
+  code at a different offset - the Reference Designator string indices
+  have no accessor in this class at all, now flagged explicitly in the
+  comment rather than silently misdescribed), `smbios_anchor.h`
+  (undocumented enum + template function), `smbios_entry_point.h`
+  (every wire-format field of both `SMBIOSEntryPoint32`/`64` was
+  completely uncommented), `win_bios.h`/`win_system_information.h`/
+  `physical_memory.h` (×2, Windows and POSIX legacy) and
+  `win_native_api_helper.h` (Windows-only code, doc-only edits, not
+  exercised by the macOS build used to verify this task - see below).
+  **New:** `docs/architecture/overview.md` - a Mermaid data-flow diagram
+  of the real `ISmbiosSource` chain (`make_default_source_chain()` ->
+  per-source list tried in order -> `SMBios` constructor -> `read_smbios_table()`
+  -> `DMIHeader` iteration -> `SMBiosEntryFactory::create()` -> concrete
+  `AbstractSMBiosEntry` subclass -> `read_uN` + length-guard field
+  accessors), tying milestone 0003's field-table accessor pattern to
+  milestone 0005's source chain, plus a "how to add a new structure type"
+  walkthrough - cross-checked directly against `libsmbios/src/smbios.cpp`,
+  `smbios_entry_factory.h`/`.cpp`, and `bios_information_entry.h`/`.cpp`
+  rather than against any roadmap plan file's description of intent.
+  Build: `cmake --build --preset macos` clean, zero new warnings/errors
+  (pre-existing unrelated linker visibility warnings only).
+  `ctest --test-dir build/macos --output-on-failure`: all 4 targets green,
+  `smbios_unit_test` still 166 cases / 901 assertions, 0 failures - exact
+  same count as Story 02.0's baseline, confirming this was a comment-only
+  pass. Tasks 02 (CLAUDE.md/README rewrite) and 03 (tests) of this story
+  remain.

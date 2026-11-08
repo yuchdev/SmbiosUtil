@@ -41,6 +41,11 @@ public:
     std::vector<uint8_t> get_memory_dump(size_t offset, size_t length) const;
 
     /// @brief get page-aligned offset from beginning of the mapping
+    /// @param offset byte offset from the originally requested `base` to
+    /// return a pointer to.
+    /// @return pointer into the mapped view; only valid until
+    /// `unmap_memory()` is called or this object is destroyed - callers
+    /// must not retain it past either.
     uint8_t* get_memory_offset(size_t offset) const;
 
     /// @brief Unmap memory, close handles, zero pointers

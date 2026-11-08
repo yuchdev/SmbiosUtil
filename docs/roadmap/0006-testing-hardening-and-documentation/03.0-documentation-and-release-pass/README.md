@@ -16,7 +16,7 @@ story.
 
 | #  | Document                                                        | Status         | Blocks |
 |----|----------------------------------------------------------------------|----------------|--------|
-| 01 | [Doxygen and architecture docs](01-doxygen-and-architecture-docs.md)   | ⬜ Not started | 02     |
+| 01 | [Doxygen and architecture docs](01-doxygen-and-architecture-docs.md)   | ✅ Complete | 02     |
 | 02 | [Update CLAUDE.md and README](02-update-claude-md-and-readme.md)      | ⬜ Not started | 03     |
 | 03 | [Tests](03-tests.md)                                                  | ⬜ Not started | -      |
 
