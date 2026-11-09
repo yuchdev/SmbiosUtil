@@ -1,4 +1,4 @@
-# SMBIOS Utility
+# SMBIOS SDK
 
 A cross-platform C++20 library and command-line tool that reads the SMBIOS/DMI firmware table and reports what it finds: BIOS, motherboard, CPU, memory, and 45 of the 49 structure types the SMBIOS 3.9.0 specification defines (the remaining 4 are either the table's own terminator or marked obsolete by the spec itself - see [SMBIOS structure coverage](#smbios-structure-coverage) below).
 
