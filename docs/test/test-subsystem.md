@@ -8,9 +8,9 @@ at the group level on purpose.
 
 ## Taxonomy
 
-Four categories, each its own top-level directory and its own Boost.Test
-executable, all wired into `ctest` via `enable_testing()` in the root
-`CMakeLists.txt`:
+Four Boost.Test categories plus one plain-executable category (C ABI,
+milestone 0007), each its own top-level directory, all wired into
+`ctest` via `enable_testing()` in the root `CMakeLists.txt`:
 
 | Category    | Directory             | Target                     | Needs root/admin? | Always expected green? |
 |--------------|------------------------|------------------------------|--------------------|--------------------------|
@@ -18,6 +18,7 @@ executable, all wired into `ctest` via `enable_testing()` in the root
 | Mock         | `tests/mock/`          | `smbios_mock_test`          | No                 | Yes (currently a documented placeholder - see below) |
 | Perf         | `tests/perf/`          | `smbios_perf_test`          | Yes (real hardware) | No - fails cleanly without privileges, not a regression |
 | Integration  | `tests/integration/`  | `smbios_integration_test`  | Yes (real hardware) | No - same as Perf |
+| C ABI        | `tests/c_abi/`         | `smbios_c_compile_as_c_test`, `smbios_c_example`, `smbios_c_open_close_test`, `smbios_c_entry_iteration_test`, `smbios_c_typed_getters_test` | No (reads real hardware, but no elevated privilege needed - same as the native sources `smbios_c` sits on top of) | Yes - each checks `smbios_open()`'s own return code and degrades gracefully rather than failing when no table is available |
 
 **No `e2e` category.** A hardware-inventory library/CLI has no user journey
 distinct from "construct an `SMBios`, read its structures" - that journey
@@ -80,6 +81,29 @@ native source discovery, legacy-scan fallback, table walk, entry
 factory - actually produces a sane result end-to-end on a real host,
 which no synthetic-buffer unit test can claim regardless of how many
 tiers it covers.
+
+### C ABI - `tests/c_abi/` (five plain executables, not Boost.Test)
+
+Each proves one slice of the `smbios_c` shim (milestone 0007) against
+the real machine's SMBIOS table: `smbios_c_compile_as_c_test` (the
+public header parses under a real C compiler, not just C++ with
+`extern "C"` ignored), `smbios_c_example` (a genuine end-to-end C
+program - open, iterate, render, close), `smbios_c_open_close_test`
+(handle lifecycle and the `SMBIOS_ERR_NO_TABLE_FOUND` path),
+`smbios_c_entry_iteration_test` and `smbios_c_typed_getters_test` (every
+entry's rendered description, and the five curated typed getters, cross-
+checked byte-for-byte against the equivalent direct C++
+`SMBiosEntryFactory::create()`/`render_to_description()` calls). The
+latter two link `libsmbios` directly (for that cross-check) in addition
+to `smbios_c`, and need the same whole-archive link treatment
+`smbios_c`'s own `CMakeLists.txt` uses - see that file's comment for why.
+Guards against the exact gap discovered while first verifying this
+milestone by hand: a binary linking `libsmbios` as a plain static
+archive without whole-archive silently drops entry-type registration for
+any type never directly named in that binary's own code, so `smbios_c`'s
+behavior could silently diverge from the CLI's for exactly those types
+without a test exercising every real structure, not just the ones the
+shim's own source happens to name.
 
 ## Intended coverage (committed, not yet implemented)
 

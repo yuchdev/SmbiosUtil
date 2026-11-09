@@ -86,7 +86,7 @@ jobs:
       # (adapted from the pre-existing SMBiosImpl, see
       # libsmbios_win/src/windows_native_source.cpp) builds and its
       # own unit coverage passes on a real Windows runner.
-      - name: Run unprivileged tests (smbios_unit_test, smbios_mock_test)
+      - name: Run unprivileged tests (smbios_unit_test, smbios_mock_test, smbios_c_*)
         if: matrix.os == 'windows-latest' && steps.build.outcome == 'success'
         # -C Debug: the windows preset uses the Visual Studio generator
         # (multi-config), unlike linux/macos's single-config Ninja - ctest
@@ -94,7 +94,16 @@ jobs:
         # ("Test not available without configuration"). cmake --build
         # --preset windows with no --config defaults to Debug (confirmed
         # from the Build step's own .vcxproj output paths).
-        run: ctest --test-dir build/${{ matrix.preset }} -C Debug --output-on-failure -R "smbios_unit_test|smbios_mock_test"
+        #
+        # Milestone 0007, Story 03.0: the smbios_c_* tests (tests/c_abi/)
+        # belong in this hard-gate bucket, not the best-effort
+        # integration/perf one below, because every one of them checks
+        # smbios_open()'s return code itself and exits 0 on
+        # SMBIOS_ERR_NO_TABLE_FOUND - unlike smbios_integration_test/
+        # smbios_perf_test, they are well-behaved regardless of whether
+        # this runner's (possibly virtualized) firmware exposes a real
+        # SMBIOS table, so a real failure here is a genuine regression.
+        run: ctest --test-dir build/${{ matrix.preset }} -C Debug --output-on-failure -R "smbios_unit_test|smbios_mock_test|smbios_c_"
 
       # Milestone 0005, Story 04.0, Task 02: unlike Linux/macOS's legacy
       # scan, Windows's native source (GetSystemFirmwareTable(), via
@@ -180,7 +189,10 @@ jobs:
           # support LeakSanitizer (known platform limitation from milestone
           # 0001).
           ASAN_OPTIONS: ${{ matrix.os == 'macos-latest' && 'detect_leaks=0:detect_container_overflow=0' || 'detect_container_overflow=0' }}
-        run: ctest --output-on-failure -R 'smbios_unit_test|smbios_mock_test'
+        # Milestone 0007, Story 03.0: smbios_c_* (tests/c_abi/) joins this
+        # hard-gate bucket, not the best-effort one below - see the build
+        # job's "Run unprivileged tests" step for why.
+        run: ctest --output-on-failure -R 'smbios_unit_test|smbios_mock_test|smbios_c_'
 
       - name: Run privileged tests best-effort (smbios_integration_test, smbios_perf_test)
         if: steps.build.outcome == 'success'
