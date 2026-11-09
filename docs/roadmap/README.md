@@ -84,11 +84,14 @@ on:
    being settled), so this library is callable from Python/Rust/C#/Go via
    FFI, not just from other C++ code.
 8. **0008** replaces the two machine-local symlinks under `c-versions/`
-   (invisible to git, unreproducible on another checkout) with real,
-   pinned git submodules, and adds a dedicated agent that watches those
-   upstreams and Microsoft's own firmware-table documentation for changes
-   worth porting - closing the loop that an earlier mis-read of those
-   symlinks (mistaken for empty placeholders) exposed.
+   (invisible to git, unreproducible on another checkout) with a fetch
+   script that clones each GPL upstream's HEAD into the still-git-ignored
+   `c-versions/` (no submodules, no GPL tracked in any form) plus a
+   tracked manifest recording each upstream's last-triaged `baseline_sha`.
+   It also adds an on-demand agent that watches those upstreams and
+   Microsoft's own firmware-table documentation for changes worth porting.
+   This closes the loop that an earlier mis-read of those symlinks
+   (mistaken for empty placeholders) exposed.
 9. **0009** adds a structured field model under every entry type (0004's
    eleven) and a self-registering output-formatter registry producing
    text/XML/JSON/YAML, plus one worked example proving a "custom format"
@@ -112,7 +115,7 @@ on:
 | 0005 | Native source abstraction and UEFI support (Linux & macOS)            | [plan.md](./0005-uefi-and-native-source-abstraction/plan.md)           | [status.md](./0005-uefi-and-native-source-abstraction/status.md)         |
 | 0006 | Hermetic testing, boundary hardening and documentation                | [plan.md](./0006-testing-hardening-and-documentation/plan.md)          | [status.md](./0006-testing-hardening-and-documentation/status.md)        |
 | 0007 | C ABI shim for cross-language interop (opaque handles over the C++ core) | [plan.md](./0007-c-abi-shim-for-cross-language-interop/plan.md)     | [status.md](./0007-c-abi-shim-for-cross-language-interop/status.md)      |
-| 0008 | Upstream reference submodules and change-monitoring agent            | [plan.md](./0008-upstream-reference-submodules-and-monitoring-agent/plan.md) | [status.md](./0008-upstream-reference-submodules-and-monitoring-agent/status.md) |
+| 0008 | Upstream reference fetch script and change-monitoring agent          | [plan.md](./0008-upstream-reference-submodules-and-monitoring-agent/plan.md) | [status.md](./0008-upstream-reference-submodules-and-monitoring-agent/status.md) |
 | 0009 | Structured output formats (text, XML, JSON, YAML, custom)            | [plan.md](./0009-structured-output-formats/plan.md)                | [status.md](./0009-structured-output-formats/status.md)                  |
 | 0010 | SMBIOS structure coverage expansion (`tables/` reorg + 34 new types) | [plan.md](./0010-smbios-structure-coverage-expansion/plan.md)      | [status.md](./0010-smbios-structure-coverage-expansion/status.md)        |
 

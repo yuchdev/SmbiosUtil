@@ -1,37 +1,41 @@
-# Story 02.0 - Submodule Update and Pinning Workflow
+# Story 02.0 - Reference Baseline Review Workflow
 
 **Parent milestone:** [plan.md](../plan.md)
 **Status:** ⬜ Not started
-**Depends on:** Story 01.0 (submodules must exist)
+**Depends on:** Story 01.0 (the manifest and fetch script must exist)
 
 ## Scope
 
-Document exactly how a submodule's pinned commit gets bumped (R3) -
-who/what proposes it, who approves it, what must be re-verified - and add
-a CI check that catches pin/working-tree drift, so the pinning this
-milestone establishes doesn't silently rot.
+This story documents exactly how an upstream's `baseline_sha` in
+`scripts/upstream_references.json` gets advanced (R3):
+- **when**: only after a watcher report has triaged the range;
+- **how**: a human-reviewed manifest-edit PR;
+- **what** must be re-checked: named files in this tree.
+
+Without this procedure the "last triaged" marker either never moves or
+moves without review.
 
 ## Tasks
 
 | #  | Document                                                        | Status         | Blocks |
 |----|----------------------------------------------------------------------|----------------|--------|
-| 01 | [Pinning policy and bump procedure](01-pinning-policy-and-bump-procedure.md) | ⬜ Not started | 02     |
-| 02 | [CI submodule checkout verification](02-ci-submodule-checkout-verification.md) | ⬜ Not started | 03     |
+| 01 | [Baseline-advance procedure](01-pinning-policy-and-bump-procedure.md) | ⬜ Not started | 03     |
+| 02 | [CI submodule checkout verification](02-ci-submodule-checkout-verification.md) (superseded by [01.0/02](../01.0-upstream-reference-fetch-script-and-license-isolation/02-build-isolation-guard.md)) | ⛔ Superseded | -      |
 | 03 | [Tests](03-tests.md)                                                | ⬜ Not started | -      |
 
 ## Key constraints
 
-- **No automated bump ever merges on its own** - every pin change is a
-  normal, human-reviewed PR, even when Story 03.0's agent is the one that
-  proposed it (R3).
-- The bump procedure must explicitly name which of this project's own
-  files (`unix_bios.cpp`'s TODOs, milestone 0003's field-table
-  implementations, milestone 0005's source implementations) are the
-  "downstream" of each submodule, so a bump's PR description can point a
-  reviewer at exactly what to re-check - not leave them to rediscover it.
+- **No automated baseline advance ever merges on its own.** Every
+  manifest change is a normal, human-reviewed PR, even when the Story
+  03.0 agent's report recommended it (R3). The agent never edits the
+  manifest.
+- The procedure names, per upstream, the real current files in this tree
+  that are its "downstream". A baseline-advance PR can then point a
+  reviewer at exactly what to re-check, instead of leaving them to
+  rediscover it.
 
 ## Files or directories created or modified by this story
 
-- `docs/dev/submodule_bump_procedure.md` (new).
-- `.github/workflows/ci.yml` (milestone 0001) - submodule-pin
-  verification step.
+- `docs/dev/upstream_reference_review.md` (new).
+- No CI change. The former pin-drift CI step (Task 02) is superseded
+  because there are no pins to drift from.
