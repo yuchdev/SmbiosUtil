@@ -16,7 +16,7 @@ DMTF SMBIOS 3.9.0 specification (`docs/standard/DSP0134_3.9.0.md`) defines
 classes lives flat, directly under `libsmbios/include/smbios/*.hpp` and
 `libsmbios/src/*.cpp`, alongside genuinely different kinds of files in the
 same two directories: the acquisition/parsing core (`smbios.hpp`/`.cpp`), the
-entry base class (`abstract_smbios_entry.hpppp`/`.cpp`), and the
+entry base class (`abstract_smbios_entry.hpp`/`.cpp`), and the
 self-registering factory (`smbios_entry_factory.hpp`/`.cpp`).
 
 Milestone 0010 (`docs/roadmap/0010-smbios-structure-coverage-expansion/`)
@@ -34,7 +34,7 @@ groups its own multi-file concern under a named subdirectory of
 
 Reading `libsmbios_linux/` as the worked example:
 
-- `libsmbios_linux/include/smbios/linux/linux_sysfs_source.hpppppp` and
+- `libsmbios_linux/include/smbios/linux/linux_sysfs_source.hpp` and
   `linux_efi_source.hpp` - headers live under a `linux/` **segment
   subdirectory** of `include/smbios/`.
 - `libsmbios_linux/src/linux_sysfs_source.cpp`,
@@ -103,7 +103,7 @@ smbios/` to distinguish them from.
 3. `libsmbios/include/smbios/*.hpp` keeps exactly the 4 files that are not
    per-structure-type entry classes: `smbios.hpp` (acquisition/parsing core,
    `SMBiosHandler` enum, `DMIHeader`, `SMBiosVersion`),
-   `abstract_smbios_entry.hpppp` (the base class every `tables/` header
+   `abstract_smbios_entry.hpp` (the base class every `tables/` header
    derives from), `smbios_entry_factory.hpp` (the self-registering factory),
    `smbios_entry_interface.hpp` (`SMBiosInterface`). These stay at the flat
    root because they are not entry-class headers, not because of an
@@ -177,7 +177,7 @@ in `tables/` instead of being written flat and moved again later.
   of `libsmbios_linux` today, so it is at least a *consistent* asymmetry
   across the codebase, not a new one.
 - `libsmbios/include/smbios/*.hpp`'s remaining 4 files (`smbios.hpp`,
-  `abstract_smbios_entry.hpppp`, `smbios_entry_factory.hpp`,
+  `abstract_smbios_entry.hpp`, `smbios_entry_factory.hpp`,
   `smbios_entry_interface.hpp`) are themselves not segmented into any
   subdirectory of their own (e.g. a hypothetical `core/`) - left flat
   deliberately per Decision point 3, but a future reader could reasonably
@@ -210,7 +210,7 @@ in `tables/` instead of being written flat and moved again later.
 
 A follow-up, user-directed rename moved `libsmbios`'s entire public
 `include/` tree from `libsmbios/include/smbios/` to
-`libsmbios/include/libsmbios/` (headers now `#include <libsmbios/smbios.hpppp>`,
+`libsmbios/include/libsmbios/` (headers now `#include <libsmbios/smbios.hpp>`,
 `#include <libsmbios/tables/*.hpp>`, etc.), at the same time renaming the
 `smbios` CLI's own private header directory from `smbios/include/smbios_util/`
 to `smbios/include/smbios/`. This addendum records it rather than rewriting

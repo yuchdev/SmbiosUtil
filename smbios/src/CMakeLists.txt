@@ -3,7 +3,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "../bin")
 
 find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS program_options REQUIRED)
 
-# include/smbios/command_line_parser.hpppp is this executable's own private
+# include/smbios/command_line_parser.hpp is this executable's own private
 # header - it lives under this target's own include/smbios/ segment
 # (renamed from include/smbios_util/), distinct from libsmbios's own
 # public headers at libsmbios/include/libsmbios/.

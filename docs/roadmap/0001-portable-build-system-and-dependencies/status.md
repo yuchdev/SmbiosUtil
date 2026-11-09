@@ -174,13 +174,13 @@ alone:
 
 1. **Run [41993079007](https://github.com/yuchdev/SmbiosSdk/actions/runs/41993079007):**
    macOS ✓ (Story 02.1's fix confirmed for real, not just locally).
-   Ubuntu ✗ - `abstract_smbios_entry.hpppp` uses `uint16_t` with no
+   Ubuntu ✗ - `abstract_smbios_entry.hpp` uses `uint16_t` with no
    `#include <cstdint>` (only "worked" on libc++ via transitive luck).
    Windows ✗ - configure itself failed: `CMakePresets.json` hardcoded
    `"Visual Studio 17 2022"`, but the `windows-latest` runner image now
    ships a newer Visual Studio CMake's generator-name matching has no
    fallback for.
-2. **Fix + push (`5b0ffd2`):** added `<cstdint>` to `abstract_smbios_entry.hpppp`
+2. **Fix + push (`5b0ffd2`):** added `<cstdint>` to `abstract_smbios_entry.hpp`
    and (defensively, same gap, not yet triggered) `smbios_anchor.hpp`; swept
    every header in `smbios/` for the same class of bug, found no others
    at that point.

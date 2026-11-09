@@ -6,7 +6,7 @@ roadmap - milestone 0003's field-table accessor pattern and milestone
 real machine (or a synthetic test buffer) becomes a typed, human-readable
 SMBIOS entry. It is written for a reader who was not part of either
 milestone's design discussions. It is cross-checked against the current
-code (`libsmbios/src/smbios.cpp`, `libsmbios/include/libsmbios/smbios_entry_factory.hpppppp`,
+code (`libsmbios/src/smbios.cpp`, `libsmbios/include/libsmbios/smbios_entry_factory.hpp`,
 `libsmbios/include/libsmbios/bios_information_entry.hpp`/`.cpp`), not against
 what any roadmap `plan.md` merely describes as intent - several renames
 (`smbios`/`libsmbios` swapping names, the repo-root library split) landed
@@ -24,7 +24,7 @@ job).
   class (`BiosInformationEntry`, `MemoryDeviceEntry`, etc., in
   `libsmbios/include/libsmbios/`) reads its own fixed-offset fields through
   the little-endian `read_u8`/`read_u16`/`read_u32`/`read_u64` helpers
-  (`sys_interface/include/smbios/sys_interface/byte_reader.hpppppp`) plus a
+  (`sys_interface/include/smbios/sys_interface/byte_reader.hpp`) plus a
   `get_entry_size()`-based length guard before every read, instead of
   `reinterpret_cast`-ing the raw bytes onto a `#pragma pack` struct. This
   is what makes the parser tolerant of shorter structures from older
@@ -34,7 +34,7 @@ job).
   structure's actual formatted-area length.
 - **Milestone 0005 - the `ISmbiosSource` chain.** Where the raw table
   bytes come from is abstracted behind `ISmbiosSource`
-  (`sys_interface/include/smbios/sys_interface/ismbios_source.hpppppp`): `is_available()`
+  (`sys_interface/include/smbios/sys_interface/ismbios_source.hpp`): `is_available()`
   (cheap, no actual read), `try_read(out_table, major_version,
   minor_version)`, and `source_name()` for diagnostics. Each platform
   defines its own `make_default_source_chain()` (one real definition per
@@ -71,7 +71,7 @@ flowchart TD
     E --> F["DMIHeader per structure\n(type, length, handle, data pointer\ninto table_buffer_ - no copy)"]
     F --> G["headers_list_: std::vector<DMIHeader>\nSMBios::begin()/end() iterate this"]
     G --> H["Caller loop: for (const DMIHeader& header : bios)"]
-    H --> I["SMBiosEntryFactory::create(header, version, table_end)\n(libsmbios/include/libsmbios/smbios_entry_factory.hpppppp)"]
+    H --> I["SMBiosEntryFactory::create(header, version, table_end)\n(libsmbios/include/libsmbios/smbios_entry_factory.hpp)"]
     I --> J{"registered creator\nfor header.type?"}
     J -->|yes| K["Concrete AbstractSMBiosEntry subclass\n(e.g. BiosInformationEntry)\nconstructed from (header, version, table_end)"]
     J -->|no, unregistered type| K0["nullptr returned\n(caller skips this structure)"]
@@ -81,7 +81,7 @@ flowchart TD
 Walking this left to right in prose:
 
 1. **`make_default_source_chain()`** is declared once, platform-neutrally,
-   in `sys_interface/include/smbios/sys_interface/smbios_source_chain.hpppppp`,
+   in `sys_interface/include/smbios/sys_interface/smbios_source_chain.hpp`,
    but *defined* exactly once per build inside whichever per-OS library
    `CMakeLists.txt`'s `if(WIN32)/elseif(APPLE)/elseif(...Linux)/else()`
    branch actually links. No translation unit in this codebase chooses
@@ -109,7 +109,7 @@ Walking this left to right in prose:
    `headers_list_`, so a caller (`smbios/src/main.cpp`, or a test) can
    write a plain `for (const DMIHeader& header : bios)` loop.
 5. **`SMBiosEntryFactory::create(header, version, table_end)`**
-   (`libsmbios/include/libsmbios/smbios_entry_factory.hpppppp`) looks up
+   (`libsmbios/include/libsmbios/smbios_entry_factory.hpp`) looks up
    `header.type` in a module-scope registry populated at static-init time
    by each concrete entry class's own `REGISTER_SMBIOS_ENTRY` invocation,
    and either returns a freshly-constructed concrete
@@ -134,11 +134,11 @@ Milestone 0004 established this pattern; it still holds today. To add
 support for an SMBIOS structure type this project does not yet decode:
 
 1. **Add the type code** to `SMBios::SMBiosHandler`
-   (`libsmbios/include/libsmbios/smbios.hpppppp`) if it is not already listed,
+   (`libsmbios/include/libsmbios/smbios.hpp`) if it is not already listed,
    using the numeric value from the DMTF SMBIOS specification's "Required
    structures and data" table.
 2. **Write one entry class** extending `AbstractSMBiosEntry`
-   (`libsmbios/include/libsmbios/abstract_smbios_entry.hpppppppp`), in its own header
+   (`libsmbios/include/libsmbios/abstract_smbios_entry.hpp`), in its own header
    + `.cpp` pair under `libsmbios/include/libsmbios/` + `libsmbios/src/`
    (matching every existing entry, e.g. `BiosInformationEntry`). The
    constructor takes `(const DMIHeader& header, const SMBiosVersion&
@@ -165,7 +165,7 @@ support for an SMBIOS structure type this project does not yet decode:
    ```cpp
    REGISTER_SMBIOS_ENTRY(SMBios::YourNewHandlerValue, YourNewEntryClass);
    ```
-   This macro (`libsmbios/include/libsmbios/smbios_entry_factory.hpppppp`) expands
+   This macro (`libsmbios/include/libsmbios/smbios_entry_factory.hpp`) expands
    to a function-local-static-guarded, namespace-scope static initializer
    that calls `smbios::register_smbios_entry()` against a module-scope
    registry (`libsmbios/src/smbios_entry_factory.cpp`) the first time that
@@ -184,7 +184,7 @@ support for an SMBIOS structure type this project does not yet decode:
    one new `.cpp`, one `REGISTER_SMBIOS_ENTRY` line.
 6. **Add tests** under `tests/unit/`, following any existing
    `*_entry_test.cpp` file's shape: build a synthetic structure via
-   `smbios::test::SyntheticTableBuilder` (`tests/unit/synthetic_table_builder.hpppp`)
+   `smbios::test::SyntheticTableBuilder` (`tests/unit/synthetic_table_builder.hpp`)
    and assert each accessor against the bytes you constructed, including
    at least one length tier shorter than the full structure to exercise
    the length-guard defaults.

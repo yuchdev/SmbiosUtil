@@ -170,7 +170,7 @@ add_subdirectory(tests)
 # one of tests/CMakeLists.txt's four always-registered ctest categories
 # (unit/mock/perf/integration) and must stay entirely out of the default
 # build graph. parse_synthetic_table() (the only symbol this target needs
-# from tests/unit/synthetic_table_builder.hpppppp) is defined inline in that
+# from tests/unit/synthetic_table_builder.hpp) is defined inline in that
 # header, so this target needs no dependency on the smbios_unit_test
 # sources themselves - only the header's include path and libsmbios to link
 # against.

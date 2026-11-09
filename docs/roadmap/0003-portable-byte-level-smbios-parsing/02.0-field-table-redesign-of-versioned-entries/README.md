@@ -46,7 +46,7 @@ currently carry.
 
 ## Files or directories created or modified by this story
 
-- `smbios/include/smbios/abstract_smbios_entry.hpppp` /
+- `smbios/include/smbios/abstract_smbios_entry.hpp` /
   `smbios/src/abstract_smbios_entry.cpp` - add `raw_data()`.
 - `smbios/include/smbios/bios_information_entry.hpp` /
   `smbios/src/bios_information_entry.cpp` - struct chain deleted; accessors

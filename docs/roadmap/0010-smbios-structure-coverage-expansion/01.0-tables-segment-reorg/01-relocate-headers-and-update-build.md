@@ -51,7 +51,7 @@ directives and one CMake glob line only.
   time.
 - Do not touch `smbios_entry_factory.hpp`/`.cpp` (ADR 0002 point 5) or any of
   the 4 non-entry headers staying flat in `include/smbios/`
-  (`smbios.hpp`, `abstract_smbios_entry.hpppp`, `smbios_entry_factory.hpp`,
+  (`smbios.hpp`, `abstract_smbios_entry.hpp`, `smbios_entry_factory.hpp`,
   `smbios_entry_interface.hpp`).
 
 ## Tests

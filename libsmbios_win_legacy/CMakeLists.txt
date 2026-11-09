@@ -3,17 +3,17 @@
 # that gave each platform flavor of the legacy BIOS shadow-ROM
 # physical-memory scan (PhysicalMemory, LegacyMemoryScanSource) its own
 # top-level library. This is the Windows flavor: PhysicalMemory here IS the
-# former NativePhysicalMemory (win_physical_memory.hpppp/.cpp) - the old PImpl
+# former NativePhysicalMemory (win_physical_memory.hpp/.cpp) - the old PImpl
 # wrapper has been merged directly into this one concrete class, since this
 # library only ever builds on Windows (selected by the root CMakeLists.txt's
 # if(WIN32) branch) and there is no other PhysicalMemory to forward to.
 #
-# legacy_memory_scan_source.hpppp/.cpp is intentionally duplicated verbatim in
+# legacy_memory_scan_source.hpp/.cpp is intentionally duplicated verbatim in
 # libsmbios_posix_legacy (not shared via a third library) - see that
 # library's CMakeLists.txt comment and the story's own report for why.
 #
-# Exposes its public headers at smbios/legacy/physical_memory.hpppppppp and
-# smbios/legacy/legacy_memory_scan_source.hpppppppp - the identical logical path
+# Exposes its public headers at smbios/legacy/physical_memory.hpp and
+# smbios/legacy/legacy_memory_scan_source.hpp - the identical logical path
 # libsmbios_posix_legacy also uses - so every consumer's
 # #include <smbios/legacy/...> resolves to whichever flavor got linked,
 # with no include-path change required at any call site.

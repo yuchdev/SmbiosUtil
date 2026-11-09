@@ -7,13 +7,13 @@
 
 Delete `BiosInformationV24`/`BiosInformationV31` and the
 `bios_information24_`/`bios_information31_` pointer members
-([bios_information_entry.hpp:19-41,236-237](/libsmbios/include/libsmbios/tables/bios_information_entry.hpppppp)),
+([bios_information_entry.hpp:19-41,236-237](/libsmbios/include/libsmbios/tables/bios_information_entry.hpp)),
 and rebuild every accessor in `BiosInformationEntry` to read directly from
 `raw_data()` via `read_uN` plus a length guard.
 
 ## Files
 
-- **Modify** `smbios/include/smbios/abstract_smbios_entry.hpppp` /
+- **Modify** `smbios/include/smbios/abstract_smbios_entry.hpp` /
   `.cpp`: add
   ```cpp
   protected:

@@ -64,7 +64,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   fields they actually need.
 - Story 01.0 Task 02: `smbios::SMBios()` never throws when every
   `ISmbiosSource` in the chain fails - per its own doc comment in
-  `libsmbios/include/libsmbios/smbios.hpppppp`, it leaves itself with an empty
+  `libsmbios/include/libsmbios/smbios.hpp`, it leaves itself with an empty
   table instead. `smbios_open()` therefore detects "no table found" via
   `get_structures_count() == 0` after construction, not via a caught
   exception for that specific case; the try/catch still exists for any

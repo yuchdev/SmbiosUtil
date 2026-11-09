@@ -34,7 +34,7 @@ unlike the feature stories that follow it.
   header (none currently do, per a check of the existing 11 headers'
   `#include` lists).
 - `libsmbios/include/smbios/*.hpp`'s 4 non-entry files
-  (`smbios.hpp`, `abstract_smbios_entry.hpppp`, `smbios_entry_factory.hpp`,
+  (`smbios.hpp`, `abstract_smbios_entry.hpp`, `smbios_entry_factory.hpp`,
   `smbios_entry_interface.hpp`) stay exactly where they are - ADR 0002's
   Decision point 3 is explicit that `tables/` is a segment for
   structure-type entries only.

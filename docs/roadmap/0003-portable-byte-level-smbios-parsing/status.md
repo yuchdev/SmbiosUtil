@@ -21,7 +21,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   accessors. See `plan.md`'s intro for the three concrete problems this
   fixes (non-portability to big-endian hosts, strict-aliasing UB, and
   linear struct proliferation per SMBIOS revision).
-- **Resolved:** `PortConnectionEntry` ([port_connection_entry.hpp](/libsmbios/include/libsmbios/tables/port_connection_entry.hpppppp))
+- **Resolved:** `PortConnectionEntry` ([port_connection_entry.hpp](/libsmbios/include/libsmbios/tables/port_connection_entry.hpp))
   has **no** version chain - a single `PortConnection` struct and a single
   `const PortConnection* port_connection_` member, matching its own header
   comment ("By 3.1 version fully compatible with all previous versions").
@@ -52,7 +52,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   rebuilt on the new accessors; `BiosInformationV24`/`V31` and both
   pointer members deleted entirely (confirmed by grep across `smbios/`,
   `tests/`, `smbios_util/`). Added `AbstractSMBiosEntry::raw_data()` as a
-  new protected accessor (declared in `abstract_smbios_entry.hpppp`, defined
+  new protected accessor (declared in `abstract_smbios_entry.hpp`, defined
   in the `.cpp` since `DMIHeader` is only forward-declared in the header
   and `header_->data` needs the complete type). Added a previously-
   missing public getter, `get_extended_rom_size()` (offset `0x18`), for
