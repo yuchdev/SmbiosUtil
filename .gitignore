@@ -18,6 +18,9 @@ vcpkg_installed/
 # these with pinned git submodules.
 /c-versions/
 
+logs/*
+*.log
+
 # User-specific
 CMakeLists.txt.user
 CMakeUserPresets.json

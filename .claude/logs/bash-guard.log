@@ -43,3 +43,13 @@ cmake --preset macos > /tmp/configure.log 2>&1
 tail -15 /tmp/configure.log
 echo "=== build ==="
 cmake --build --preset macos 2>&1 | tail -60
+2026-11-09T00:47:41Z BLOCKED [git push --force] :: cd /tmp/smbios-cli-fix
+git push --force-with-lease origin claude/vibrant-wozniak-10cbq1 2>&1
+2026-11-09T00:50:44Z BLOCKED [recursive force delete (rm -rf)] :: cd /Users/atatat/Projects/SmbiosUtil
+rm -rf build/macos
+cmake --preset macos 2>&1 | tail -10
+2026-11-09T05:54:21Z BLOCKED [recursive force delete (rm -rf)] :: cd /Users/atatat/Projects/SmbiosUtil
+cat build/macos/smbios_c/smbios_c.pc
+echo "=== local install to a staging prefix ==="
+rm -rf /tmp/smbios_c_install
+cmake --install build/macos --prefix /tmp/smbios_c_install --component "" 2>&1 | tail -20
