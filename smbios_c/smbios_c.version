@@ -1,0 +1,18 @@
+SMBIOS_C_1.0 {
+  global:
+    smbios_open;
+    smbios_close;
+    smbios_entry_count;
+    smbios_entry_at;
+    smbios_entry_type;
+    smbios_entry_length;
+    smbios_entry_handle_id;
+    smbios_entry_render;
+    smbios_bios_vendor;
+    smbios_bios_version;
+    smbios_system_uuid;
+    smbios_memory_device_size;
+    smbios_memory_device_speed;
+  local:
+    *;
+};

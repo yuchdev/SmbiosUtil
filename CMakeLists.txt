@@ -161,6 +161,7 @@ endif()
 
 add_subdirectory(libsmbios)
 add_subdirectory(smbios)
+add_subdirectory(smbios_c)
 add_subdirectory(tests)
 
 # Milestone 0006, Story 02.0, Task 02: the fuzz harness target itself, built

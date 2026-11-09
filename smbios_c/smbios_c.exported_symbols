@@ -1,0 +1,13 @@
+_smbios_open
+_smbios_close
+_smbios_entry_count
+_smbios_entry_at
+_smbios_entry_type
+_smbios_entry_length
+_smbios_entry_handle_id
+_smbios_entry_render
+_smbios_bios_vendor
+_smbios_bios_version
+_smbios_system_uuid
+_smbios_memory_device_size
+_smbios_memory_device_speed
