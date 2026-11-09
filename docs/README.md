@@ -10,6 +10,7 @@
 | [agent/skills.md](agent/skills.md) | Generated reference of installed skills and their invocation. Do not hand-edit. |
 | [agent/hooks.md](agent/hooks.md) | Generated reference of installed hooks and their triggers. Do not hand-edit. |
 | [dev/cpp_coding_standard.md](dev/cpp_coding_standard.md) | libbios C++ style guide that `cpp-expert`, `testing-expert` and the reviewers follow. |
+| [dev/upstream_reference_review.md](dev/upstream_reference_review.md) | Procedure for advancing an upstream `dmidecode` reference's `baseline_sha` after a reviewed watcher report. |
 | [roadmap/README.md](roadmap/README.md) | Roadmap index and the Milestone → Story → Task hierarchy; six-milestone program taking libbios to a portable, UEFI-capable C++20 library. |
 | [roadmap/0001-portable-build-system-and-dependencies/plan.md](roadmap/0001-portable-build-system-and-dependencies/plan.md) | Milestone 0001: vcpkg manifest, CMake presets, CI matrix - replaces manually-pointed Boost installs. |
 | [roadmap/0002-cpp20-modernization-and-bugfixes/plan.md](roadmap/0002-cpp20-modernization-and-bugfixes/plan.md) | Milestone 0002: raise to C++20, `-Werror`/sanitizers, fix the `SMBiosVersion` comparison and `unix_bios.cpp` bugs. |

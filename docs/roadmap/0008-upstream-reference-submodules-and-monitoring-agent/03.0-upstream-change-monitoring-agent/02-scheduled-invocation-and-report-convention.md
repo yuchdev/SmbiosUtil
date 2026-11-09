@@ -1,32 +1,33 @@
-# 02 - Scheduled invocation and report convention
+# 02 - Invocation and report convention
 
 **Parent story:** [README.md](README.md)
 **Status:** ⬜ Not started
 **Depends on:** Task 01
 
+> File name kept as `02-scheduled-invocation-and-report-convention.md` so
+> existing links resolve. The scheduled option is **rejected**: the user
+> decided on 2026-11-09 that this agent runs on demand only (see
+> [status.md](../status.md)).
+
 ## Objective
 
-Decide and document how `dmidecode-upstream-watcher` actually runs
-(on-demand only vs. a real schedule), and register its report type in
-`docs/reviews/README.md`'s naming-convention table.
+Document how `dmidecode-upstream-watcher` runs (**on demand only**), and
+register its report type in `docs/reviews/README.md`'s naming-convention
+table.
 
 ## Files
 
 - **Modify** `docs/reviews/README.md`: add a row for
   `upstream-watch-<YYYY-MM-DD>.md` alongside the existing `dep-audit`/
-  `license-check` examples.
-- **Decide and document** the invocation mechanism - two realistic
-  options, to be chosen during implementation rather than prescribed
-  here:
-  - **On-demand**: a developer (or another agent, per
-    `agent-orchestrator.md`'s cross-agent coordination pattern) invokes
-    it manually or via a periodic reminder, no infrastructure change.
-  - **Scheduled**: a GitHub Actions workflow on a `schedule:` cron
-    trigger that invokes Claude Code non-interactively with this agent,
-    committing its report via a PR - a real, standing automation, not
-    just documentation of intent.
-  Record the choice and rationale in `status.md`, not just in this task
-  file, since it's a decision with ongoing infrastructure cost either way.
+  `license-check` examples. In that row, or in the agent definition's
+  description, state that the agent is invoked on demand.
+- **Document the invocation (on demand).** A developer, or another agent
+  following `agent-orchestrator.md`'s cross-agent coordination pattern,
+  invokes the agent manually, for example before starting new work on
+  milestone 0003/0005 logic. The run happens on a developer machine with
+  network access, because it runs the fetch script. It requires no
+  standing automation, no CI workflow, and no Claude-in-CI credentials.
+  The resulting report is committed through a normal PR.
 
 ## Functions and Classes
 
@@ -34,18 +35,21 @@ N/A.
 
 ## Constraints
 
-- Whichever mechanism is chosen, the agent's own report still goes
-  through this project's normal PR review before anything it recommends
-  is acted on (milestone's Key constraints) - "scheduled" describes when
-  the *agent runs*, never when a *change merges*.
+- There is no `schedule:` cron, no `workflow_dispatch` workflow, and no
+  other GitHub Actions job for this agent (user decision, 2026-11-09).
+  Adding one later would be a new decision, not part of this milestone.
+- The agent's report goes through this project's normal PR review before
+  anything it recommends is acted on (milestone Key constraints). That
+  includes any recommended `baseline_sha` advance, which a human applies
+  under `docs/dev/upstream_reference_review.md`.
 
 ## Tests
 
-- If the scheduled option is chosen: a manual trigger of the workflow
-  (GitHub Actions supports `workflow_dispatch` for exactly this) to
-  confirm it runs correctly before relying on its cron schedule.
+- **One manual end-to-end invocation.** The agent runs the fetch script,
+  reviews each `<baseline_sha>..HEAD` range, and writes a correctly-shaped
+  report to `docs/reviews/`.
 
 ## Success criteria
 
 - [ ] `docs/reviews/README.md` lists this agent's report type.
-- [ ] The chosen invocation mechanism works end-to-end at least once.
+- [ ] A manual (on-demand) invocation works end-to-end at least once.

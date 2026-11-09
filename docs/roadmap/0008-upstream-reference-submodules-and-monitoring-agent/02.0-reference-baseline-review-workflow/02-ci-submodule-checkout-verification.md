@@ -1,7 +1,17 @@
+> **⛔ SUPERSEDED (2026-11-09 user ruling: no submodules).** Do not
+> implement this task. There are no submodule pins left for a checkout to
+> drift from. Its protective intent was to stop untracked or unreviewed
+> upstream state from entering the repository. That intent is now covered
+> by the extended isolation guard in
+> [Story 01.0 Task 02](../01.0-upstream-reference-fetch-script-and-license-isolation/02-build-isolation-guard.md),
+> which fails CI on any `.gitmodules` entry or any tracked file under
+> `c-versions/`. The text below is kept only as a historical record; see
+> [status.md](../status.md).
+
 # 02 - CI submodule checkout verification
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ⛔ Superseded by 01.0/02
 **Depends on:** Task 01
 
 ## Objective

@@ -13,9 +13,11 @@ prefix/
 # vcpkg manifest-mode install output (re-created by `vcpkg install` / `cmake --preset`)
 vcpkg_installed/
 
-# Machine-local symlinks to upstream dmidecode reference checkouts (see
-# CLAUDE.md) - meaningless on another checkout; milestone 0008 replaces
-# these with pinned git submodules.
+# Upstream dmidecode reference clones, populated by
+# `python scripts/fetch_upstream_references.py` from
+# scripts/upstream_references.json (see CLAUDE.md). Both upstreams are
+# GPL-2.0-or-later: this ignore rule is load-bearing for license isolation
+# and must not be removed - nothing under c-versions/ may ever be tracked.
 /c-versions/
 
 logs/*
