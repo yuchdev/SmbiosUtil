@@ -75,7 +75,7 @@ paths and formats already match what `unix_bios.cpp`'s own TODO comments
 describe); Story 03.0 ports `dmidecode_macos`'s IORegistry mechanism,
 **with one deliberate deviation**: the reference reaches
 `mem_chunk_ioreg()` only through a call site compiled under `#if defined
-__i386__ || defined __x86_64__` ([dmidecode.c:6395](/c-versions/dmidecode_macos/dmidecode.c))
+__i386__ || defined __x86_64__` (`c-versions/dmidecode_macos/dmidecode.c:6395`)
 - on a native Apple Silicon build, that guard would skip the IORegistry
 path entirely despite the Acidanthera changelog claiming Apple Silicon
 support (plausibly relying on the tool shipping as an x86_64 binary
