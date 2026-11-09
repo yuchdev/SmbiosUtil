@@ -1,10 +1,10 @@
 #include <memory>
 #include <vector>
 
-#include <smbios/os_interface/smbios_source_chain.h>
-#include <smbios/legacy/legacy_memory_scan_source.h>
-#include <smbios/linux/linux_efi_source.h>
-#include <smbios/linux/linux_sysfs_source.h>
+#include <smbios/sys_interface/smbios_source_chain.hpp>
+#include <smbios/legacy/legacy_memory_scan_source.hpp>
+#include <smbios/linux/linux_efi_source.hpp>
+#include <smbios/linux/linux_sysfs_source.hpp>
 
 using namespace smbios;
 

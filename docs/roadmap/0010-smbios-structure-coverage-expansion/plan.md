@@ -94,7 +94,7 @@ time - see ADR 0002 for the full reorg design and rationale.
    pass of its own).
 6. **R6** - Each new entry type's tests are built via
    `smbios::test::SyntheticTableBuilder`
-   (`tests/unit/synthetic_table_builder.h`, milestone 0006 Story 01.0) -
+   (`tests/unit/synthetic_table_builder.hpp`, milestone 0006 Story 01.0) -
    no hand-rolled byte arrays, per that builder's own stated purpose.
 7. **R7** - `smbios/src/command_line_parser.cpp`/`main.cpp` (the CLI) gains
    display support for every new type as part of the same task that adds

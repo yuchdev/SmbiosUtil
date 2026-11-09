@@ -32,7 +32,7 @@ add_test(NAME smbios_c_example COMMAND smbios_c_example)
 add_executable(smbios_c_open_close_test smbios_open_close_test.cpp)
 target_include_directories(smbios_c_open_close_test PRIVATE
     ${CMAKE_SOURCE_DIR}/libsmbios/include
-    ${CMAKE_SOURCE_DIR}/os_interface/include
+    ${CMAKE_SOURCE_DIR}/sys_interface/include
 )
 target_link_libraries(smbios_c_open_close_test PRIVATE smbios_c)
 add_test(NAME smbios_c_open_close_test COMMAND smbios_c_open_close_test)
@@ -59,7 +59,7 @@ foreach(test_name smbios_c_entry_iteration_test smbios_c_typed_getters_test)
     add_executable(${test_name} ${source_file})
     target_include_directories(${test_name} PRIVATE
         ${CMAKE_SOURCE_DIR}/libsmbios/include
-        ${CMAKE_SOURCE_DIR}/os_interface/include
+        ${CMAKE_SOURCE_DIR}/sys_interface/include
     )
 
     if(APPLE)

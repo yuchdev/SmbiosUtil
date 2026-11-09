@@ -1,6 +1,6 @@
 # Milestone 0007 - C ABI Shim for Cross-Language Interop
 
-**Package:** new `smbios_c` | **Module root:** `smbios_c/include/smbios_c/`, `smbios_c/src/`
+**Package:** new `smbios_c` | **Module root:** `smbios_c/include/smbios/`, `smbios_c/src/`
 
 Adds a C-callable interface alongside the existing C++ one, so this
 library can be linked from Python/Rust/C#/Go/plain-C callers via FFI, not
@@ -80,7 +80,7 @@ internal `SMBiosImpl`/`NativePhysicalMemory` PImpl idiom moved out to the
 
 ## Shared contracts
 
-### C1 - Opaque handles and error model (`smbios_c/include/smbios_c/smbios_c.h`, new)
+### C1 - Opaque handles and error model (`smbios_c/include/smbios/smbios.h`, new)
 
 ```c
 #ifdef __cplusplus

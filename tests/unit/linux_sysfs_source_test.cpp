@@ -15,7 +15,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <smbios/linux/linux_sysfs_source.h>
+#include <smbios/linux/linux_sysfs_source.hpp>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>

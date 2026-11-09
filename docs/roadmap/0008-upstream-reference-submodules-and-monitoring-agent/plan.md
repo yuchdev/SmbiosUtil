@@ -68,7 +68,7 @@ submodule is a small follow-up to this milestone, not a redesign of it.
    submodule's path is ever referenced from any `CMakeLists.txt`,
    `vcpkg.json`, or `#include` directive anywhere under any of this
    project's own build-product directories: `libsmbios/`, `smbios/`
-   (the CLI), `os_interface/`, `libsmbios_win/`, `libsmbios_macos/`,
+   (the CLI), `sys_interface/`, `libsmbios_win/`, `libsmbios_macos/`,
    `libsmbios_linux/`, `libsmbios_win_legacy/`, `libsmbios_posix_legacy/`,
    or `smbios_c/` once it exists - the full repo-root library set as of
    the later build-layout restructure (see CLAUDE.md), not just the two

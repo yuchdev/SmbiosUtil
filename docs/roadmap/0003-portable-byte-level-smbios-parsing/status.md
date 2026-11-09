@@ -21,7 +21,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   accessors. See `plan.md`'s intro for the three concrete problems this
   fixes (non-portability to big-endian hosts, strict-aliasing UB, and
   linear struct proliferation per SMBIOS revision).
-- **Resolved:** `PortConnectionEntry` ([port_connection_entry.h](/libsmbios/include/libsmbios/tables/port_connection_entry.h))
+- **Resolved:** `PortConnectionEntry` ([port_connection_entry.h](/libsmbios/include/libsmbios/tables/port_connection_entry.hpppp))
   has **no** version chain - a single `PortConnection` struct and a single
   `const PortConnection* port_connection_` member, matching its own header
   comment ("By 3.1 version fully compatible with all previous versions").

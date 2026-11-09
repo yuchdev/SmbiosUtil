@@ -64,7 +64,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   fields they actually need.
 - Story 01.0 Task 02: `smbios::SMBios()` never throws when every
   `ISmbiosSource` in the chain fails - per its own doc comment in
-  `libsmbios/include/libsmbios/smbios.h`, it leaves itself with an empty
+  `libsmbios/include/libsmbios/smbios.hpppp`, it leaves itself with an empty
   table instead. `smbios_open()` therefore detects "no table found" via
   `get_structures_count() == 0` after construction, not via a caught
   exception for that specific case; the try/catch still exists for any
@@ -214,7 +214,7 @@ closed here):
 ### Story 01.0 - C ABI Core: Handles and Error Model (✅ 2026-11-09)
 
 **Delivered**
-- `smbios_c/include/smbios_c/smbios_c.h`: opaque `smbios_handle_t`/
+- `smbios_c/include/smbios/smbios.h`: opaque `smbios_handle_t`/
   `smbios_entry_handle_t` (incomplete-struct-pointer idiom, no struct body
   exposed) and the `smbios_error_t` enum (contract C1), plus
   `smbios_open()`/`smbios_close()` declarations.

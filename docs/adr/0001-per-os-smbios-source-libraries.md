@@ -36,7 +36,7 @@
 > `LegacyMemoryScanSource`'s ~180 lines across the two new libraries -
 > **a deliberate exception to this ADR's own DD3** below, made because
 > the user asked for exactly these two libraries with no third shared
-> one, not because DD3's reasoning stopped applying. `os_interface`
+> one, not because DD3's reasoning stopped applying. `sys_interface`
 > (renamed from `smbios_source_interface` by the first addendum above)
 > is unaffected by the split, and `#include <smbios/legacy/...>` is
 > unchanged at every call site either way (both flavors expose it at the

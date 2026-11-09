@@ -2,7 +2,7 @@
 #include <memory>
 #include <vector>
 
-#include <smbios/os_interface/ismbios_source.h>
+#include <smbios/sys_interface/ismbios_source.hpp>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>

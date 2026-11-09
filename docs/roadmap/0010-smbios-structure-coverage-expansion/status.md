@@ -19,7 +19,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 ## Notes & decisions
 
 - This milestone depends on milestone 0006 (`SyntheticTableBuilder`,
-  `tests/unit/synthetic_table_builder.h`) for R6 - already complete as of
+  `tests/unit/synthetic_table_builder.hpp`) for R6 - already complete as of
   this writing, so no blocking dependency in practice.
 - Story 01.0 must land before any of Stories 02.0-07.0 start (see plan.md's
   dependency graph and ADR 0002) - every new entry header is written

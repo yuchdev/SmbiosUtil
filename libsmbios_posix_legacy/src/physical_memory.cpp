@@ -1,4 +1,4 @@
-#include <smbios/legacy/physical_memory.h>
+#include <smbios/legacy/physical_memory.hpp>
 #include <unistd.h>
 #include <boost/iostreams/device/mapped_file.hpp>
 

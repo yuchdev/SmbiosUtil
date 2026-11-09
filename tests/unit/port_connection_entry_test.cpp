@@ -1,8 +1,8 @@
 #include <cstdint>
 #include <vector>
 
-#include <libsmbios/smbios.h>
-#include <libsmbios/tables/port_connection_entry.h>
+#include <libsmbios/smbios.hpp>
+#include <libsmbios/tables/port_connection_entry.hpp>
 
 #include "synthetic_table_builder.h"
 

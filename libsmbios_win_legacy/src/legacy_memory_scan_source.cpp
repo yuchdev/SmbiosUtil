@@ -1,11 +1,11 @@
 #include <algorithm>
 #include <vector>
 
-#include <smbios/legacy/legacy_memory_scan_source.h>
-#include <smbios/legacy/physical_memory.h>
-#include <smbios/os_interface/smbios_anchor.h>
-#include <smbios/os_interface/smbios_entry_point.h>
-#include <smbios/os_interface/smbios_version_fixup.h>
+#include <smbios/legacy/legacy_memory_scan_source.hpp>
+#include <smbios/legacy/physical_memory.hpp>
+#include <smbios/sys_interface/smbios_anchor.hpp>
+#include <smbios/sys_interface/smbios_entry_point.hpp>
+#include <smbios/sys_interface/smbios_version_fixup.hpp>
 
 using namespace smbios;
 

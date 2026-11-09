@@ -43,7 +43,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   coverage via direct `AbstractSMBiosEntry` subclass construction, not a
   `SMBios`-level buffer-input path.
 - **2026-11-08, Story 01.0 Task 01 (`SyntheticTableBuilder`) landed:**
-  `tests/unit/synthetic_table_builder.h`/`.cpp` (namespace
+  `tests/unit/synthetic_table_builder.hpp`/`.cpp` (namespace
   `smbios::test`), reusing the existing `SmbiosTableWalkTestAccess` friend
   seam (moved there from `smbios_table_walk_test.cpp`, which now includes
   the shared header instead of duplicating it) rather than adding the
@@ -180,7 +180,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   (new) is a standard libFuzzer `LLVMFuzzerTestOneInput` entry point driving
   arbitrary bytes into `SMBios::read_smbios_table()` via the same
   `SmbiosTableWalkTestAccess::parse_synthetic_table()` seam Story 01.0 Task 01
-  built (`tests/unit/synthetic_table_builder.h`) - the task spec's own code
+  built (`tests/unit/synthetic_table_builder.hpp`) - the task spec's own code
   sample called a `smbios::read_headers_from_buffer()` free function that
   Task 01 deliberately never added (see that task's own note above); this
   task uses the real seam instead, adding no second parallel mechanism.
@@ -243,7 +243,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 ## Story 01.0 - Hermetic Fixture-Based Test Layer (✅ 2026-11-08)
 
 **Delivered:**
-- `smbios::test::SyntheticTableBuilder` (`tests/unit/synthetic_table_builder.h`/`.cpp`) - fluent, well-formed-by-default in-memory SMBIOS table construction (R1), with an `add_raw_bytes()` escape hatch reserved for Story 02.0's malformed-table tests.
+- `smbios::test::SyntheticTableBuilder` (`tests/unit/synthetic_table_builder.hpp`/`.cpp`) - fluent, well-formed-by-default in-memory SMBIOS table construction (R1), with an `add_raw_bytes()` escape hatch reserved for Story 02.0's malformed-table tests.
 - Reused rather than duplicated the pre-existing `SmbiosTableWalkTestAccess` friend seam for feeding a synthetic buffer into `SMBios`'s private table walk - no new production API surface was added.
 - 13 `tests/unit/*_test.cpp` files migrated off hand-rolled byte buffers onto the shared builder (R2); 13 duplicate `append_string_terminator()` helpers deleted as dead code.
 - Confirmed (not newly built) that CI already runs the full hermetic suite unprivileged on every push across Windows/Linux/macOS (R3); added one traceability comment rather than a redundant job.
@@ -268,11 +268,11 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   landed - 1/3 tasks of this story:** audited every header under every
   `include/smbios/` tree across all 7 repo-root libraries (`libsmbios`,
   `libsmbios_linux`, `libsmbios_macos`, `libsmbios_posix_legacy`,
-  `libsmbios_win`, `libsmbios_win_legacy`, `os_interface`) - 29 header
+  `libsmbios_win`, `libsmbios_win_legacy`, `sys_interface`) - 29 header
   files, ~140 classes/structs/enums/functions/templates. Most of
   `libsmbios/include/smbios/` (the 10 entry classes, `smbios_entry_factory.h`,
   `smbios_entry_interface.h`, `abstract_smbios_entry.h`) and all of
-  `os_interface/`'s `ismbios_source.h`/`smbios_source_chain.h`/
+  `sys_interface/`'s `ismbios_source.h`/`smbios_source_chain.h`/
   `smbios_version_fixup.h`, plus both macOS headers and both Linux
   headers, were already complete per the skill's contract and left
   untouched (confirming the task spec's own expectation that

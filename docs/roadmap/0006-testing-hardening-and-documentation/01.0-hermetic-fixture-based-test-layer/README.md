@@ -31,7 +31,7 @@ Task 03 "build-only" gap.
 
 ## Files or directories created or modified by this story
 
-- `tests/unit/synthetic_table_builder.h` / `.cpp` (new; actual location -
+- `tests/unit/synthetic_table_builder.hpp` / `.cpp` (new; actual location -
   the spec's `smbios/test/unit/` path predates the repo-root
   restructuring, see CLAUDE.md).
 - 13 `tests/unit/*_test.cpp` files that hand-rolled their own synthetic

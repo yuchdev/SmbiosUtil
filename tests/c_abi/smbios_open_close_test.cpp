@@ -3,7 +3,7 @@
 // only the API under test needs to be C, not every caller of it. Not
 // wired into CMake yet (Story 03.0's job); compiled and run manually -
 // see the task spec for the exact invocations used to verify it.
-#include <smbios_c/smbios_c.h>
+#include <smbios/smbios.h>
 
 #include <cassert>
 #include <cstdio>

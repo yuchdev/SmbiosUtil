@@ -23,7 +23,7 @@ makes these submodules safe to carry at all.
 
 - This story is purely additive to repository structure - it does not
   touch any file under this project's own build-product directories
-  (`libsmbios/`, `smbios/` [the CLI], `os_interface/`, `libsmbios_win/`,
+  (`libsmbios/`, `smbios/` [the CLI], `sys_interface/`, `libsmbios_win/`,
   `libsmbios_macos/`, `libsmbios_linux/`, `libsmbios_win_legacy/`,
   `libsmbios_posix_legacy/`, or `smbios_c/` once it exists - see
   CLAUDE.md).

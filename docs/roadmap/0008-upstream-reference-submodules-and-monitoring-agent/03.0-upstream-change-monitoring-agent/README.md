@@ -24,7 +24,7 @@ page, and wire up how/when it runs.
 ## Key constraints
 
 - This agent **never edits this project's own build-product source
-  itself** (`libsmbios`/`smbios`/`os_interface`/`libsmbios_win`/
+  itself** (`libsmbios`/`smbios`/`sys_interface`/`libsmbios_win`/
   `libsmbios_macos`/`libsmbios_linux`/`libsmbios_win_legacy`/
   `libsmbios_posix_legacy`/`smbios_c` - see CLAUDE.md) - its tool access
   is read/report only (matching

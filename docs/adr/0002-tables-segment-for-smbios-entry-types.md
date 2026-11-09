@@ -26,7 +26,7 @@ would leave 45 single-purpose entry-class files indistinguishable, by
 location alone, from the 4 files that are actually core infrastructure -
 exactly the kind of flat-directory sprawl this repo has already decided,
 elsewhere, not to tolerate: every other library in the tree
-(`libsmbios_linux`, `libsmbios_macos`, `libsmbios_win`, `os_interface`)
+(`libsmbios_linux`, `libsmbios_macos`, `libsmbios_win`, `sys_interface`)
 groups its own multi-file concern under a named subdirectory of
 `include/smbios/`.
 
@@ -34,7 +34,7 @@ groups its own multi-file concern under a named subdirectory of
 
 Reading `libsmbios_linux/` as the worked example:
 
-- `libsmbios_linux/include/smbios/linux/linux_sysfs_source.h` and
+- `libsmbios_linux/include/smbios/linux/linux_sysfs_source.hpppp` and
   `linux_efi_source.h` - headers live under a `linux/` **segment
   subdirectory** of `include/smbios/`.
 - `libsmbios_linux/src/linux_sysfs_source.cpp`,
@@ -46,8 +46,8 @@ Reading `libsmbios_linux/` as the worked example:
   deliberate: "`file(GLOB)` is non-recursive, so this only ever picks up
   `*.cpp` sitting directly in `libsmbios/src/` itself").
 
-`os_interface` follows the same split
-(`os_interface/include/smbios/os_interface/*.h`, flat `src/`... actually
+`sys_interface` follows the same split
+(`sys_interface/include/smbios/sys_interface/*.h`, flat `src/`... actually
 header-only, no `src/` at all, but the include-side segmentation is
 identical).
 
@@ -210,7 +210,7 @@ in `tables/` instead of being written flat and moved again later.
 
 A follow-up, user-directed rename moved `libsmbios`'s entire public
 `include/` tree from `libsmbios/include/smbios/` to
-`libsmbios/include/libsmbios/` (headers now `#include <libsmbios/smbios.h>`,
+`libsmbios/include/libsmbios/` (headers now `#include <libsmbios/smbios.hpp>`,
 `#include <libsmbios/tables/*.h>`, etc.), at the same time renaming the
 `smbios` CLI's own private header directory from `smbios/include/smbios_util/`
 to `smbios/include/smbios/`. This addendum records it rather than rewriting

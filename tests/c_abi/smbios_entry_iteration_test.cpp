@@ -3,11 +3,11 @@
 // direct C++ calls (SMBiosEntryFactory::create() + render_to_description()
 // - the same pattern smbios/src/main.cpp itself uses). Not wired into
 // CMake yet (Story 03.0's job); compiled and run manually.
-#include <smbios_c/smbios_c.h>
+#include <smbios/smbios.h>
 
-#include <libsmbios/smbios.h>
-#include <libsmbios/abstract_smbios_entry.h>
-#include <libsmbios/smbios_entry_factory.h>
+#include <libsmbios/smbios.hpp>
+#include <libsmbios/abstract_smbios_entry.hpp>
+#include <libsmbios/smbios_entry_factory.hpp>
 
 #include <cassert>
 #include <cstdio>

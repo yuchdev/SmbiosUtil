@@ -2,9 +2,9 @@
 #include <memory>
 #include <vector>
 
-#include <smbios/os_interface/smbios_source_chain.h>
-#include <smbios/legacy/legacy_memory_scan_source.h>
-#include <smbios/windows/win_bios.h>
+#include <smbios/sys_interface/smbios_source_chain.hpp>
+#include <smbios/legacy/legacy_memory_scan_source.hpp>
+#include <smbios/windows/win_bios.hpp>
 
 using namespace smbios;
 

@@ -12,7 +12,7 @@ set_target_properties(${TARGET} PROPERTIES PREFIX "")
 
 target_include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_link_libraries(${TARGET} PUBLIC os_interface libsmbios_posix_legacy)
+target_link_libraries(${TARGET} PUBLIC sys_interface libsmbios_posix_legacy)
 
 # Milestone 0005, Story 03.0, Task 01: macos_efi_reader.cpp reads SMBIOS
 # properties off the IORegistry via IOKit/CoreFoundation - system

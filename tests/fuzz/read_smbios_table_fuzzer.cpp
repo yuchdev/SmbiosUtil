@@ -2,7 +2,7 @@
 #include <utility>
 #include <vector>
 
-#include <libsmbios/smbios.h>
+#include <libsmbios/smbios.hpp>
 
 #include "../unit/synthetic_table_builder.h"
 

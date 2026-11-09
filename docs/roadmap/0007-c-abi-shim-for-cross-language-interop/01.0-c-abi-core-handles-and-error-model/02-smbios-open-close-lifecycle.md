@@ -12,7 +12,7 @@ working handle to operate on and a proven pattern to copy.
 
 ## Files
 
-- **Modify** `smbios_c/include/smbios_c/smbios_c.h`:
+- **Modify** `smbios_c/include/smbios/smbios.h`:
   ```c
   smbios_error_t smbios_open(smbios_handle_t* out_handle);
   void smbios_close(smbios_handle_t handle); /* no-op on NULL; never fails */

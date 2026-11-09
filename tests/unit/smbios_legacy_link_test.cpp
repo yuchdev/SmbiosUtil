@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-#include <smbios/legacy/legacy_memory_scan_source.h>
+#include <smbios/legacy/legacy_memory_scan_source.hpp>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>

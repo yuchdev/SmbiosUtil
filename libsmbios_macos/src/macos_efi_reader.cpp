@@ -1,4 +1,4 @@
-#include <smbios/macos/macos_efi_reader.h>
+#include <smbios/macos/macos_efi_reader.hpp>
 
 #include <algorithm>
 

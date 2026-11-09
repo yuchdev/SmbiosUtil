@@ -1,7 +1,7 @@
-#include <libsmbios/tables/port_connection_entry.h>
-#include <smbios/os_interface/byte_reader.h>
-#include <libsmbios/smbios.h>
-#include <libsmbios/smbios_entry_factory.h>
+#include <libsmbios/tables/port_connection_entry.hpp>
+#include <smbios/sys_interface/byte_reader.hpp>
+#include <libsmbios/smbios.hpp>
+#include <libsmbios/smbios_entry_factory.hpp>
 
 #include <sstream>
 #include <cassert>

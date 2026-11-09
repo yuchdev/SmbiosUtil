@@ -13,7 +13,7 @@ string.
 
 ## Files
 
-- **Modify** `smbios_c/include/smbios_c/smbios_c.h`:
+- **Modify** `smbios_c/include/smbios/smbios.h`:
   ```c
   smbios_error_t smbios_entry_count(smbios_handle_t, size_t* out_count);
   smbios_error_t smbios_entry_at(smbios_handle_t, size_t index, smbios_entry_handle_t* out_entry);

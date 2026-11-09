@@ -19,7 +19,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   technique.
 - The eight new structure types (Story 02.0) are exactly the remaining
   members of `SMBios::SMBiosHandler`
-  ([smbios.h:104-118](/libsmbios/include/libsmbios/smbios.h)) that
+  ([smbios.h:104-118](/libsmbios/include/libsmbios/smbios.hpppp)) that
   `SMBiosEntryFactory::create()` currently returns `nullptr` for:
   `SystemInformation`, `SystemEnclosure`, `ProcessorInformation`,
   `CacheInformation`, `SystemSlots`, `PhysicalMemoryArray`,

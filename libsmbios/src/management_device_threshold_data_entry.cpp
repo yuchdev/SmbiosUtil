@@ -1,7 +1,7 @@
-#include <libsmbios/tables/management_device_threshold_data_entry.h>
-#include <libsmbios/smbios.h>
-#include <smbios/os_interface/byte_reader.h>
-#include <libsmbios/smbios_entry_factory.h>
+#include <libsmbios/tables/management_device_threshold_data_entry.hpp>
+#include <libsmbios/smbios.hpp>
+#include <smbios/sys_interface/byte_reader.hpp>
+#include <libsmbios/smbios_entry_factory.hpp>
 
 #include <sstream>
 
