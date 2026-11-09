@@ -25,6 +25,20 @@ typedef enum {
     SMBIOS_ERR_UNKNOWN = 99         /* an unexpected C++ exception was caught at the boundary */
 } smbios_error_t;
 
+/* Opens a handle onto the live machine's SMBIOS table (mirrors
+ * smbios::SMBios()'s own source-chain walk). On success, writes a non-null
+ * handle to *out_handle and returns SMBIOS_OK. On any failure, writes NULL
+ * to *out_handle and returns a non-SMBIOS_OK code - callers may rely on a
+ * null handle whenever the return is not SMBIOS_OK. Never throws across
+ * this boundary: any C++ exception raised while opening is caught and
+ * translated to smbios_error_t. */
+smbios_error_t smbios_open(smbios_handle_t* out_handle);
+
+/* Releases a handle obtained from smbios_open(). No-op on NULL. Never
+ * fails and never throws - there is no error channel for a void-returning
+ * cleanup function to report through. */
+void smbios_close(smbios_handle_t handle);
+
 #ifdef __cplusplus
 }
 #endif
