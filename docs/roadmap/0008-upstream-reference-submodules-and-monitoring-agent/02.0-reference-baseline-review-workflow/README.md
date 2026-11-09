@@ -1,7 +1,7 @@
 # Story 02.0 - Reference Baseline Review Workflow
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 **Depends on:** Story 01.0 (the manifest and fetch script must exist)
 
 ## Scope
@@ -19,9 +19,9 @@ moves without review.
 
 | #  | Document                                                        | Status         | Blocks |
 |----|----------------------------------------------------------------------|----------------|--------|
-| 01 | [Baseline-advance procedure](01-pinning-policy-and-bump-procedure.md) | ⬜ Not started | 03     |
+| 01 | [Baseline-advance procedure](01-pinning-policy-and-bump-procedure.md) | ✅ Complete    | 03     |
 | 02 | [CI submodule checkout verification](02-ci-submodule-checkout-verification.md) (superseded by [01.0/02](../01.0-upstream-reference-fetch-script-and-license-isolation/02-build-isolation-guard.md)) | ⛔ Superseded | -      |
-| 03 | [Tests](03-tests.md)                                                | ⬜ Not started | -      |
+| 03 | [Tests](03-tests.md)                                                | ✅ Complete    | -      |
 
 ## Key constraints
 
