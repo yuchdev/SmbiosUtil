@@ -83,3 +83,31 @@ SET_PROPERTY(TARGET
     smbios_c_typed_getters_test
     PROPERTY FOLDER "Tests"
 )
+
+# Windows: the loader looks for smbios_c.dll next to the executable (or on
+# PATH), but smbios_c's own target writes it to its own build directory
+# (smbios_c/<config>/), not to this file's RUNTIME_OUTPUT_DIRECTORY. vcpkg's
+# applocal step only copies vcpkg-installed DLLs, never a project-built one.
+# Without this copy, every test that actually calls an smbios_* function
+# fails to start with STATUS_DLL_NOT_FOUND - and on a headless CI runner
+# the loader's "System Error" dialog never gets dismissed, so ctest sees a
+# hang (the 60s timeouts first seen on windows-latest, CI run 42630026324),
+# not a crash. smbios_c_compile_as_c_test was the only one that passed
+# because it references no smbios_* symbol, so MSVC records no import of
+# smbios_c.dll at all. $<TARGET_FILE:...> (not $<TARGET_RUNTIME_DLLS:...>)
+# keeps this working at the root CMakeLists.txt's cmake_minimum_required
+# of 3.13; smbios_c is the only project-built DLL these tests load.
+if(WIN32)
+    foreach(test_name
+            smbios_c_compile_as_c_test
+            smbios_c_example
+            smbios_c_open_close_test
+            smbios_c_entry_iteration_test
+            smbios_c_typed_getters_test)
+        add_custom_command(TARGET ${test_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    $<TARGET_FILE:smbios_c> $<TARGET_FILE_DIR:${test_name}>
+            VERBATIM
+        )
+    endforeach()
+endif()

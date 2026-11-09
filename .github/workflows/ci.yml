@@ -112,20 +112,16 @@ jobs:
         # smbios_perf_test, they were assumed well-behaved regardless of
         # whether this runner's (possibly virtualized) firmware exposes a
         # real SMBIOS table, so a real failure here was assumed to be a
-        # genuine regression. That assumption does NOT cover a hang:
-        # observed 2026-11-09, smbios_c_example stalled past 1h46m with
-        # no further ctest output on a windows-latest runner - the real
-        # smbios_open() -> SMBios() -> ISmbiosSource chain this exercises
-        # (unlike smbios_unit_test's synthetic, hermetic tables) was never
-        # previously run against this runner's actual firmware in CI, and
-        # static review of WindowsNativeSource/LegacyMemoryScanSource
-        # found no loop/retry/sleep that explains it - plausibly a crashed
-        # process blocked on a headless Windows Error Reporting dialog
-        # (an SEH access violation /EHsc's catch(...) cannot intercept),
-        # or GetSystemFirmwareTable() itself blocking against this
-        # specific virtualized firmware. --timeout 60 below bounds this:
-        # a recurrence now fails fast as a reported timeout instead of
-        # silently consuming the whole job.
+        # genuine regression. Observed 2026-11-09: smbios_c_example
+        # stalled past 1h46m on windows-latest, and with --timeout 60 every
+        # smbios_c_* test that calls an smbios_* function timed out (run
+        # 42630026324). Root cause: smbios_c.dll was never next to the test
+        # executables, so the Windows loader's "DLL not found" dialog
+        # blocked each process on the headless runner. Fixed in
+        # tests/c_abi/CMakeLists.txt (POST_BUILD copy of smbios_c.dll) -
+        # not a firmware or GetSystemFirmwareTable() problem. --timeout 60
+        # stays as the bound for any future hang: it fails fast as a
+        # reported timeout instead of silently consuming the whole job.
         run: ctest --test-dir build/${{ matrix.preset }} -C Debug --output-on-failure --timeout 60 -R "smbios_unit_test|smbios_mock_test|smbios_c_"
 
       # Milestone 0005, Story 04.0, Task 02: unlike Linux/macOS's legacy
