@@ -1,7 +1,7 @@
 # Story 01.0 - C ABI Core: Handles and Error Model
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 **Depends on:** Milestone 0004 (stable entry model/factory)
 
 ## Scope
@@ -15,9 +15,9 @@ both for every later function in Story 02.0 to follow.
 
 | #  | Document                                                  | Status         | Blocks |
 |----|----------------------------------------------------------------|----------------|--------|
-| 01 | [Error code and handle types](01-error-code-and-handle-types.md) | ⬜ Not started | 02     |
-| 02 | [smbios_open/close lifecycle](02-smbios-open-close-lifecycle.md) | ⬜ Not started | 03     |
-| 03 | [Tests](03-tests.md)                                           | ⬜ Not started | -      |
+| 01 | [Error code and handle types](01-error-code-and-handle-types.md) | ✅ Complete    | 02     |
+| 02 | [smbios_open/close lifecycle](02-smbios-open-close-lifecycle.md) | ✅ Complete    | 03     |
+| 03 | [Tests](03-tests.md)                                           | ✅ Complete    | -      |
 
 ## Key constraints
 
