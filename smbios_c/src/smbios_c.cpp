@@ -3,6 +3,9 @@
 #include <libsmbios/smbios.h>
 #include <libsmbios/abstract_smbios_entry.h>
 #include <libsmbios/smbios_entry_factory.h>
+#include <libsmbios/tables/bios_information_entry.h>
+#include <libsmbios/tables/system_information_entry.h>
+#include <libsmbios/tables/memory_device_entry.h>
 
 #include <cstring>
 #include <memory>
@@ -222,4 +225,77 @@ extern "C" smbios_error_t smbios_entry_render(smbios_entry_handle_t entry, char*
     } catch (...) {
         return SMBIOS_ERR_UNKNOWN;
     }
+}
+
+namespace {
+
+/// @brief Shared implementation behind every curated typed getter
+/// (smbios_bios_vendor(), etc.): constructs the concrete entry the same
+/// way smbios_entry_render() does, dynamic_casts it to the type the
+/// caller asked for, and - on success - applies the same
+/// caller-provided-buffer pattern already used by smbios_entry_render().
+/// A failed dynamic_cast (wrong structure type for this getter) reports
+/// SMBIOS_ERR_INVALID_ARGUMENT, per this task's own constraint that a
+/// caller must check smbios_entry_type() first if unsure.
+template <typename Concrete>
+smbios_error_t typed_string_getter(smbios_entry_handle_t entry, char* buf, size_t buf_len, size_t* out_needed_len,
+    std::string (Concrete::*getter)() const)
+{
+    if (entry == nullptr || out_needed_len == nullptr) {
+        return SMBIOS_ERR_INVALID_ARGUMENT;
+    }
+
+    try {
+        const auto* wrapper = reinterpret_cast<const smbios_entry_handle_s*>(entry);
+
+        smbios::SMBiosEntryFactory factory;
+        const uint8_t* table_end = wrapper->parent->get_table_base() + wrapper->parent->get_table_size();
+        std::unique_ptr<smbios::AbstractSMBiosEntry> concrete_entry =
+            factory.create(*wrapper->header, wrapper->parent->get_smbios_version(), table_end);
+
+        auto* typed = dynamic_cast<Concrete*>(concrete_entry.get());
+        if (typed == nullptr) {
+            return SMBIOS_ERR_INVALID_ARGUMENT;
+        }
+
+        std::string value = (typed->*getter)();
+        const size_t needed = value.size() + 1; // + null terminator
+        *out_needed_len = needed;
+
+        if (buf == nullptr || buf_len < needed) {
+            return SMBIOS_ERR_BUFFER_TOO_SMALL;
+        }
+
+        std::memcpy(buf, value.c_str(), needed);
+        return SMBIOS_OK;
+    } catch (...) {
+        return SMBIOS_ERR_UNKNOWN;
+    }
+}
+
+} // namespace
+
+extern "C" smbios_error_t smbios_bios_vendor(smbios_entry_handle_t entry, char* buf, size_t buf_len, size_t* out_needed_len)
+{
+    return typed_string_getter<smbios::BiosInformationEntry>(entry, buf, buf_len, out_needed_len, &smbios::BiosInformationEntry::get_vendor_string);
+}
+
+extern "C" smbios_error_t smbios_bios_version(smbios_entry_handle_t entry, char* buf, size_t buf_len, size_t* out_needed_len)
+{
+    return typed_string_getter<smbios::BiosInformationEntry>(entry, buf, buf_len, out_needed_len, &smbios::BiosInformationEntry::get_version_string);
+}
+
+extern "C" smbios_error_t smbios_system_uuid(smbios_entry_handle_t entry, char* buf, size_t buf_len, size_t* out_needed_len)
+{
+    return typed_string_getter<smbios::SystemInformationEntry>(entry, buf, buf_len, out_needed_len, &smbios::SystemInformationEntry::get_uuid_string);
+}
+
+extern "C" smbios_error_t smbios_memory_device_size(smbios_entry_handle_t entry, char* buf, size_t buf_len, size_t* out_needed_len)
+{
+    return typed_string_getter<smbios::MemoryDeviceEntry>(entry, buf, buf_len, out_needed_len, &smbios::MemoryDeviceEntry::get_device_size_string);
+}
+
+extern "C" smbios_error_t smbios_memory_device_speed(smbios_entry_handle_t entry, char* buf, size_t buf_len, size_t* out_needed_len)
+{
+    return typed_string_getter<smbios::MemoryDeviceEntry>(entry, buf, buf_len, out_needed_len, &smbios::MemoryDeviceEntry::get_device_speed_string);
 }

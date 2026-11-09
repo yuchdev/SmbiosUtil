@@ -73,6 +73,20 @@ uint16_t smbios_entry_handle_id(smbios_entry_handle_t entry);
  * special-case one unrecognized type among many known ones. */
 smbios_error_t smbios_entry_render(smbios_entry_handle_t entry, char* buf, size_t buf_len, size_t* out_needed_len);
 
+/* Curated typed field accessors - deliberately not a 1:1 mirror of every
+ * C++ getter (see plan.md's Key constraints): just the fields a C caller
+ * is most likely to want without parsing smbios_entry_render()'s
+ * free-form text. Each follows smbios_entry_render()'s exact
+ * caller-provided-buffer pattern, and each returns
+ * SMBIOS_ERR_INVALID_ARGUMENT if entry's underlying structure type does
+ * not match the getter (e.g. calling smbios_bios_vendor() on a Memory
+ * Device entry) - check smbios_entry_type() first if unsure. */
+smbios_error_t smbios_bios_vendor(smbios_entry_handle_t entry, char* buf, size_t buf_len, size_t* out_needed_len);
+smbios_error_t smbios_bios_version(smbios_entry_handle_t entry, char* buf, size_t buf_len, size_t* out_needed_len);
+smbios_error_t smbios_system_uuid(smbios_entry_handle_t entry, char* buf, size_t buf_len, size_t* out_needed_len);
+smbios_error_t smbios_memory_device_size(smbios_entry_handle_t entry, char* buf, size_t buf_len, size_t* out_needed_len);
+smbios_error_t smbios_memory_device_speed(smbios_entry_handle_t entry, char* buf, size_t buf_len, size_t* out_needed_len);
+
 #ifdef __cplusplus
 }
 #endif
