@@ -1,7 +1,7 @@
 # Story 01.0 - Upstream Reference Fetch Script and License Isolation
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 
 ## Scope
 
@@ -27,7 +27,7 @@ safe to keep these references on disk at all.
 |----|------------------------------------------------------------------------|----------------|--------|
 | 01 | [Fetch script and manifest](01-fetch-script-and-manifest.md)            | ✅ Complete    | 02     |
 | 02 | [Build isolation guard](02-build-isolation-guard.md)                   | ✅ Complete    | 03     |
-| 03 | [Tests](03-tests.md)                                                   | ⬜ Not started | -      |
+| 03 | [Tests](03-tests.md)                                                   | ✅ Complete    | -      |
 
 ## Key constraints
 

@@ -6,7 +6,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 | Story | Name                                                  | Status         | Tests |
 |-------|--------------------------------------------------------|----------------|-------|
-| 01.0  | Upstream reference fetch script and license isolation  | 🔶 In progress (2/3 tasks) | - |
+| 01.0  | Upstream reference fetch script and license isolation  | ✅ Complete | guard fixtures + fresh-clone sim; CI guard green ×3 OS |
 | 02.0  | Reference baseline review workflow                     | ⬜ Not started | -     |
 | 03.0  | Upstream change-monitoring agent                       | ⬜ Not started | -     |
 
@@ -154,3 +154,48 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   obfuscation; copy-pasted GPL code (covered by code review). Separately,
   the workflow has no top-level `permissions: contents: read` (this
   predates the PR; noted, not changed here).
+
+### Story 01.0 - Upstream reference fetch script and license isolation (✅ 2026-11-09)
+
+**Delivered** (PR #6: `9794f39`, `d817ddd`, `89c4b79`, `6b3423a`, `c421d8d`):
+- `scripts/upstream_references.json` is the tracked manifest (name, path,
+  HTTPS url, `baseline_sha`). It holds metadata only.
+- `scripts/fetch_upstream_references.py` makes full clones of each
+  upstream into git-ignored `c-versions/`, or fast-forwards existing
+  ones. It never deletes, resets, or checks out `baseline_sha`. Git runs
+  hardened (no hooks/fsmonitor, https only); a mismatched origin, a
+  symlinked `c-versions/`, or a target that resolves outside it is
+  skipped.
+- `scripts/check_cversions_isolation.py` is the R2 guard. It flags, case
+  insensitively:
+  - non-comment `c-versions` references in build files (the build-product
+    dirs, `tests/`, and the root build files);
+  - `#include`/`#define` lines in C/C++ sources that reference it;
+  - any `.gitmodules` entry or submodule gitlink;
+  - any tracked file under `c-versions/`;
+  - tracked symlinks pointing into it.
+
+  Provenance comments remain legitimate.
+- `.github/workflows/ci.yml` runs the guard right after checkout in the
+  `build` and `sanitizers` jobs.
+- `CLAUDE.md` and `.gitignore` describe `c-versions/` as script-populated,
+  untracked, and never part of the build.
+
+**Tests / gate:**
+- `task-verifier` PASS on Tasks 01 and 02.
+- Guard fixtures: every violation class fails, comment-only mentions
+  pass.
+- Fresh-clone simulation: fetch exits 0, SHAs match `git ls-remote`,
+  `git status` is clean, no `.gitmodules`.
+- A booby-trapped clone probe confirms the hardening.
+- `/pr-review`: feature LGTM, security PASS.
+- CI runs 42643434393 and 42652498002: the guard is green on every job on
+  all three OSes. The Windows `build` job is red only from the
+  pre-existing `smbios_c_*` timeout (see the note above; deferred by the
+  user to after this milestone).
+
+**Reconciliation:** the original submodule specs are superseded per the
+2026-11-09 ruling. The 01.0/01 file was rewritten in place as the
+fetch-script spec. 01.0/02 is consumed, with an as-built superset (wider
+scan scope, symlink/`#define`/gitlink checks). 01.0/03 is consumed. The
+optional local hook was declined.
