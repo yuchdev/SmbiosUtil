@@ -22,8 +22,10 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   Windows CI job is red only from the pre-existing `smbios_c_*` timeout,
   deferred by the user to after this milestone.
 - **2026-11-10:** branch rebased onto `master@ce80e80`, which includes
-  the Windows `smbios_c.dll` copy fix (PR #7, `3c720b7`). The Windows CI
-  re-run on the rebased branch is pending (see the 2026-11-10 note below).
+  the Windows `smbios_c.dll` copy fix (PR #7, `3c720b7`), then merged to
+  `master` as `775bdb1`. CI run 42684073658 on that merge is **green on
+  all six jobs, including Windows** (ctest 7/7 unprivileged, with all five
+  `smbios_c_*` cases passing in ~0.02s each).
 
 ## Notes & decisions
 
@@ -154,9 +156,13 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   `smbios_c.dll` was not copied next to the `c_abi` test executables, so
   Windows could not load it. PR #7 (`3c720b7`, merged as `ce80e80`) fixed
   that on `master`. The branch was rebased onto `ce80e80` with no
-  conflicts (8 commits replayed, no content change). Pending: confirm that
-  the Windows `build` job is green on the rebased PR #6, then strike the
-  matching item under "Deferred / follow-ups" below.
+  conflicts (8 commits replayed, no content change) and merged to `master`
+  as `775bdb1` (`--no-ff`). PR #6 was closed manually with a pointer to
+  that merge, because the rebase rewrote its SHAs and GitHub could not
+  detect it as merged. The branch was then deleted. **Confirmed:** CI run
+  42684073658 on `775bdb1` is green on all six jobs, and the Windows
+  `build` job passes ctest 7/7, including the four previously timing-out
+  `smbios_c_*` cases.
 - **2026-11-09, PR #6 review hardening (`/pr-review`: feature LGTM,
   security PASS, no CRITICAL/HIGH).** The MEDIUM/LOW findings were fixed
   in `6b3423a`:
@@ -308,8 +314,8 @@ consumed (on demand). 03.0/03 was consumed.
 
 **Deferred / follow-ups (not milestone scope):**
 - the Windows `smbios_c_*` ctest timeout (user: fix after this milestone).
-  *Fixed on `master` by PR #7 and picked up by the 2026-11-10 rebase.
-  Windows CI confirmation is pending;*
+  ✅ *Resolved: fixed by PR #7 and confirmed green on `master@775bdb1`
+  (CI run 42684073658);*
 - an optional `testing-expert` regression probe of the agent against a
   deliberately rigged clone (textconv driver, hostile file name,
   instruction-bearing commit);
