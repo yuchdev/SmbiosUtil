@@ -119,9 +119,9 @@ std::string PortConnectionEntry::render_to_description() const
 {
     std::stringstream decsription;
     decsription << "Header type: " << get_type() << '\n';
-    decsription << "Internal Reference Designator: " << get_internal_connection_type() << '\n'; // dmi-string
+    decsription << "Internal Connector Type: " << static_cast<unsigned>(get_internal_connection_type()) << '\n';
     decsription << "Internal Connection Type: " << get_internal_connection_string() << '\n';
-    decsription << "External Reference Designator: " << get_external_connection_type() << '\n'; // dmi-string
+    decsription << "External Connector Type: " << static_cast<unsigned>(get_external_connection_type()) << '\n';
     decsription << "External Connection Type: " << get_external_connection_string() << '\n';
     decsription << "Port Type: " << get_port_string() << '\n';
 
