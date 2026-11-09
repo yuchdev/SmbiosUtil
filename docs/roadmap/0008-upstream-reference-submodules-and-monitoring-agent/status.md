@@ -126,3 +126,31 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   gitlink even without a `.gitmodules`. The optional local pre-commit
   hook was **declined by the user (2026-11-09)**: CI is the enforcement
   point, and no extra `.claude/settings.json` hook is registered.
+- **2026-11-09, pre-existing Windows CI failure (out of scope; user
+  decision: fix separately after this milestone).** On PR #6, the
+  isolation-guard step is green on all six CI jobs, including Windows. The
+  Windows `build` job is red because four `smbios_c_*` ctest cases
+  (`smbios_c_example`, `smbios_c_open_close_test`,
+  `smbios_c_entry_iteration_test`, `smbios_c_typed_getters_test`) hit the
+  60s timeout. This is identical on `master@066244b` (run 42630026324),
+  the commit that introduced that timeout. It is not caused by milestone
+  0008 (no C++ changed). Story 01.0 Task 03's CI criterion is judged on
+  the guard step.
+- **2026-11-09, PR #6 review hardening (`/pr-review`: feature LGTM,
+  security PASS, no CRITICAL/HIGH).** The MEDIUM/LOW findings were fixed
+  in `6b3423a`:
+  - git runs with hooks and fsmonitor disabled and only the https
+    protocol allowed;
+  - an origin URL that doesn't match the manifest is skipped;
+  - a symlinked `c-versions/` is refused and clone targets must resolve
+    inside it;
+  - clones use `--no-recurse-submodules --`, and userinfo URLs are
+    rejected;
+  - the guard matches case-insensitively and also flags tracked symlinks
+    into `c-versions/` and `#define` lines.
+
+  **Accepted residual risks:** filter/merge drivers in a pre-existing,
+  locally tampered clone's `.git/config`; CMake string-splitting
+  obfuscation; copy-pasted GPL code (covered by code review). Separately,
+  the workflow has no top-level `permissions: contents: read` (this
+  predates the PR; noted, not changed here).
