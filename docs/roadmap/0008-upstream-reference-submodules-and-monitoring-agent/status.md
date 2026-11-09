@@ -21,6 +21,9 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   42643434393 and 42652498002), and local ctest passed 7/7 on macOS. The
   Windows CI job is red only from the pre-existing `smbios_c_*` timeout,
   deferred by the user to after this milestone.
+- **2026-11-10:** branch rebased onto `master@ce80e80`, which includes
+  the Windows `smbios_c.dll` copy fix (PR #7, `3c720b7`). The Windows CI
+  re-run on the rebased branch is pending (see the 2026-11-10 note below).
 
 ## Notes & decisions
 
@@ -146,6 +149,14 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   the commit that introduced that timeout. It is not caused by milestone
   0008 (no C++ changed). Story 01.0 Task 03's CI criterion is judged on
   the guard step.
+- **2026-11-10, rebased onto `master` to pick up the Windows fix.** The
+  `smbios_c_*` timeout above had a root cause outside this milestone:
+  `smbios_c.dll` was not copied next to the `c_abi` test executables, so
+  Windows could not load it. PR #7 (`3c720b7`, merged as `ce80e80`) fixed
+  that on `master`. The branch was rebased onto `ce80e80` with no
+  conflicts (8 commits replayed, no content change). Pending: confirm that
+  the Windows `build` job is green on the rebased PR #6, then strike the
+  matching item under "Deferred / follow-ups" below.
 - **2026-11-09, PR #6 review hardening (`/pr-review`: feature LGTM,
   security PASS, no CRITICAL/HIGH).** The MEDIUM/LOW findings were fixed
   in `6b3423a`:
@@ -296,7 +307,9 @@ hardening, Process issues section, `-N` same-day naming). 03.0/02 was
 consumed (on demand). 03.0/03 was consumed.
 
 **Deferred / follow-ups (not milestone scope):**
-- the Windows `smbios_c_*` ctest timeout (user: fix after this milestone);
+- the Windows `smbios_c_*` ctest timeout (user: fix after this milestone).
+  *Fixed on `master` by PR #7 and picked up by the 2026-11-10 rebase.
+  Windows CI confirmation is pending;*
 - an optional `testing-expert` regression probe of the agent against a
   deliberately rigged clone (textconv driver, hostile file name,
   instruction-bearing commit);
