@@ -8,12 +8,46 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 |-------|---------------------------------------------|----------------|-------|
 | 01.0  | C ABI core: handles and error model        | ✅ Complete    | manual (pre-CMake) |
 | 02.0  | Entry and field accessors C API            | ✅ Complete    | manual (pre-CMake) |
-| 03.0  | Build integration and packaging            | ⬜ Not started | -     |
+| 03.0  | Build integration and packaging            | 🔶 In progress (2/3 tasks) | - |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
 ## Notes & decisions
 
+- Story 03.0 Task 01: the task spec's own CMake example links against a
+  target named `smbios` - that named the core library before this
+  session's earlier rename (`smbios_util`->`smbios`,
+  `libsmbios/smbios`->`libsmbios/libsmbios`, landed on `master` before
+  this milestone started). `smbios` now names the CLI executable; the
+  core library is `libsmbios`. Linked against `libsmbios` (the correct
+  current name), not `smbios`, and not against the CLI target (linking a
+  library against an executable is not meaningful for this purpose
+  anyway). Also built `smbios_c` as `SHARED`, not the plain static
+  archive the spec's literal `add_library(smbios_c ...)` example
+  produces: a static `smbios_c` only records a link-time dependency on
+  `libsmbios`, it does not merge its objects, so the "a consumer links
+  `smbios_c` only" contract (this story's Key constraints) would not
+  hold without every downstream consumer separately re-solving the
+  whole-archive registration problem. Added an explicit linker export
+  allowlist (`smbios_c.exported_symbols` for macOS,
+  `smbios_c.version` for a GNU-ld-style `--version-script` elsewhere)
+  since `CXX_VISIBILITY_PRESET hidden` alone cannot retroactively hide
+  symbols already baked into `libsmbios.a`'s own objects (visibility is
+  set at each object's own compile time; `libsmbios`'s own
+  `CMakeLists.txt` sets no visibility option). Verified via `nm -gU`:
+  exactly the 13 intended `smbios_*` functions are exported, nothing
+  else leaks.
+- Story 03.0 Task 02's vcpkg-port-vs-manifest decision: deferred full
+  vcpkg port publication (`portfile.cmake` + its own `vcpkg.json` under
+  a `ports/smbios-c/` layout, registry submission, independent
+  versioning) to a future milestone - the task's own Constraints section
+  explicitly allows this when the immediate goal is "usable via
+  `pkg-config` today," which Task 02 already delivers and verified
+  end-to-end (a trivial external C program built from `pkg-config
+  --cflags --libs smbios_c` alone, no reference to this repo's source
+  tree, ran correctly against the real SMBIOS table). Revisit once a
+  real external consumer (the Python/Rust/C# binding this milestone's
+  own motivation names) actually needs `vcpkg install smbios-c` to work.
 - Added at the user's request after a design discussion on how to offer
   both a C and a C++ interface. The architectural decision made then,
   carried into `plan.md`: a thin, separately-versioned C ABI shim over

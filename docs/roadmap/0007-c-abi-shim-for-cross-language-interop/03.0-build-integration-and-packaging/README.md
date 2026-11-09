@@ -16,8 +16,8 @@ own dependencies already are.
 
 | #  | Document                                                    | Status         | Blocks |
 |----|------------------------------------------------------------------|----------------|--------|
-| 01 | [smbios_c CMake target](01-smbios-c-cmake-target.md)              | ⬜ Not started | 02     |
-| 02 | [pkg-config and vcpkg export](02-pkg-config-and-vcpkg-export.md)  | ⬜ Not started | 03     |
+| 01 | [smbios_c CMake target](01-smbios-c-cmake-target.md)              | ✅ Complete    | 02     |
+| 02 | [pkg-config and vcpkg export](02-pkg-config-and-vcpkg-export.md)  | ✅ Complete    | 03     |
 | 03 | [Tests](03-tests.md)                                             | ⬜ Not started | -      |
 
 ## Key constraints
