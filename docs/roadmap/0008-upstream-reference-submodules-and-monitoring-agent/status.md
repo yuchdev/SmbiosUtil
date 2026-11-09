@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                                                  | Status         | Tests |
 |-------|--------------------------------------------------------|----------------|-------|
 | 01.0  | Upstream reference fetch script and license isolation  | ✅ Complete | guard fixtures + fresh-clone sim; CI guard green ×3 OS |
-| 02.0  | Reference baseline review workflow                     | ⬜ Not started | -     |
+| 02.0  | Reference baseline review workflow                     | ✅ Complete (02 superseded) | dry-run no-op advance; ctest 7/7 (macOS) |
 | 03.0  | Upstream change-monitoring agent                       | ⬜ Not started | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started · ⛔ Superseded (task-level only; see Notes)
@@ -199,3 +199,39 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 fetch-script spec. 01.0/02 is consumed, with an as-built superset (wider
 scan scope, symlink/`#define`/gitlink checks). 01.0/03 is consumed. The
 optional local hook was declined.
+
+### Story 02.0 - Reference baseline review workflow (✅ 2026-11-09)
+
+**Delivered:**
+- `docs/dev/upstream_reference_review.md` (R3) covers:
+  - what `baseline_sha` means: metadata for "last triaged", not a build
+    pin;
+  - when to advance it: only after an `upstream-watch-*` report has
+    triaged the range;
+  - how: a normal human-reviewed PR citing the report, never automated;
+  - per-upstream re-check lists, with the portable
+    `git grep -l "c-versions/dmidecode_<linux|macos>"` as the
+    authoritative list (24 Linux / 4 macOS files today);
+  - per-preset build/test commands using CI's unprivileged `-R` filter
+    (Windows adds `-C Debug`).
+- Pointers were added to `docs/README.md` and the `CLAUDE.md` `c-versions/`
+  paragraph.
+
+**Tests / gate:**
+- `task-verifier` PASS.
+- Dry run (single no-op advance of `dmidecode_linux`, 2026-11-09): every
+  step passed, the manifest is unchanged, and ctest passed 7/7 on macOS.
+- Feature review was REQUEST_CHANGES on Windows portability (`python3`,
+  a quote-nested one-liner, glob `grep`, missing `-C Debug`). It was
+  resolved and re-checked.
+- The security review was skipped because the change is docs-only, with
+  no code or secret surface.
+- Note: the Windows `ctest` line will currently hit the pre-existing
+  `smbios_c_*` timeout (deferred above).
+
+**Reconciliation:** 02.0/01 was consumed. Its re-check list was rebuilt
+from the live grep, because the spec's snapshot had drifted:
+`linux_sysfs_source.cpp` was dropped, `system_boot_information_entry.*`
+moved from the macOS list to the Linux list, and
+`system_information_entry.hpp` was added. 02.0/02 was superseded by
+01.0/02. 02.0/03 was consumed.
