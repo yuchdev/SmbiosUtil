@@ -5,13 +5,23 @@ upstream URLs - nothing is hard-coded here) and, for every entry, makes sure a
 **full** (non-shallow) clone of that upstream's default branch exists at the
 entry's ``path``:
 
-- ``path`` absent: ``git clone <url> <path>``.
-- ``path`` is an existing git work tree (not a symlink): fetch, then
-  fast-forward the current branch to its upstream (``git pull --ff-only``
-  semantics). A dirty tree, local commits, a detached HEAD or a missing
-  upstream branch is reported as a failure and the checkout is left untouched.
-- ``path`` is a symlink or an existing non-git file/directory: warn and skip.
-  The script never deletes, moves or overwrites anything.
+- ``path`` absent: ``git clone --no-recurse-submodules -- <url> <path>``.
+- ``path`` is an existing git work tree (not a symlink) whose
+  ``remote.origin.url`` equals the manifest URL exactly: fetch, then
+  fast-forward the checked-out branch from its upstream (``git pull
+  --ff-only`` semantics). A dirty tree, local commits, a detached HEAD or a
+  missing upstream branch is reported as a failure and the checkout is left
+  untouched.
+- ``path`` is a symlink, an existing non-git file/directory, or a clone whose
+  origin URL differs from the manifest: warn and skip. ``c-versions/`` itself
+  being a symlink, or a ``path`` whose parent resolves outside
+  ``c-versions/``, is likewise skipped. The script never deletes, moves or
+  overwrites anything.
+
+Every git invocation runs with ``core.fsmonitor=false``, ``core.hooksPath``
+pointed at the null device, and only the ``https`` transport allowed, so a
+pre-existing clone's ``.git/config`` cannot make this script execute an
+fsmonitor command, a hook, or a non-HTTPS transport helper.
 
 After each entry it prints ``<name> <path> <HEAD SHA>`` (or ``skipped`` /
 ``failed`` in place of the SHA). The checkouts float at upstream HEAD; the
@@ -45,6 +55,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Optional
+from urllib.parse import urlsplit
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -56,6 +67,18 @@ DEFAULT_MANIFEST = REPO_ROOT / "scripts" / "upstream_references.json"
 REFERENCE_DIR = "c-versions"
 
 _REQUIRED_FIELDS = ("name", "path", "url", "baseline_sha")
+
+# Prepended to every git invocation. The clones under c-versions/ are
+# third-party trees whose .git/config this script did not necessarily write,
+# so config keys that execute commands are neutralised, and only the https
+# transport is permitted (no ext::, file://, ssh:// helpers). os.devnull keeps
+# the hooks path valid on Windows ("nul") as well as POSIX ("/dev/null").
+_GIT_SAFETY_OPTIONS = (
+    "-c", "core.fsmonitor=false",
+    "-c", f"core.hooksPath={os.devnull}",
+    "-c", "protocol.allow=never",
+    "-c", "protocol.https.allow=always",
+)
 
 
 class ManifestError(Exception):
@@ -123,6 +146,8 @@ def load_manifest(manifest_path: Path) -> list[Upstream]:
             raise ManifestError(f"upstreams[{index}] missing/empty field(s): {', '.join(missing)}")
         if not entry["url"].startswith("https://"):
             raise ManifestError(f"upstreams[{index}] url must be HTTPS: {entry['url']!r}")
+        if "@" in urlsplit(entry["url"]).netloc:
+            raise ManifestError(f"upstreams[{index}] url must not contain userinfo (user@host)")
         _validate_path(entry["path"])
         if entry["name"] in seen_names or entry["path"] in seen_paths:
             raise ManifestError(f"upstreams[{index}] duplicates an earlier name or path")
@@ -136,7 +161,9 @@ def _git(args: list[str], cwd: Optional[Path] = None) -> subprocess.CompletedPro
     """Run ``git`` with an argument list (no shell) and capture its output.
 
     Terminal credential prompts are disabled so an unreachable/private URL
-    fails instead of hanging.
+    fails instead of hanging, and ``_GIT_SAFETY_OPTIONS`` is prepended so no
+    clone-local config can run an fsmonitor command, a hook, or a non-HTTPS
+    transport.
 
     :param args: arguments after ``git``.
     :param cwd: working directory, or ``None`` for the current one.
@@ -144,7 +171,7 @@ def _git(args: list[str], cwd: Optional[Path] = None) -> subprocess.CompletedPro
     """
     env = dict(os.environ, GIT_TERMINAL_PROMPT="0")
     return subprocess.run(
-        ["git", *args],
+        ["git", *_GIT_SAFETY_OPTIONS, *args],
         cwd=str(cwd) if cwd is not None else None,
         env=env,
         stdout=subprocess.PIPE,
@@ -187,13 +214,31 @@ def _head_sha(target: Path) -> Optional[str]:
     return proc.stdout.strip() if proc.returncode == 0 else None
 
 
+def _is_inside(path: Path, directory: Path) -> bool:
+    """Return whether resolved ``path`` is ``directory`` or a descendant of it."""
+    try:
+        path.resolve().relative_to(directory.resolve())
+    except (OSError, ValueError):
+        return False
+    return True
+
+
+def _origin_url(target: Path) -> Optional[str]:
+    """Return the clone's ``remote.origin.url``, or ``None`` if unset."""
+    proc = _git(["config", "--get", "remote.origin.url"], cwd=target)
+    return proc.stdout.strip() if proc.returncode == 0 else None
+
+
 def _clone(upstream: Upstream, target: Path) -> Optional[str]:
     """Make a full clone of the upstream's default branch at ``target``.
+
+    Submodules are never cloned (``--no-recurse-submodules``), and ``--``
+    stops the URL from ever being parsed as an option.
 
     :returns: the new HEAD SHA, or ``None`` on failure (already reported).
     """
     target.parent.mkdir(parents=True, exist_ok=True)
-    proc = _git(["clone", "--quiet", upstream.url, str(target)])
+    proc = _git(["clone", "--quiet", "--no-recurse-submodules", "--", upstream.url, str(target)])
     if proc.returncode != 0:
         _warn(f"{upstream.name}: git clone failed: {_git_error(proc)}")
         return None
@@ -237,23 +282,42 @@ def _fast_forward(upstream: Upstream, target: Path) -> Optional[str]:
 
 
 def sync_upstream(upstream: Upstream, root: Path = REPO_ROOT) -> str:
-    """Bring one upstream's checkout to its default-branch HEAD.
+    """Clone the upstream, or fast-forward its checked-out branch from its upstream.
 
     :param upstream: the manifest entry.
     :param root: directory the entry's ``path`` is relative to.
     :returns: the HEAD SHA, ``"skipped"`` or ``"failed"``.
     """
+    reference_dir = root / REFERENCE_DIR
     target = root.joinpath(*PurePosixPath(upstream.path).parts)
 
+    # A symlinked c-versions/ could point anywhere, including a tracked
+    # directory; refuse rather than write through it.
+    if reference_dir.is_symlink():
+        _warn(f"{upstream.name}: {REFERENCE_DIR}/ is a symlink; skipping (not modified)")
+        return "skipped"
     # Symlink check first: is_dir()/exists() follow links. A broken symlink
     # also counts as "present" and is skipped, never replaced.
     if target.is_symlink():
         _warn(f"{upstream.name}: {upstream.path} is a symlink; skipping (not modified)")
         return "skipped"
+    # The manifest path is lexically inside c-versions/, but an intermediate
+    # directory symlink could still redirect it elsewhere.
+    if not _is_inside(target.parent, reference_dir):
+        _warn(f"{upstream.name}: {upstream.path} resolves outside {REFERENCE_DIR}/; skipping (not modified)")
+        return "skipped"
     if not target.exists():
         return _clone(upstream, target) or "failed"
     if not target.is_dir() or not _is_own_work_tree(target):
         _warn(f"{upstream.name}: {upstream.path} exists but is not a git clone; skipping (not modified)")
+        return "skipped"
+    origin = _origin_url(target)
+    if origin != upstream.url:
+        # The local URL is deliberately not echoed: it may embed credentials.
+        _warn(
+            f"{upstream.name}: {upstream.path} remote.origin.url does not match the manifest URL "
+            f"{upstream.url}; skipping (not modified)"
+        )
         return "skipped"
     return _fast_forward(upstream, target) or "failed"
 

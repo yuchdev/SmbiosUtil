@@ -4,8 +4,10 @@
 sources (fetched by ``scripts/fetch_upstream_references.py``). Both upstreams
 are GPL-2.0-or-later, so this project stays unaffected only if neither is ever
 tracked, compiled, or linked. This script turns that constraint into a check
-that fails CI (milestone 0008, plan.md R2). It runs three checks and reports
-every hit (``file:line: reason``) before exiting non-zero:
+that fails CI (milestone 0008, plan.md R2). It runs four checks and reports
+every hit (``file:line: reason``) before exiting non-zero. The ``c-versions``
+needle is matched case-insensitively everywhere (macOS and Windows file
+systems are case-insensitive, so ``C-Versions/`` names the same directory):
 
 1. **Build references.** Within the build-product directories (``libsmbios/``,
    ``smbios/``, ``sys_interface/``, ``libsmbios_win/``, ``libsmbios_macos/``,
@@ -20,7 +22,9 @@ every hit (``file:line: reason``) before exiting non-zero:
    - any line of a ``vcpkg.json`` / ``vcpkg-configuration.json`` /
      ``CMakePresets.json`` (JSON has no comments);
    - the **``#include`` directive** of a ``*.h``/``*.hpp``/``*.c``/``*.cpp``
-     file (trailing comments on that line are ignored).
+     file (trailing comments on that line are ignored);
+   - the non-comment part of any **``#define``** line in those files, which
+     closes the ``#define H "../c-versions/x.h"`` / ``#include H`` bypass.
 
    Provenance comments such as ``// Cross-checked against
    c-versions/dmidecode_linux/dmidecode.c`` stay legitimate: a comment cannot
@@ -32,14 +36,24 @@ every hit (``file:line: reason``) before exiting non-zero:
    ``[submodule ...]`` entry (an entry-less file is only a warning), or if any
    gitlink (mode ``160000``) is tracked.
 
-3. **Tracking.** Fails if ``git ls-files c-versions`` prints anything.
+3. **Tracking.** Fails if ``git ls-files ':(icase)c-versions'`` prints
+   anything.
+
+4. **Symlinks.** Fails on any tracked symlink (mode ``120000``, anywhere in
+   the repo) whose link target - read from the blob via ``git cat-file -p``
+   and from the file on disk - contains ``c-versions``.
+
+Known residual limits (accepted; code review covers them): matching is per
+line, so backslash line continuations are not joined; CMake string-splitting
+obfuscation (e.g. ``set(A "c-") ... "${A}versions"``) is not detected; and
+GPL code copy-pasted into a tracked file is not detected.
 
 Usage::
 
     python scripts/check_cversions_isolation.py
     python scripts/check_cversions_isolation.py --root /path/to/checkout
 
-Requires ``git`` on ``PATH`` for checks 2-3. Exit status is ``0`` when the
+Requires ``git`` on ``PATH`` for checks 2-4. Exit status is ``0`` when the
 tree is clean, ``1`` on any violation (or when ``git`` cannot answer).
 """
 
@@ -85,6 +99,7 @@ JSON_BUILD_FILES = frozenset({"vcpkg.json", "vcpkg-configuration.json"})
 C_SUFFIXES = frozenset({".h", ".hpp", ".c", ".cpp"})
 
 _INCLUDE_RE = re.compile(r"^\s*#\s*(?:include_next|include|import)\b(.*)$")
+_DEFINE_RE = re.compile(r"^\s*#\s*define\b(.*)$")
 _BRACKET_OPEN_RE = re.compile(r"#\[(=*)\[")
 
 
@@ -104,6 +119,11 @@ class Violation:
     def __str__(self) -> str:
         where = f"{self.path}:{self.line}" if self.line is not None else self.path
         return f"{where}: {self.reason}"
+
+
+def _has_needle(text: str) -> bool:
+    """Return whether ``text`` contains ``c-versions``, ignoring case."""
+    return NEEDLE in text.casefold()
 
 
 def _git(args: list[str], root: Path) -> subprocess.CompletedProcess:
@@ -190,7 +210,7 @@ def check_cmake_file(path: Path, root: Path) -> list[Violation]:
                 break  # plain line comment: the rest of the line is ignored
             bracket_close = "]" + opener.group(1) + "]"
             rest = comment[opener.end():]
-        if NEEDLE in code:
+        if _has_needle(code):
             violations.append(
                 Violation(_rel(path, root), number, f"build file references {NEEDLE}/ outside a comment")
             )
@@ -207,7 +227,7 @@ def check_json_build_file(path: Path, root: Path) -> list[Violation]:
     return [
         Violation(_rel(path, root), number, f"build manifest references {NEEDLE}/")
         for number, line in enumerate(_read_lines(path), start=1)
-        if NEEDLE in line
+        if _has_needle(line)
     ]
 
 
@@ -229,12 +249,32 @@ def _include_target(directive_rest: str) -> str:
     return rest
 
 
+def _strip_c_comment(text: str) -> str:
+    """Return ``text`` up to its first ``//`` or ``/*`` outside a string literal."""
+    quote: Optional[str] = None
+    escaped = False
+    for index, char in enumerate(text):
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif quote is not None:
+            if char == quote:
+                quote = None
+        elif char in ('"', "'"):
+            quote = char
+        elif text.startswith(("//", "/*"), index):
+            return text[:index]
+    return text
+
+
 def check_c_source(path: Path, root: Path) -> list[Violation]:
-    """Flag ``c-versions`` in the ``#include`` directives of a C/C++ file.
+    """Flag ``c-versions`` in the ``#include``/``#define`` directives of a C/C++ file.
 
     Only the directive itself is inspected: comments (``//``, ``///``,
     ``/* ... */`` and their `` * `` continuation lines), including a trailing
-    comment on the ``#include`` line, never match.
+    comment on the directive line, never match. ``#define`` lines are checked
+    so a macro cannot smuggle the path into a later ``#include MACRO``.
 
     :param path: a ``*.h``/``*.hpp``/``*.c``/``*.cpp`` file.
     :param root: repo root, for reporting.
@@ -243,9 +283,15 @@ def check_c_source(path: Path, root: Path) -> list[Violation]:
     violations: list[Violation] = []
     for number, line in enumerate(_read_lines(path), start=1):
         match = _INCLUDE_RE.match(line)
-        if match and NEEDLE in _include_target(match.group(1)):
+        if match and _has_needle(_include_target(match.group(1))):
             violations.append(
                 Violation(_rel(path, root), number, f"#include of a {NEEDLE}/ (GPL) source")
+            )
+            continue
+        match = _DEFINE_RE.match(line)
+        if match and _has_needle(_strip_c_comment(match.group(1))):
+            violations.append(
+                Violation(_rel(path, root), number, f"#define referencing a {NEEDLE}/ (GPL) source")
             )
     return violations
 
@@ -257,7 +303,7 @@ def _iter_scope_files(root: Path) -> Iterator[Path]:
         if not top.is_dir():
             continue
         for dirpath, dirnames, filenames in os.walk(top):
-            dirnames[:] = sorted(d for d in dirnames if d not in PRUNE_DIRS)
+            dirnames[:] = sorted(d for d in dirnames if d.casefold() not in PRUNE_DIRS)
             for filename in sorted(filenames):
                 yield Path(dirpath) / filename
 
@@ -317,14 +363,51 @@ def check_submodules(root: Path) -> list[Violation]:
     return violations
 
 
+def check_symlinks(root: Path) -> list[Violation]:
+    """Fail on any tracked symlink whose target names ``c-versions``.
+
+    The target is read both from the index blob (``git cat-file -p``) and,
+    when present, from the link on disk, so neither a committed nor a
+    locally-retargeted link slips through.
+
+    :param root: repo root.
+    :returns: one violation per offending symlink.
+    :raises RuntimeError: if ``git ls-files`` fails.
+    """
+    proc = _git(["ls-files", "--stage"], root)
+    if proc.returncode != 0:
+        raise RuntimeError(f"git ls-files --stage failed: {proc.stderr.strip() or proc.returncode}")
+    violations: list[Violation] = []
+    for record in proc.stdout.splitlines():
+        meta, _, path = record.partition("\t")
+        fields = meta.split()
+        if len(fields) < 2 or fields[0] != "120000":
+            continue
+        targets: list[str] = []
+        blob = _git(["cat-file", "-p", fields[1]], root)
+        if blob.returncode == 0:
+            targets.append(blob.stdout)
+        on_disk = root / path
+        if on_disk.is_symlink():
+            try:
+                targets.append(os.readlink(on_disk))
+            except OSError:
+                pass
+        if any(_has_needle(target) for target in targets):
+            violations.append(
+                Violation(path, None, f"tracked symlink points into {REFERENCE_DIR}/ (GPL) - never link to it")
+            )
+    return violations
+
+
 def check_tracking(root: Path) -> list[Violation]:
-    """Fail on any tracked file under ``c-versions/``.
+    """Fail on any tracked file under ``c-versions/`` (any letter case).
 
     :param root: repo root.
     :returns: one violation per tracked path.
     :raises RuntimeError: if ``git ls-files`` fails.
     """
-    proc = _git(["ls-files", "--", REFERENCE_DIR], root)
+    proc = _git(["ls-files", "--", f":(icase){REFERENCE_DIR}"], root)
     if proc.returncode != 0:
         raise RuntimeError(f"git ls-files {REFERENCE_DIR} failed: {proc.stderr.strip() or proc.returncode}")
     return [
@@ -341,7 +424,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     :returns: ``0`` if clean, ``1`` on any violation or git failure.
     """
     parser = argparse.ArgumentParser(
-        description="Fail if c-versions/ (GPL upstream references) is built, included, or tracked."
+        description="Fail if c-versions/ (GPL upstream references) is built, included, linked, or tracked."
     )
     parser.add_argument(
         "--root",
@@ -356,6 +439,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     try:
         violations += check_submodules(root)
         violations += check_tracking(root)
+        violations += check_symlinks(root)
     except (OSError, RuntimeError) as exc:  # e.g. git not on PATH, not a repo
         print(f"error: {exc}", file=sys.stderr)
         for violation in violations:
