@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                                     | Status         | Tests |
 |-------|---------------------------------------------|----------------|-------|
 | 01.0  | C ABI core: handles and error model        | ✅ Complete    | manual (pre-CMake) |
-| 02.0  | Entry and field accessors C API            | ⬜ Not started | -     |
+| 02.0  | Entry and field accessors C API            | ✅ Complete    | manual (pre-CMake) |
 | 03.0  | Build integration and packaging            | ⬜ Not started | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
@@ -58,6 +58,74 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   story's changes are purely additive with no CMake wiring). Re-verify
   this specific criterion once Story 03.0 lands the `smbios_c` CMake
   target.
+- Story 02.0 Task 01: `smbios_entry_handle_t`'s real type
+  (`smbios_entry_handle_s`, defined only in `smbios_c.cpp`) carries both
+  the entry's `DMIHeader*` and a pointer back to its parent `SMBios*` -
+  not just the header - because `smbios_entry_render()`'s fixed signature
+  (per plan.md's contract) takes no parent-handle parameter, yet decoding
+  an entry correctly needs the parent's SMBIOS version and table bounds
+  for version-gated fields. This required replacing Story 01.0 Task 02's
+  original bare `reinterpret_cast<smbios::SMBios*>` handle representation
+  with a small internal wrapper struct (`smbios_handle_s`) that owns both
+  the real `SMBios` and every entry handle ever given out through it -
+  freed together at `smbios_close()`, never separately. No change to
+  `smbios_open()`/`smbios_close()`'s public signatures or behavior;
+  contract C1 explicitly allows the opaque layout to change freely.
+- Story 02.0 Task 03's cross-platform criterion ("all C API tests pass on
+  real hardware across Windows/Linux/macOS") is deferred to Story 03.0's
+  close for the same reason as Story 01.0's CI criterion: there is no
+  CMake target yet for any CI job to build or run these tests against.
+  Verified on macOS only for now; re-verify on Windows/Linux once Story
+  03.0 lands the CMake target and CI exercises it.
+- Story 02.0 Task 03's end-to-end C program criterion: `tests/c_abi/smbios_c_example.c`,
+  compiled with `clang -std=c11 -Wall -Wextra` (zero warnings) and linked
+  against `smbios_c`/`libsmbios` with a C++ driver (required since both
+  are implemented in C++ internally - the *compilation* of the consumer
+  is what had to be, and was, done with a plain C compiler). Ran
+  successfully against this host's real SMBIOS table: printed all 32
+  structures' type/length/handle and rendered descriptions, plus the BIOS
+  vendor via `smbios_bios_vendor()`.
+- While verifying Task 01/02's output byte-for-byte against the C++ API,
+  discovered that the manual verification binaries initially omitted the
+  whole-archive link flag (`-force_load`) the real `smbios` CLI target
+  uses - without it, entry types never directly named in `smbios_c.cpp`
+  (e.g. `CacheInformationEntry`) never got their `REGISTER_SMBIOS_ENTRY`
+  static initializer linked in, so `SMBiosEntryFactory::create()`
+  silently returned `nullptr` for them in both the C API path and the
+  test's own reference walk - both sides agreeing on the wrong answer and
+  masking the gap. Fixed the verification script, not any shipped code.
+  Separately, this also surfaced a real pre-existing bug unrelated to
+  this milestone - `PortConnectionEntry::render_to_description()`
+  (`libsmbios/src/port_connection_entry.cpp:122`) streams a raw `uint8_t`
+  through `operator<<`, which inserts it as a literal character (a NUL
+  byte when the value is 0) instead of a number - flagged as a separate
+  background task, not fixed here (out of this milestone's scope).
+
+### Story 02.0 - Entry and Field Accessors C API (✅ 2026-11-09)
+
+**Delivered**
+- `smbios_entry_count()`, `smbios_entry_at()`, `smbios_entry_type()`/
+  `length()`/`handle_id()`, `smbios_entry_render()` (Task 01).
+- `smbios_bios_vendor()`/`smbios_bios_version()`, `smbios_system_uuid()`,
+  `smbios_memory_device_size()`/`smbios_memory_device_speed()` - the
+  exact curated set from `plan.md`'s Key constraints (Task 02).
+- `tests/c_abi/smbios_entry_iteration_test.cpp`,
+  `tests/c_abi/smbios_typed_getters_test.cpp`,
+  `tests/c_abi/smbios_c_example.c` (Tasks 01-03).
+
+**Tests / gate**
+- All 32 real structures on this host render byte-for-byte identical to
+  the direct C++ `SMBiosEntryFactory::create()`/`render_to_description()`
+  calls (verified with the correct whole-archive link - see note above).
+- All 5 curated getters match their C++ equivalents exactly; each
+  correctly rejects a mismatched entry type with
+  `SMBIOS_ERR_INVALID_ARGUMENT`.
+- `smbios_c_example.c`: a genuine end-to-end C11 program, compiled and
+  run successfully against real hardware.
+- Existing full suite (`ctest --test-dir build/macos`): 4/4 passed, no
+  regression.
+- Cross-platform (Windows/Linux) criterion deferred to Story 03.0 - see
+  note above.
 
 ### Story 01.0 - C ABI Core: Handles and Error Model (✅ 2026-11-09)
 

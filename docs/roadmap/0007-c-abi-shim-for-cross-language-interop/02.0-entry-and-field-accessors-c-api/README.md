@@ -1,7 +1,7 @@
 # Story 02.0 - Entry and Field Accessors C API
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 **Depends on:** Story 01.0 (handles, error model, exception boundary)
 
 ## Scope
@@ -16,9 +16,9 @@ without exception.
 
 | #  | Document                                                        | Status         | Blocks |
 |----|----------------------------------------------------------------------|----------------|--------|
-| 01 | [Entry iteration and type dispatch](01-entry-iteration-and-type-dispatch.md) | ⬜ Not started | 02     |
-| 02 | [Curated typed field accessors](02-curated-typed-field-accessors.md) | ⬜ Not started | 03     |
-| 03 | [Tests](03-tests.md)                                                | ⬜ Not started | -      |
+| 01 | [Entry iteration and type dispatch](01-entry-iteration-and-type-dispatch.md) | ✅ Complete    | 02     |
+| 02 | [Curated typed field accessors](02-curated-typed-field-accessors.md) | ✅ Complete    | 03     |
+| 03 | [Tests](03-tests.md)                                                | ✅ Complete    | -      |
 
 ## Key constraints
 
