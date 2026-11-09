@@ -6,9 +6,9 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 | Story | Name                                     | Status         | Tests |
 |-------|---------------------------------------------|----------------|-------|
-| 01.0  | C ABI core: handles and error model        | ✅ Complete    | manual (pre-CMake) |
-| 02.0  | Entry and field accessors C API            | ✅ Complete    | manual (pre-CMake) |
-| 03.0  | Build integration and packaging            | 🔶 In progress (2/3 tasks) | - |
+| 01.0  | C ABI core: handles and error model        | ✅ Complete    | 9/9 real ctest (retroactively, via Story 03.0) |
+| 02.0  | Entry and field accessors C API            | ✅ Complete    | 9/9 real ctest (retroactively, via Story 03.0) |
+| 03.0  | Build integration and packaging            | ✅ Complete    | 9/9 real ctest |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -134,6 +134,56 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   through `operator<<`, which inserts it as a literal character (a NUL
   byte when the value is 0) instead of a number - flagged as a separate
   background task, not fixed here (out of this milestone's scope).
+
+### Story 03.0 - Build Integration and Packaging (✅ 2026-11-09)
+
+**Delivered**
+- `smbios_c/CMakeLists.txt`: a new `smbios_c` CMake target, built
+  `SHARED`, whole-archive-linking `libsmbios` and constraining its
+  exports to exactly the 13 intended `smbios_*` functions via an
+  explicit linker allowlist (`smbios_c.exported_symbols` /
+  `smbios_c.version`); wired into the root `CMakeLists.txt` (Task 01).
+- `smbios_c/smbios_c.pc.in` + `install()` rules for the library, headers,
+  and generated `.pc` file - the project's first `install()` rules of
+  any kind (Task 02).
+- `tests/c_abi/CMakeLists.txt`: all 5 of Stories 01.0/02.0's test files
+  wired into real `ctest` for the first time, retroactively closing out
+  every "not yet wired into CMake" caveat recorded in those stories'
+  notes above (Task 03).
+- `.github/workflows/ci.yml`: the 5 new `smbios_c_*` tests added to both
+  platforms' existing hard-gate unprivileged `ctest -R` filters.
+- CLAUDE.md, README.md, `docs/cli-usage.md`, `docs/test/test-subsystem.md`
+  each gained a `smbios_c` mention (this task's own documentation
+  criterion).
+
+**Tests / gate**
+- Real `cmake --preset macos` + `cmake --build --preset macos` +
+  `cmake --install` + `pkg-config --cflags --libs smbios_c` against a
+  trivial external C program (no reference to this repo's source tree) -
+  compiled, linked, ran correctly (32 real entries) using only the
+  installed, pkg-config-discovered flags.
+- `nm -gU` on the built shared library: exactly the 13 intended
+  `smbios_*` functions exported, nothing from `libsmbios`/libc++ leaks.
+- All 9 tests (4 pre-existing + 5 new `smbios_c_*`) pass via real
+  `ctest`, not just manual compilation.
+- `check_doc_links.py docs/`: 184 files, 0 problems.
+- Verified on macOS only so far; Windows/Linux verification happens on
+  real CI after this push (see Reconciliation note below) - the two
+  criteria Stories 01.0/02.0 deferred for exactly this reason are closed
+  by this same push.
+
+**Reconciliation note** (deferred criteria from Stories 01.0/02.0,
+closed here):
+- Story 01.0's "sanitizer CI green against `smbios_c`" and Story 02.0's
+  "all C API tests pass on Windows/Linux/macOS" - both deferred because
+  no CMake target existed for CI to build or run against. Both are now
+  *structurally* satisfiable (the target and its tests exist and build
+  locally); *actual* cross-platform confirmation lands with this
+  milestone's closing CI run, tracked in the Program overview update
+  below rather than re-litigated per-story.
+- The `PortConnectionEntry` NUL-byte finding (Story 02.0) remains
+  tracked as background `task_94669f59`, unaffected by this story's
+  scope.
 
 ### Story 02.0 - Entry and Field Accessors C API (✅ 2026-11-09)
 

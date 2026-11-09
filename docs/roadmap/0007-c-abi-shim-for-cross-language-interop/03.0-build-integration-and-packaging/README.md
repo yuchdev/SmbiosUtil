@@ -1,7 +1,7 @@
 # Story 03.0 - Build Integration and Packaging
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 **Depends on:** Story 01.0 (the `smbios_c` target must exist)
 
 ## Scope
@@ -18,7 +18,7 @@ own dependencies already are.
 |----|------------------------------------------------------------------|----------------|--------|
 | 01 | [smbios_c CMake target](01-smbios-c-cmake-target.md)              | ✅ Complete    | 02     |
 | 02 | [pkg-config and vcpkg export](02-pkg-config-and-vcpkg-export.md)  | ✅ Complete    | 03     |
-| 03 | [Tests](03-tests.md)                                             | ⬜ Not started | -      |
+| 03 | [Tests](03-tests.md)                                             | ✅ Complete    | -      |
 
 ## Key constraints
 
