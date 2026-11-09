@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: hand-built DMIHeader/raw
 // buffers drive ProcessorInformationEntry (smbios/include/smbios/
-// processor_information_entry.h) across the header.length tiers named by
+// processor_information_entry.hpp) across the header.length tiers named by
 // docs/roadmap/0004-.../02.0-.../02-processor-and-cache-information.md,
 // cross-checked against c-versions/dmidecode_linux/dmidecode.c's case 4
 // ("Processor Information"):
@@ -38,7 +38,7 @@ using namespace smbios;
 //   thread_count), proven both without and with the sentinel set, and the
 //   voltage encoding's two branches.
 //
-// Wire layout (see smbios/include/smbios/processor_information_entry.h's
+// Wire layout (see smbios/include/smbios/processor_information_entry.hpp's
 // "@brief 0xNN offset" getter comments):
 //   offset 0x00 : uint8_t  type   (common DMIHeader, parsed separately)
 //   offset 0x01 : uint8_t  length

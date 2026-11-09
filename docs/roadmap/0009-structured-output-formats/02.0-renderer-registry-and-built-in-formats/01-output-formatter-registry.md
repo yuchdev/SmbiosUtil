@@ -12,7 +12,7 @@ formats.
 
 ## Files
 
-- **Create** `smbios/include/smbios/output_formatter.h`:
+- **Create** `smbios/include/smbios/output_formatter.hpp`:
   ```cpp
   #pragma once
   #include <memory>

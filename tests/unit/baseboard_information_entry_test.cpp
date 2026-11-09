@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive BaseboardInformationEntry
-// (smbios/include/smbios/tables/baseboard_information_entry.h) across the
+// (smbios/include/smbios/tables/baseboard_information_entry.hpp) across the
 // header.length tiers named by docs/roadmap/0010-.../02.0-.../
 // 01-baseboard-information.md, cross-checked against DSP0134 3.9.0's own
 // 7.3/7.3.1/7.3.2 tables and c-versions/dmidecode_linux/dmidecode.c's case 2

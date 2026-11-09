@@ -12,7 +12,7 @@ starts; revise the decision and record why if it doesn't).
 
 ## Files
 
-- **Create** `smbios/include/smbios/yaml_formatter.h` / `.cpp`:
+- **Create** `smbios/include/smbios/yaml_formatter.hpp` / `.cpp`:
   ```cpp
   class YamlFormatter : public IOutputFormatter {
   public:

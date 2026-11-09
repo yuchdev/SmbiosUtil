@@ -9,7 +9,7 @@
 // Story 01.1, that seam now exists architecturally: SMBios's constructor
 // walks an ordered vector<unique_ptr<ISmbiosSource>> returned by
 // smbios::make_default_source_chain() (smbios/include/smbios/
-// source_interface/ismbios_source.h, smbios_source_chain.h), with zero
+// source_interface/ismbios_source.hpp, smbios_source_chain.hpp), with zero
 // remaining compile-time #if inside SMBios itself - the per-platform choice
 // is now a CMake-time link-seam (which per-OS library gets linked), not a
 // preprocessor branch. The library boundary this test target would need to

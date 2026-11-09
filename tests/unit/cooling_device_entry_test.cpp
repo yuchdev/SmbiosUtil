@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive CoolingDeviceEntry
-// (smbios/include/smbios/tables/cooling_device_entry.h), cross-checked
+// (smbios/include/smbios/tables/cooling_device_entry.hpp), cross-checked
 // against DSP0134 3.9.0's own 7.28 (Table 97/98) directly. Covers all
 // three documented length tiers for the structure's two independent
 // trailing-field length gates: 0x0C (neither Nominal Speed nor

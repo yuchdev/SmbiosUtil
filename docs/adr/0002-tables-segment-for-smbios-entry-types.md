@@ -47,7 +47,7 @@ Reading `libsmbios_linux/` as the worked example:
   `*.cpp` sitting directly in `libsmbios/src/` itself").
 
 `sys_interface` follows the same split
-(`sys_interface/include/smbios/sys_interface/*.h`, flat `src/`... actually
+(`sys_interface/include/smbios/sys_interface/*.hpp`, flat `src/`... actually
 header-only, no `src/` at all, but the include-side segmentation is
 identical).
 

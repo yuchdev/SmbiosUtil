@@ -43,8 +43,8 @@ C++ compiler.
 
 ## Success criteria
 
-- [ ] `smbios_c.h` compiles under `gcc -std=c11`/`clang -std=c11` with no
+- [ ] `smbios.h` compiles under `gcc -std=c11`/`clang -std=c11` with no
       warnings.
-- [ ] `smbios_c.h` compiles under a C++ compiler with no warnings.
+- [ ] `smbios.h` compiles under a C++ compiler with no warnings.
 - [ ] No struct field of `smbios_handle_s`/`smbios_entry_handle_s` is
       visible in the public header.

@@ -34,7 +34,7 @@ struct smbios_entry_handle_s
 /// contract C1. Owns the real smbios::SMBios plus every entry handle ever
 /// handed out through it via smbios_entry_at(), so entry handles stay
 /// valid for exactly as long as documented ("valid until smbios_close()",
-/// smbios_c.h) and are freed together with their parent, never
+/// smbios.h) and are freed together with their parent, never
 /// separately - there is deliberately no smbios_entry_close() function.
 struct smbios_handle_s
 {
@@ -53,7 +53,7 @@ extern "C" smbios_error_t smbios_open(smbios_handle_t* out_handle)
 
         // smbios::SMBios() never throws when every ISmbiosSource in the
         // chain fails - it leaves itself with an empty table instead (see
-        // its own doc comment in libsmbios/include/libsmbios/smbios.h).
+        // its own doc comment in libsmbios/include/libsmbios/smbios.hpp).
         // That case has to be detected here, not caught above, since no
         // exception is ever raised for it.
         if (bios->get_structures_count() == 0) {

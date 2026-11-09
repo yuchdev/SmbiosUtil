@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive SystemConfigurationOptionsEntry
-// (smbios/include/smbios/tables/system_configuration_options_entry.h),
+// (smbios/include/smbios/tables/system_configuration_options_entry.hpp),
 // cross-checked against DSP0134 3.9.0's own 7.13 (Table 57): the only
 // fixed field is Count (offset 0x04); everything else is the trailing DMI
 // string list - byte-for-byte identical in shape to OemStringsEntry (7.12)

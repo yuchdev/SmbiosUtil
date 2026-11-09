@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive SystemPowerSupplyEntry
-// (smbios/include/smbios/tables/system_power_supply_entry.h),
+// (smbios/include/smbios/tables/system_power_supply_entry.hpp),
 // cross-checked directly against DSP0134 3.9.0's own 7.40/7.40.1 (Table
 // 116/117).
 //
@@ -40,7 +40,7 @@ using namespace smbios;
 //
 // Handle "absent" sentinel confirmed as 0xFFFF (DSP0134 3.9.0's general
 // Handle field description, 7.2/Table 10 - see
-// system_power_supply_entry.h's own leading comment block).
+// system_power_supply_entry.hpp's own leading comment block).
 
 BOOST_AUTO_TEST_SUITE(SystemPowerSupplyEntryUnitTests)
 

@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -20,7 +20,7 @@ using namespace smbios;
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive
 // OnboardDevicesExtendedInformationEntry
-// (smbios/include/smbios/tables/onboard_devices_extended_information_entry.h),
+// (smbios/include/smbios/tables/onboard_devices_extended_information_entry.hpp),
 // cross-checked directly against DSP0134 3.9.0's own 7.42/7.42.1-7.42.4
 // (Table 120/121).
 //
@@ -36,7 +36,7 @@ using namespace smbios;
 //
 // Bus-address "not applicable" sentinel confirmed as the same all-FF/
 // all-FFFF convention as SystemSlotsEntry's own 7.10.8 - see
-// onboard_devices_extended_information_entry.h's own leading comment block
+// onboard_devices_extended_information_entry.hpp's own leading comment block
 // for the direct 7.42.4-vs-7.10.8 text comparison.
 
 BOOST_AUTO_TEST_SUITE(OnboardDevicesExtendedInformationEntryUnitTests)

@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive TemperatureProbeEntry
-// (smbios/include/smbios/tables/temperature_probe_entry.h), cross-checked
+// (smbios/include/smbios/tables/temperature_probe_entry.hpp), cross-checked
 // against DSP0134 3.9.0's own 7.29 (Table 99/100) directly - including the
 // 0x14 Nominal Value field (same discrepancy-from-the-roadmap-document
 // finding as VoltageProbeEntry's own test file) and the 15-value Location

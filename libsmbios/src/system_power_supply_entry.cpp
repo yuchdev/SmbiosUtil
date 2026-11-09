@@ -8,7 +8,7 @@
 using namespace smbios;
 
 // Self-register against SMBios::SystemPowerSupply at static-init time; see
-// REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.h) for why this
+// REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.hpp) for why this
 // lives here rather than in the header.
 REGISTER_SMBIOS_ENTRY(SMBios::SystemPowerSupply, SystemPowerSupplyEntry)
 
@@ -43,7 +43,7 @@ constexpr size_t kCoolingDeviceHandleMinLength = 0x14;
 constexpr size_t kInputCurrentProbeHandleMinLength = 0x16;
 
 /// Power Supply Characteristics bit positions/masks, DSP0134 3.9.0 Table
-/// 117 (see system_power_supply_entry.h's leading comment block for the
+/// 117 (see system_power_supply_entry.hpp's leading comment block for the
 /// confirmed layout citation).
 constexpr uint16_t kPowerSupplyTypeShift = 10; // Bits 13:10
 constexpr uint16_t kPowerSupplyTypeMask = 0x0F;

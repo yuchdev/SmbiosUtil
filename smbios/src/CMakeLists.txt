@@ -7,7 +7,7 @@ find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS program_options REQUIRED)
 # header - it lives under this target's own include/smbios/ segment
 # (renamed from include/smbios_util/), distinct from libsmbios's own
 # public headers at libsmbios/include/libsmbios/.
-file(GLOB SOURCES *.cpp ../include/smbios/*.h)
+file(GLOB SOURCES *.cpp ../include/smbios/*.hpp)
 
 include_directories(${Boost_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}/../include

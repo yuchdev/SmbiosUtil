@@ -78,7 +78,7 @@ endif()
 
 # PRIVATE: a consumer of smbios_c must never need to also link or include
 # libsmbios's C++ headers (Story 03.0's own Key constraints) - the C ABI
-# declared in smbios_c.h is the complete interface. libsmbios's own
+# declared in smbios.h is the complete interface. libsmbios's own
 # dependencies (its per-OS/legacy libraries) are themselves PUBLIC from
 # libsmbios, so linking libsmbios here already pulls in everything the
 # whole-archive step above needs resolved.
@@ -89,7 +89,7 @@ add_dependencies(${TARGET} libsmbios)
 # Only the intended extern "C" smbios_* functions are exported from the
 # shared library - not every C++ symbol smbios_c.cpp happens to pull in
 # from libsmbios - via hidden-by-default visibility plus a generated
-# export header. Every extern "C" function in smbios_c.h already carries
+# export header. Every extern "C" function in smbios.h already carries
 # no class/template machinery of its own, so SMBIOS_C_EXPORT expanding to
 # nothing on a platform/build where hidden visibility is not the default
 # (MSVC's own __declspec(dllexport)/dllimport pair, handled automatically

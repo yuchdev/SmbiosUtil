@@ -4,7 +4,7 @@
 
 #include <libsmbios/smbios.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -16,7 +16,7 @@ using namespace smbios::test;
 // Unit tests for SyntheticTableBuilder itself (milestone 0006, Story 01.0,
 // Task 01). Deterministic, no hardware/privileges: every table here is
 // built in-memory and fed through the real SMBios::read_smbios_table() via
-// the SmbiosTableWalkTestAccess seam (synthetic_table_builder.h), never
+// the SmbiosTableWalkTestAccess seam (synthetic_table_builder.hpp), never
 // through any ISmbiosSource.
 
 BOOST_AUTO_TEST_SUITE(SyntheticTableBuilderUnitTests)

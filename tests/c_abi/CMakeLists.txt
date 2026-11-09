@@ -4,7 +4,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "../../smbios_c/bin")
 
 # compile_as_c_test.c and smbios_c_example.c are built as real C
 # executables (not C++) - that is the entire point of Story 01.0 Task
-# 01's/Story 02.0 Task 03's success criteria: proving smbios_c.h parses
+# 01's/Story 02.0 Task 03's success criteria: proving smbios.h parses
 # under a real C compiler, not a C++ one with extern "C" ignored. Both
 # link only against smbios_c - no libsmbios include path or library
 # needed, since the whole point of the C ABI is that a C caller never

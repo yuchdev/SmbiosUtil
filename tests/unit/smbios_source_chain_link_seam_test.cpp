@@ -16,7 +16,7 @@ using namespace smbios;
 // resolution of R8 actually works, on whichever platform CI runs this
 // suite on.
 //
-// smbios_source_chain.h only *declares* make_default_source_chain(); its
+// smbios_source_chain.hpp only *declares* make_default_source_chain(); its
 // *definition* lives in exactly one of smbios_windows/smbios_macos/smbios_linux
 // (or fallback_source_chain.cpp on BSD/Solaris) - whichever one
 // smbios/src/CMakeLists.txt's if(WIN32)/elseif(APPLE)/elseif(Linux)/else()

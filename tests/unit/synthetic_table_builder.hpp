@@ -10,10 +10,10 @@
 // Shared hermetic test-support seam (milestone 0006, Story 01.0, Task 01).
 //
 // SMBios's constructor (post milestone 0005) always walks the
-// ISmbiosSource chain (see smbios/sys_interface/smbios_source_chain.h) -
+// ISmbiosSource chain (see smbios/sys_interface/smbios_source_chain.hpp) -
 // there is no production entry point that takes a raw buffer directly, and
 // this task deliberately does not add one: SMBios's public API stays
-// untouched. Instead, smbios/include/smbios/smbios.h declares a narrowly
+// untouched. Instead, smbios/include/smbios/smbios.hpp declares a narrowly
 // scoped `friend class SmbiosTableWalkTestAccess;` that lets test code
 // overwrite an already-constructed SMBios's private table_buffer_, reset
 // its cached parse state, and re-invoke the private read_smbios_table()

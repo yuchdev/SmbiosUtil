@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive SystemPowerControlsEntry
-// (smbios/include/smbios/tables/system_power_controls_entry.h),
+// (smbios/include/smbios/tables/system_power_controls_entry.hpp),
 // cross-checked against DSP0134 3.9.0's own 7.26/7.26.1 (Table 94), whose
 // source excerpt was NOT redacted (every field is a whole BCD byte, no
 // sub-byte bit-field confirmation needed).

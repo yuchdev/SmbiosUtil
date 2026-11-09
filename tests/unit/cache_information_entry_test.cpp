@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: hand-built DMIHeader/raw
 // buffers drive CacheInformationEntry (smbios/include/smbios/
-// cache_information_entry.h) across the header.length tiers named by
+// cache_information_entry.hpp) across the header.length tiers named by
 // docs/roadmap/0004-.../02.0-.../02-processor-and-cache-information.md,
 // cross-checked against c-versions/dmidecode_linux/dmidecode.c's case 7
 // ("Cache Information"):
@@ -34,7 +34,7 @@ using namespace smbios;
 //   both length thresholds (0x17 for max size, 0x1B for installed size),
 //   and both granularity branches (1 KB / 64 KB) of the size encoding.
 //
-// Wire layout (see smbios/include/smbios/cache_information_entry.h's
+// Wire layout (see smbios/include/smbios/cache_information_entry.hpp's
 // "@brief 0xNN offset" getter comments):
 //   offset 0x00 : uint8_t  type   (common DMIHeader, parsed separately)
 //   offset 0x01 : uint8_t  length

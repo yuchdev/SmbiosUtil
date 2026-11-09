@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive TpmDeviceEntry
-// (smbios/include/smbios/tables/tpm_device_entry.h), cross-checked directly
+// (smbios/include/smbios/tables/tpm_device_entry.hpp), cross-checked directly
 // against DSP0134 3.9.0's own 7.44/7.44.1 (Table 126/127).
 //
 // Wire layout (formatted area, offsets relative to structure start):

@@ -7,7 +7,7 @@
 /// needed to map `\Device\PhysicalMemory` directly, plus the handful of
 /// standard NT structures (`UNICODE_STRING`, `OBJECT_ATTRIBUTES`,
 /// `SECTION_INHERIT`) those calls require - none of these are exposed by
-/// the public Windows SDK headers, so `PhysicalMemory` (physical_memory.h)
+/// the public Windows SDK headers, so `PhysicalMemory` (physical_memory.hpp)
 /// resolves the actual function pointers at runtime via `GetProcAddress`
 /// against the signatures declared here. Field-level layouts match the NT
 /// kernel's own ABI and are not this project's own design; documented at

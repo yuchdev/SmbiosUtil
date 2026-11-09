@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive ManagementDeviceEntry
-// (smbios/include/smbios/tables/management_device_entry.h), cross-checked
+// (smbios/include/smbios/tables/management_device_entry.hpp), cross-checked
 // against DSP0134 3.9.0's own 7.35 (Table 107), 7.35.1 (Table 108), and
 // 7.35.2 (Table 109) directly.
 //

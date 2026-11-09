@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive OutOfBandRemoteAccessEntry
-// (smbios/include/smbios/tables/out_of_band_remote_access_entry.h),
+// (smbios/include/smbios/tables/out_of_band_remote_access_entry.hpp),
 // cross-checked against DSP0134 3.9.0's own 7.31 (Table 103), whose
 // Connections row was redacted in this task's own source excerpt and was
 // therefore re-confirmed directly against docs/standard/DSP0134_3.9.0.md

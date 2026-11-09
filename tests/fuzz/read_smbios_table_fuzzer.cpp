@@ -4,7 +4,7 @@
 
 #include <libsmbios/smbios.hpp>
 
-#include "../unit/synthetic_table_builder.h"
+#include "../unit/synthetic_table_builder.hpp"
 
 // libFuzzer entry point (milestone 0006, Story 02.0, Task 02 - R4's fourth
 // boundary-test category).
@@ -13,8 +13,8 @@
 // SMBios::read_smbios_table() via the same test-only seam Story 01.0 Task 01
 // built for the hermetic unit-test layer
 // (smbios::SmbiosTableWalkTestAccess::parse_synthetic_table(), declared in
-// tests/unit/synthetic_table_builder.h and friended by
-// libsmbios/include/smbios/smbios.h) - there is no `read_headers_from_buffer()`
+// tests/unit/synthetic_table_builder.hpp and friended by
+// libsmbios/include/libsmbios/smbios.hpp) - there is no `read_headers_from_buffer()`
 // free function in this codebase; an earlier draft of this task's own spec
 // assumed one, but Task 01 deliberately reused the existing friend-accessor
 // seam instead of adding a second, parallel entry point (see

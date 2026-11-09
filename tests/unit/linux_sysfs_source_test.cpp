@@ -29,7 +29,7 @@ namespace {
 /// `/sys/firmware/dmi/tables/`'s two-file layout, so
 /// `LinuxSysfsSource(entry_point_path, table_path)` can be pointed at it
 /// instead of the real sysfs paths (see that constructor's doc comment in
-/// `smbios/include/smbios/linux/linux_sysfs_source.h` for why it
+/// `smbios/include/smbios/linux/linux_sysfs_source.hpp` for why it
 /// exists).
 class SysfsFixtureDir {
 public:

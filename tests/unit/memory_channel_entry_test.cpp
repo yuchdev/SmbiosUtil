@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive MemoryChannelEntry
-// (smbios/include/smbios/tables/memory_channel_entry.h), cross-checked
+// (smbios/include/smbios/tables/memory_channel_entry.hpp), cross-checked
 // directly against DSP0134 3.9.0's own 7.38/7.38.1 (Table 112/113).
 //
 // Wire layout (formatted area, offsets relative to structure start):
@@ -31,7 +31,7 @@ using namespace smbios;
 //
 // Per Table 112's own Length row, Length ("must not be used to determine
 // the number of memory devices") is the OPPOSITE derivation direction from
-// GroupAssociationsEntry (7.15, Story 02.0) - see memory_channel_entry.h's
+// GroupAssociationsEntry (7.15, Story 02.0) - see memory_channel_entry.hpp's
 // own class doc comment. These tests exist specifically to confirm
 // get_device_count() reads the explicit 0x06 field, never derives from
 // get_entry_size()/Length.

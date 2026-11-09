@@ -8,7 +8,7 @@
 using namespace smbios;
 
 // Self-register against SMBios::ElectricalCurrentProbe at static-init
-// time; see REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.h)
+// time; see REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.hpp)
 // for why this lives here rather than in the header.
 REGISTER_SMBIOS_ENTRY(SMBios::ElectricalCurrentProbe, ElectricalCurrentProbeEntry)
 
@@ -39,7 +39,7 @@ constexpr size_t kOemDefinedMinLength = 0x14;
 constexpr size_t kNominalValueMinLength = 0x16;
 
 /// Location and Status bit positions/masks, DSP0134 3.9.0 Table 102 (see
-/// electrical_current_probe_entry.h's class doc comment for the
+/// electrical_current_probe_entry.hpp's class doc comment for the
 /// cross-subsection confirmation note).
 constexpr uint8_t kStatusShift = 5; // Bits 7:5
 constexpr uint8_t kStatusMask = 0x07;

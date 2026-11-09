@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges. DSP0134 3.9.0's own 7.48
 // defines no fields for this structure beyond the standard header (see
-// inactive_entry.h's class doc comment) - there is nothing to vary across
+// inactive_entry.hpp's class doc comment) - there is nothing to vary across
 // test cases beyond a single minimal-buffer factory registration/
 // resolution check, per this task's own test contract (same shape as
 // BootIntegrityServicesEntry's own test, Story 05.0 Task 01).

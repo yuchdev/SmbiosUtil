@@ -32,7 +32,7 @@ formatter registered from outside `smbios`'s own source tree), and wire
 
 ## Files or directories created or modified by this story
 
-- `smbios/include/smbios/yaml_formatter.h` / `.cpp` (new).
+- `smbios/include/smbios/yaml_formatter.hpp` / `.cpp` (new).
 - `smbios_util/examples/csv_formatter.cpp` (new) - the custom-format
   proof.
 - `smbios_util/include/smbios_util/command_line_parser.hpp` /

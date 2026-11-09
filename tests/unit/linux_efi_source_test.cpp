@@ -29,7 +29,7 @@ namespace {
 /// so `LinuxEfiSource(primary_path, fallback_path)` can be pointed at it
 /// instead of the real `/sys/firmware/efi/systab` / `/proc/efi/systab`
 /// paths (see that constructor's doc comment in
-/// `smbios/include/smbios/linux/linux_efi_source.h` for why it
+/// `smbios/include/smbios/linux/linux_efi_source.hpp` for why it
 /// exists). Only the parsing stage (Stage 1) is exercised here - the
 /// `/dev/mem` mapping stage is an explicit real-hardware manual check per
 /// the task spec, not something a portable fixture can substitute for.

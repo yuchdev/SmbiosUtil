@@ -12,7 +12,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: pure free-function tests
 // against hand-built byte buffers, decoding known little-endian sequences
-// with smbios::read_u8/u16/u32/u64 (smbios/include/smbios/byte_reader.h).
+// with smbios::read_u8/u16/u32/u64 (smbios/include/smbios/byte_reader.hpp).
 
 BOOST_AUTO_TEST_SUITE(ByteReaderUnitTests)
 

@@ -9,7 +9,7 @@
 using namespace smbios;
 
 // Self-register against SMBios::MemoryArrayMappedAddress at static-init
-// time; see REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.h)
+// time; see REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.hpp)
 // for why this lives here rather than in the header.
 REGISTER_SMBIOS_ENTRY(SMBios::MemoryArrayMappedAddress, MemoryArrayMappedAddressEntry)
 

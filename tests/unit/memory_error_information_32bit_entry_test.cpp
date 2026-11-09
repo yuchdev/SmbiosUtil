@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive MemoryErrorInformation32BitEntry
-// (smbios/include/smbios/tables/memory_error_information_32bit_entry.h),
+// (smbios/include/smbios/tables/memory_error_information_32bit_entry.hpp),
 // cross-checked directly against DSP0134 3.9.0's own 7.19 (Table 81) and its
 // 7.19.1/7.19.2/7.19.3 enum tables.
 //

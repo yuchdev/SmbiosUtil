@@ -6,7 +6,7 @@
 #include <IOKit/IOKitLib.h>
 
 // Ported from c-versions/dmidecode_macos/util.c::mem_chunk_ioreg()
-// (~line 163-215). See macos_efi_reader.h's doc comment on `max_len` for
+// (~line 163-215). See macos_efi_reader.hpp's doc comment on `max_len` for
 // the one deliberate behavioral deviation from that reference (no
 // zero-padding to the originally-requested size).
 std::optional<std::vector<uint8_t>> smbios::read_apple_smbios_property(const char* property_name, size_t max_len)

@@ -4,7 +4,7 @@
  * the API from C++). Compiled under a real C compiler as part of Story
  * 02.0 Task 03's verification - see status.md for the exact command and
  * output. Not wired into CMake yet (Story 03.0's job). */
-#include <smbios_c/smbios_c.h>
+#include <smbios/smbios.h>
 
 #include <stdio.h>
 #include <stdlib.h>

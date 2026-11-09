@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive FirmwareInventoryInformationEntry
-// (smbios/include/smbios/tables/firmware_inventory_information_entry.h),
+// (smbios/include/smbios/tables/firmware_inventory_information_entry.hpp),
 // cross-checked directly against DSP0134 3.9.0's own 7.46/7.46.1-7.46.4
 // (Table 133-137).
 //
@@ -40,7 +40,7 @@ using namespace smbios;
 //
 // This offset layout (0x18 immediately after the 0x17 count byte, nothing
 // in between) was confirmed directly against the full Table 133 in
-// docs/standard/DSP0134_3.9.0.md - see firmware_inventory_information_entry.h's
+// docs/standard/DSP0134_3.9.0.md - see firmware_inventory_information_entry.hpp's
 // own leading comment block.
 
 BOOST_AUTO_TEST_SUITE(FirmwareInventoryInformationEntryUnitTests)

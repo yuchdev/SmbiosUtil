@@ -3,7 +3,7 @@
 
 #include <libsmbios/smbios.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -21,8 +21,8 @@ using namespace smbios;
 // whichever ISmbiosSource in make_default_source_chain() succeeded - see
 // milestone 0005, Story 01.0). To drive SMBios's own private
 // read_smbios_table()/count_smbios_structures() against an injected buffer,
-// smbios.h declares a narrowly-scoped `friend class SmbiosTableWalkTestAccess;`,
-// shared (milestone 0006, Story 01.0) via synthetic_table_builder.h so this
+// smbios.hpp declares a narrowly-scoped `friend class SmbiosTableWalkTestAccess;`,
+// shared (milestone 0006, Story 01.0) via synthetic_table_builder.hpp so this
 // file and synthetic_table_builder_test.cpp don't each define their own
 // copy. SmbiosTableWalkTestAccess overwrites the already-constructed
 // SMBios's table_buffer_ directly, resets the cached parse state, and

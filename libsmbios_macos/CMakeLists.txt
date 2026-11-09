@@ -5,7 +5,7 @@
 # make_default_source_chain() is now {MacOsUefiSource, LegacyMemoryScanSource}.
 set(TARGET libsmbios_macos)
 
-file(GLOB SOURCES src/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/include/smbios/macos/*.h)
+file(GLOB SOURCES src/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/include/smbios/macos/*.hpp)
 
 add_library(${TARGET} STATIC ${SOURCES})
 set_target_properties(${TARGET} PROPERTIES PREFIX "")

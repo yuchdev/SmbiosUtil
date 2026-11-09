@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -20,7 +20,7 @@ using namespace smbios;
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive
 // ProcessorAdditionalInformationEntry
-// (smbios/include/smbios/tables/processor_additional_information_entry.h),
+// (smbios/include/smbios/tables/processor_additional_information_entry.hpp),
 // cross-checked directly against DSP0134 3.9.0's own 7.45/7.45.1 (Table
 // 128/129/130).
 //
@@ -32,7 +32,7 @@ using namespace smbios;
 //   offset 0x08 : N raw BYTEs  processor_specific_data (opaque)
 //
 // Double-length relationship under test (per this task's own explicit
-// success criterion, see processor_additional_information_entry.h's own
+// success criterion, see processor_additional_information_entry.hpp's own
 // leading comment block for the full derivation): DSP0134 3.9.0 Table 128
 // defines the outer structure's own Length byte as "6 + Y", where Y is the
 // Processor-specific Block's length (Table 129: Block Length byte +

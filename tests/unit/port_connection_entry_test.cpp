@@ -4,7 +4,7 @@
 #include <libsmbios/smbios.hpp>
 #include <libsmbios/tables/port_connection_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -16,7 +16,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: hand-built DMIHeader/raw
 // buffers drive PortConnectionEntry (smbios/include/smbios/
-// port_connection_entry.h) across its length-guard boundary. Unlike
+// port_connection_entry.hpp) across its length-guard boundary. Unlike
 // MemoryDeviceEntry/BiosInformationEntry, PortConnectionEntry has no version
 // chain (confirmed by its own header comment: "fully compatible with all
 // previous versions"), so there is only one boundary to exercise: the
@@ -29,7 +29,7 @@ using namespace smbios;
 // PortConnectionEntryParsesUSBMouseTestCase) and are intentionally not
 // duplicated here.
 //
-// Wire layout (see smbios/include/smbios/port_connection_entry.h and
+// Wire layout (see smbios/include/smbios/port_connection_entry.hpp and
 // smbios/src/port_connection_entry.cpp's getters):
 //   offset 0x00 : uint8_t  type   (common DMIHeader, parsed separately)
 //   offset 0x01 : uint8_t  length

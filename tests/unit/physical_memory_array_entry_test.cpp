@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: hand-built DMIHeader/raw
 // buffers drive PhysicalMemoryArrayEntry (smbios/include/smbios/
-// physical_memory_array_entry.h) across the header.length tiers named by
+// physical_memory_array_entry.hpp) across the header.length tiers named by
 // docs/roadmap/0004-.../02.0-.../03-system-slots-and-memory-array.md,
 // cross-checked against c-versions/dmidecode_linux/dmidecode.c's case 16
 // ("Physical Memory Array"):
@@ -32,7 +32,7 @@ using namespace smbios;
 //   triple for the 0x80000000 maximum-capacity sentinel named by this
 //   task's own success criterion.
 //
-// Wire layout (see smbios/include/smbios/physical_memory_array_entry.h's
+// Wire layout (see smbios/include/smbios/physical_memory_array_entry.hpp's
 // "@brief 0xNN offset" getter comments):
 //   offset 0x00 : uint8_t  type   (common DMIHeader, parsed separately)
 //   offset 0x01 : uint8_t  length

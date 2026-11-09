@@ -15,7 +15,7 @@ Prove R5 with a real, separately-built CSV formatter living outside
   minimal `IOutputFormatter` implementation (`entry.get_fields()` → one
   CSV row: `type,field_name,field_value`), registered via
   `REGISTER_OUTPUT_FORMATTER(CsvFormatter)` from a file that only
-  `#include <smbios/output_formatter.h>` and
+  `#include <smbios/output_formatter.hpp>` and
   `<smbios/abstract_smbios_entry.hpp>` - no access to any entry type's
   concrete header, proving the registry's public surface alone is enough
   to add a format.

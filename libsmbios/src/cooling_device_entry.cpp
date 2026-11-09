@@ -8,7 +8,7 @@
 using namespace smbios;
 
 // Self-register against SMBios::CoolingDevice at static-init time; see
-// REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.h) for why this
+// REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.hpp) for why this
 // lives here rather than in the header.
 REGISTER_SMBIOS_ENTRY(SMBios::CoolingDevice, CoolingDeviceEntry)
 
@@ -35,7 +35,7 @@ constexpr size_t kNominalSpeedMinLength = 0x0E;
 constexpr size_t kDescriptionMinLength = 0x0F;
 
 /// Device Type and Status bit positions/masks, DSP0134 3.9.0 Table 98
-/// (see cooling_device_entry.h's class doc comment for the Status
+/// (see cooling_device_entry.hpp's class doc comment for the Status
 /// cross-subsection confirmation note).
 constexpr uint8_t kStatusShift = 5; // Bits 7:5
 constexpr uint8_t kStatusMask = 0x07;

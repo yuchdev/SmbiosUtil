@@ -18,7 +18,7 @@ namespace smbios {
 ///
 /// `smbios_entry_point` is parsed by reading raw bytes directly with
 /// milestone 0003's `read_u8`/`read_u16`/`read_u32` accessors
-/// (`smbios/include/smbios/sys_interface/byte_reader.h`) - deliberately
+/// (`smbios/include/smbios/sys_interface/byte_reader.hpp`) - deliberately
 /// not via a `reinterpret_cast` onto `SMBIOSEntryPoint32`/`64` (those
 /// structs document the wire layout for reference only; their
 /// `structure_table_address` member is an `intptr_t`, i.e. a

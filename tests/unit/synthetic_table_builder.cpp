@@ -1,4 +1,4 @@
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <stdexcept>
 

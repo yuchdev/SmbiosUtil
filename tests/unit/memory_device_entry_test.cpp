@@ -4,7 +4,7 @@
 #include <libsmbios/smbios.hpp>
 #include <libsmbios/tables/memory_device_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -16,7 +16,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: hand-built DMIHeader/raw
 // buffers drive MemoryDeviceEntry (smbios/include/smbios/
-// memory_device_entry.h) across the header.length tiers named by
+// memory_device_entry.hpp) across the header.length tiers named by
 // docs/roadmap/0003-.../02.0-.../02-memory-device-field-table.md:
 //   tier 1: header.length < 0x15   -> every length-guarded getter defaults
 //   tier 2: 0x15 <= length <= 0x16 -> fields through type_detail (0x13-0x14)
@@ -36,7 +36,7 @@ using namespace smbios;
 //                                      maximum/configured voltage decode as
 //                                      length reaches 0x24/0x26/0x28
 //
-// Wire layout (see smbios/include/smbios/memory_device_entry.h's
+// Wire layout (see smbios/include/smbios/memory_device_entry.hpp's
 // "@brief 0xNN offset" getter comments, re-verified against
 // c-versions/dmidecode_linux/dmidecode.c's dmi_decode() case 17 for this
 // task - see 02-memory-device-field-table.md):

@@ -22,7 +22,7 @@ using namespace smbios;
 // already owns LegacyMemoryScanSource's behavioral contract (Story 01.0,
 // Task 02). What this file adds is the *link-graph* proof itself: this
 // translation unit's only #include is
-// smbios/legacy/legacy_memory_scan_source.h; tests/unit/CMakeLists.txt
+// smbios/legacy/legacy_memory_scan_source.hpp; tests/unit/CMakeLists.txt
 // links this test executable against smbios (core) only, which pulls in
 // smbios_legacy transitively via smbios's own PUBLIC link - so if a
 // future change accidentally made smbios_legacy depend on a per-OS

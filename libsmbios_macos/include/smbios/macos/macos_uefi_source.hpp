@@ -20,7 +20,7 @@ namespace smbios {
 ///    and the reference's own `mem_chunk_ioreg(0xF0000, ...)` call size,
 ///    safely covering either entry-point layout), decoded with milestone
 ///    0003's `read_uN` accessors (`smbios/include/smbios/sys_interface/
-///    byte_reader.h`) exactly as the Linux sources decode the identical
+///    byte_reader.hpp`) exactly as the Linux sources decode the identical
 ///    wire format - no macOS-specific byte-decoding logic here.
 /// 2. `"SMBIOS"`, capped at the entry point's own declared table length
 ///    (`_SM_`: `read_u16` at 0x16; `_SM3_`: `read_u32` at 0x0C) - **not**

@@ -8,7 +8,7 @@
 using namespace smbios;
 
 // Self-register against SMBios::OutOfBandRemoteAccess at static-init time;
-// see REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.h) for why
+// see REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.hpp) for why
 // this lives here rather than in the header.
 REGISTER_SMBIOS_ENTRY(SMBios::OutOfBandRemoteAccess, OutOfBandRemoteAccessEntry)
 
@@ -21,7 +21,7 @@ constexpr size_t kManufacturerNameMinLength = 0x05;
 constexpr size_t kConnectionsMinLength = 0x06;
 
 /// Connections bit positions/masks, DSP0134 3.9.0 Table 103 (see
-/// out_of_band_remote_access_entry.h's class doc comment for the full
+/// out_of_band_remote_access_entry.hpp's class doc comment for the full
 /// confirmed layout).
 constexpr uint8_t kInboundConnectionEnabledMask = 0x01; // Bit 0
 constexpr uint8_t kOutboundConnectionEnabledMask = 0x02; // Bit 1

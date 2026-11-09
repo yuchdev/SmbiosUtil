@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -20,7 +20,7 @@ using namespace smbios;
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive
 // ManagementDeviceComponentEntry
-// (smbios/include/smbios/tables/management_device_component_entry.h),
+// (smbios/include/smbios/tables/management_device_component_entry.hpp),
 // cross-checked against DSP0134 3.9.0's own 7.36 (Table 110) directly,
 // including the Threshold Handle "no threshold" sentinel confirmation (see
 // the class's own header comment: 0xFFFF, per DSP0134 3.9.0's generic

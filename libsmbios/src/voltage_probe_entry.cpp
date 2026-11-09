@@ -8,7 +8,7 @@
 using namespace smbios;
 
 // Self-register against SMBios::VoltageProbe at static-init time; see
-// REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.h) for why this
+// REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.hpp) for why this
 // lives here rather than in the header.
 REGISTER_SMBIOS_ENTRY(SMBios::VoltageProbe, VoltageProbeEntry)
 
@@ -38,7 +38,7 @@ constexpr size_t kOemDefinedMinLength = 0x14;
 constexpr size_t kNominalValueMinLength = 0x16;
 
 /// Location and Status bit positions/masks, DSP0134 3.9.0 Table 96 (see
-/// voltage_probe_entry.h's class doc comment for the cross-subsection
+/// voltage_probe_entry.hpp's class doc comment for the cross-subsection
 /// confirmation note).
 constexpr uint8_t kStatusShift = 5; // Bits 7:5
 constexpr uint8_t kStatusMask = 0x07;

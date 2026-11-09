@@ -1,9 +1,9 @@
-/* Proves smbios_c.h is genuinely C-compatible, not just C++ with
+/* Proves smbios.h is genuinely C-compatible, not just C++ with
  * extern "C" that happens to also parse under a C compiler. Not wired
  * into CMake yet - Story 03.0 adds the build integration; until then
  * this file is compiled manually (see the task spec for the exact
  * gcc/clang invocations used to verify it). */
-#include <smbios_c/smbios_c.h>
+#include <smbios/smbios.h>
 
 int main(void)
 {

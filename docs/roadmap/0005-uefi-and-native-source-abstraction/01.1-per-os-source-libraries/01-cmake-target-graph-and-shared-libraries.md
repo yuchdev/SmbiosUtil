@@ -81,7 +81,7 @@ C++ `#if defined(_WIN32)`. This is the resolution of contract **C3**
   (exact variable/target names above are illustrative; reconcile with the
   file's existing `${TARGET}`-based conventions during implementation).
 - **Modify** `smbios/include/smbios/smbios.hpp` / `smbios/src/smbios.cpp`:
-  delete the `#if defined(_WIN32) ... #include "win_bios.h" ... #else
+  delete the `#if defined(_WIN32) ... #include "win_bios.hpp" ... #else
   ... #include "unix_bios.h" ... #endif` block at the top entirely (Story
   01.0 Task 01 already rewrote the constructor's body to call
   `make_default_source_chain()`; this task removes the now-dead `#if`

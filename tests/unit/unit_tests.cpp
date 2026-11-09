@@ -8,7 +8,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/tables/port_connection_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #define BOOST_AUTO_TEST_MAIN
 #include <boost/test/unit_test.hpp>
@@ -92,7 +92,7 @@ BOOST_AUTO_TEST_CASE(SMBiosVersionLessSameMajorMinorDecidesTestCase)
 //////////////////////////////////////////////////////////////////////////
 // 1b. PortConnectionEntry parsing from a hand-built buffer
 //
-// Wire layout (see smbios/include/smbios/port_connection_entry.h,
+// Wire layout (see libsmbios/include/libsmbios/tables/port_connection_entry.hpp,
 // struct PortConnection, #pragma pack(push, 1)):
 //   offset 0 : uint32_t header      -> type(1) + length(1) + handle(2)
 //   offset 4 : uint8_t internal_designator  (DMI string index)

@@ -10,7 +10,7 @@ namespace {
 /// @brief Size, in bytes, of a DMIHeader's on-wire representation: Type (1)
 /// + Length (1) + Handle (2), per the DMTF SMBIOS spec. Deliberately NOT
 /// `sizeof(DMIHeader)`: that in-memory struct also carries a `const
-/// uint8_t* data` convenience pointer (smbios/include/smbios/smbios.h)
+/// uint8_t* data` convenience pointer (libsmbios/include/libsmbios/smbios.hpp)
 /// that is never serialized on the wire, so `sizeof(DMIHeader)` is 12 on a
 /// 64-bit host - using it as the pre-dereference bounds margin would
 /// over-reject legitimately in-bounds trailing structures.
@@ -42,7 +42,7 @@ SMBios::SMBios()
     static_assert(sizeof(uint32_t) == 4, "Very strange uint32_t size");
 
     // Try every source in this platform's chain (make_default_source_chain(),
-    // declared in smbios/include/smbios/sys_interface/smbios_source_chain.h),
+    // declared in sys_interface/include/smbios/sys_interface/smbios_source_chain.hpp),
     // in priority order, stopping at the first one that is both available
     // and successfully reads a table. This loop itself is entirely
     // platform-neutral C++ - see plan.md's R8: milestone 0005, Story 01.1

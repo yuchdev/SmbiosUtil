@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: hand-built DMIHeader/raw
 // buffers drive SystemInformationEntry (smbios/include/smbios/
-// system_information_entry.h) across the header.length tiers named by
+// system_information_entry.hpp) across the header.length tiers named by
 // docs/roadmap/0004-.../02.0-.../01-system-information-and-enclosure.md,
 // cross-checked against c-versions/dmidecode_linux/dmidecode.c's case 1:
 //   tier 1: header.length < 0x08   -> every length-guarded getter defaults

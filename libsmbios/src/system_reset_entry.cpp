@@ -9,7 +9,7 @@
 using namespace smbios;
 
 // Self-register against SMBios::SystemReset at static-init time; see
-// REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.h) for why this
+// REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.hpp) for why this
 // lives here rather than in the header.
 REGISTER_SMBIOS_ENTRY(SMBios::SystemReset, SystemResetEntry)
 
@@ -28,7 +28,7 @@ constexpr size_t kTimerIntervalMinLength = 0x0B;
 constexpr size_t kTimeoutMinLength = 0x0D;
 
 /// Capabilities bit positions/masks, DSP0134 3.9.0 Table 92 (see
-/// system_reset_entry.h's class doc comment for the full confirmed layout).
+/// system_reset_entry.hpp's class doc comment for the full confirmed layout).
 constexpr uint8_t kStatusMask = 0x01; // Bit 0
 constexpr uint8_t kBootOptionShift = 1; // Bits 2:1
 constexpr uint8_t kBootOptionMask = 0x03;

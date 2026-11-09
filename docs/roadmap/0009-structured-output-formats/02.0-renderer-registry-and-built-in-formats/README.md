@@ -35,8 +35,8 @@ the three built-in formats `text`/`xml`/`json`.
 
 ## Files or directories created or modified by this story
 
-- `smbios/include/smbios/output_formatter.h` / `.cpp` (new).
-- `smbios/include/smbios/text_formatter.h` / `.cpp`,
-  `xml_formatter.h`/`.cpp`, `json_formatter.h`/`.cpp` (new).
+- `smbios/include/smbios/output_formatter.hpp` / `.cpp` (new).
+- `smbios/include/smbios/text_formatter.hpp` / `.cpp`,
+  `xml_formatter.hpp`/`.cpp`, `json_formatter.hpp`/`.cpp` (new).
 - `vcpkg.json` (milestone 0001) - a new JSON library dependency, only if
   Task 02's decision isn't Boost.JSON (already present transitively).

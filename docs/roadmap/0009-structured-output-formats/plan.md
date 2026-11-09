@@ -72,7 +72,7 @@ each output format needing its own per-entry-type knowledge.
 
 ## Shared contracts
 
-### C1 - Structured field model (`smbios/include/smbios/field_value.h`, `named_field.h`, new)
+### C1 - Structured field model (`smbios/include/smbios/field_value.hpp`, `named_field.hpp`, new)
 
 ```cpp
 namespace smbios {
@@ -96,7 +96,7 @@ the property's string, value = `true`), not one field holding a
 comma-joined string - so a JSON/YAML consumer gets a real array/object,
 not more prose to re-split.
 
-### C2 - Self-registering output-formatter registry (`smbios/include/smbios/output_formatter.h`, new)
+### C2 - Self-registering output-formatter registry (`smbios/include/smbios/output_formatter.hpp`, new)
 
 ```cpp
 namespace smbios {

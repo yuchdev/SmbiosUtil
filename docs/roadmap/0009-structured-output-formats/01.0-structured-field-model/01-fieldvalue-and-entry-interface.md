@@ -10,7 +10,7 @@ Implement contract **C1** exactly, and add the pure virtual
 
 ## Files
 
-- **Create** `smbios/include/smbios/field_value.h`:
+- **Create** `smbios/include/smbios/field_value.hpp`:
   ```cpp
   #pragma once
   #include <cstdint>
@@ -62,7 +62,7 @@ Implement contract **C1** exactly, and add the pure virtual
 
 ## Success criteria
 
-- [ ] `field_value.h` compiles standalone.
+- [ ] `field_value.hpp` compiles standalone.
 - [ ] `AbstractSMBiosEntry::get_fields()` is declared pure virtual (the
       codebase does not yet compile after this task alone - expected,
       per the Files section's note - confirmed resolved by Task 02).

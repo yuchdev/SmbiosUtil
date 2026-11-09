@@ -8,7 +8,7 @@
 using namespace smbios;
 
 // Self-register against SMBios::TpmDevice at static-init time; see
-// REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.h) for why this
+// REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.hpp) for why this
 // lives here rather than in the header.
 REGISTER_SMBIOS_ENTRY(SMBios::TpmDevice, TpmDeviceEntry)
 

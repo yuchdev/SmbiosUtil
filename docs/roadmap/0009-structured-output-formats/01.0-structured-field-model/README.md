@@ -36,7 +36,7 @@ Story 02.0/03.0 builds on.
 
 ## Files or directories created or modified by this story
 
-- `smbios/include/smbios/field_value.h` (new).
+- `smbios/include/smbios/field_value.hpp` (new).
 - `smbios/include/smbios/abstract_smbios_entry.hpp` - new pure virtual
   `get_fields()`.
 - Every one of the eleven entry headers/sources from milestone 0004 -

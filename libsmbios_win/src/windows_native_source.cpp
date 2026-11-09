@@ -52,7 +52,7 @@ bool copy_native_result(const SMBiosImpl& native_impl, std::vector<uint8_t>& out
 }
 
 /// @brief Thin `ISmbiosSource` adapter around the existing Windows-native
-/// `SMBiosImpl` (`win_bios.h`, `GetSystemFirmwareTable()`-based). Delegates
+/// `SMBiosImpl` (`win_bios.hpp`, `GetSystemFirmwareTable()`-based). Delegates
 /// entirely to it - no Windows-specific logic is rewritten here (plan.md
 /// R6).
 ///
@@ -64,7 +64,7 @@ bool copy_native_result(const SMBiosImpl& native_impl, std::vector<uint8_t>& out
 /// instead of a C++ `#if`).
 ///
 /// Milestone 0005, Story 04.0, Task 01: this design question is now
-/// ratified permanent, not temporary. `SMBiosImpl` (`win_bios.h`) has no
+/// ratified permanent, not temporary. `SMBiosImpl` (`win_bios.hpp`) has no
 /// `is_available()`/`try_read()`/`source_name()`-shaped methods of its own
 /// and is used nowhere else as a value type in its own right - only ever
 /// constructed and consumed right here - so giving it `: public
@@ -72,8 +72,8 @@ bool copy_native_result(const SMBiosImpl& native_impl, std::vector<uint8_t>& out
 /// "zero Windows API call site changed" constraint (R6) is meant to keep
 /// untouched, for no behavioral gain over the wrapper that already exists.
 /// Keeping this thin delegating class is therefore the genuinely
-/// zero-diff choice the story README asks for (`win_bios.h`/`.cpp`/
-/// `win_native_api_helper.h` are unmodified by this story), not merely the
+/// zero-diff choice the story README asks for (`win_bios.hpp`/`.cpp`/
+/// `win_native_api_helper.hpp` are unmodified by this story), not merely the
 /// smaller one.
 ///
 /// Also as of Story 04.0: no longer internally falls back to
@@ -91,7 +91,7 @@ bool copy_native_result(const SMBiosImpl& native_impl, std::vector<uint8_t>& out
 /// all) is unchanged either way.
 ///
 /// See `status.md`'s Story 04.0 entry for this class's real Windows-CI
-/// confirmation (not just read from `win_bios.h`'s interface, as this
+/// confirmation (not just read from `win_bios.hpp`'s interface, as this
 /// class's implementation originally was).
 class WindowsNativeSource : public ISmbiosSource {
 public:

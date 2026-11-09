@@ -4,7 +4,7 @@
 #include <libsmbios/smbios.hpp>
 #include <libsmbios/tables/bios_information_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -16,7 +16,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: hand-built DMIHeader/raw
 // buffers drive BiosInformationEntry (smbios/include/smbios/
-// bios_information_entry.h) across the three header.length tiers the field
+// bios_information_entry.hpp) across the three header.length tiers the field
 // table (docs/roadmap/0003-.../02.0-.../01-bios-information-field-table.md)
 // names:
 //   tier 1: header.length < 0x12   -> every length-guarded getter defaults
@@ -24,7 +24,7 @@ using namespace smbios;
 //                                     decode, get_extended_rom_size() defaults
 //   tier 3: header.length > 0x18   -> get_extended_rom_size() also decodes
 //
-// Wire layout (see smbios/include/smbios/bios_information_entry.h's
+// Wire layout (see smbios/include/smbios/bios_information_entry.hpp's
 // "@brief 0xNN offset" getter comments, re-verified against
 // c-versions/dmidecode_linux/dmidecode.c's dmi_decode() case 0 for this
 // task - see 01-bios-information-field-table.md's Step 3):

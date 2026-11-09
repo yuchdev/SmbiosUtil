@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive ElectricalCurrentProbeEntry
-// (smbios/include/smbios/tables/electrical_current_probe_entry.h),
+// (smbios/include/smbios/tables/electrical_current_probe_entry.hpp),
 // cross-checked against DSP0134 3.9.0's own 7.30 (Table 101/102) directly,
 // including confirming its Location (bits 4:0) is byte-identical to
 // VoltageProbeEntry's own 11-value Location, NOT TemperatureProbeEntry's

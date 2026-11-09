@@ -5,7 +5,7 @@
 # itself uses the "_win" abbreviation.
 set(TARGET libsmbios_win)
 
-file(GLOB SOURCES src/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/include/smbios/windows/*.h)
+file(GLOB SOURCES src/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/include/smbios/windows/*.hpp)
 
 add_library(${TARGET} STATIC ${SOURCES})
 set_target_properties(${TARGET} PROPERTIES PREFIX "")

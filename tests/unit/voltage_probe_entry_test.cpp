@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,12 +19,12 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive VoltageProbeEntry
-// (smbios/include/smbios/tables/voltage_probe_entry.h), cross-checked
+// (smbios/include/smbios/tables/voltage_probe_entry.hpp), cross-checked
 // against DSP0134 3.9.0's own 7.27 (Table 95/96) directly - including the
 // 0x14 Nominal Value field, which this task's own roadmap document omits
 // from Voltage Probe's field list but which Table 95 as it actually reads
 // in docs/standard/DSP0134_3.9.0.md shows present (see
-// voltage_probe_entry.h's own class doc comment for the full discrepancy
+// voltage_probe_entry.hpp's own class doc comment for the full discrepancy
 // note).
 //
 // Wire layout (formatted area, offsets relative to structure start):

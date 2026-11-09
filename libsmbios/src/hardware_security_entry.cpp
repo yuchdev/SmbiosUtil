@@ -9,7 +9,7 @@
 using namespace smbios;
 
 // Self-register against SMBios::HardwareSecurity at static-init time; see
-// REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.h) for why this
+// REGISTER_SMBIOS_ENTRY's doc comment (smbios_entry_factory.hpp) for why this
 // lives here rather than in the header.
 REGISTER_SMBIOS_ENTRY(SMBios::HardwareSecurity, HardwareSecurityEntry)
 
@@ -19,7 +19,7 @@ constexpr size_t kSettingsOffset = 0x04;
 constexpr size_t kSettingsMinLength = 0x05;
 
 /// Settings bit positions/masks, DSP0134 3.9.0 Table 93 (see
-/// hardware_security_entry.h's class doc comment for the full confirmed
+/// hardware_security_entry.hpp's class doc comment for the full confirmed
 /// layout).
 constexpr uint8_t kPowerOnPasswordShift = 6; // Bits 7:6
 constexpr uint8_t kKeyboardPasswordShift = 4; // Bits 5:4

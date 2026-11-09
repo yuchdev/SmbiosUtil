@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive IpmiDeviceInformationEntry
-// (smbios/include/smbios/tables/ipmi_device_information_entry.h),
+// (smbios/include/smbios/tables/ipmi_device_information_entry.hpp),
 // cross-checked directly against DSP0134 3.9.0's own 7.39/7.39.1 (Table
 // 114/115), including the confirmed 0x10/0x11 redacted-gap resolution (see
 // the header's own doc comment).

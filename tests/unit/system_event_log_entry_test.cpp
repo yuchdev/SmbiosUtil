@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive SystemEventLogEntry
-// (smbios/include/smbios/tables/system_event_log_entry.h), cross-checked
+// (smbios/include/smbios/tables/system_event_log_entry.hpp), cross-checked
 // directly against DSP0134 3.9.0's own 7.16 (Table 60).
 //
 // Wire layout (2.1+ shape):

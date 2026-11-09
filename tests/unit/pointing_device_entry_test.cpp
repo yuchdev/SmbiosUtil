@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive PointingDeviceEntry
-// (smbios/include/smbios/tables/pointing_device_entry.h), cross-checked
+// (smbios/include/smbios/tables/pointing_device_entry.hpp), cross-checked
 // against DSP0134 3.9.0's own 7.22/7.22.1/7.22.2 (Table 87/88/89):
 //
 //   - a normal-case full buffer decoding every documented Type (Table 88)

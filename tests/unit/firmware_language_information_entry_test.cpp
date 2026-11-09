@@ -7,7 +7,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
-#include "synthetic_table_builder.h"
+#include "synthetic_table_builder.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -19,7 +19,7 @@ using namespace smbios;
 //
 // Deterministic, require no hardware/privileges: synthetic buffers (via
 // smbios::test::SyntheticTableBuilder) drive FirmwareLanguageInformationEntry
-// (smbios/include/smbios/tables/firmware_language_information_entry.h),
+// (smbios/include/smbios/tables/firmware_language_information_entry.hpp),
 // cross-checked directly against DSP0134 3.9.0's own 7.14 (Table 58) and
 // its own worked Example 1 (long format) / Example 2 (abbreviated format).
 //

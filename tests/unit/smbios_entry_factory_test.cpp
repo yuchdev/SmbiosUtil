@@ -19,9 +19,9 @@ using namespace smbios;
 //
 // Deterministic, no hardware/privileges needed. Two groups:
 // 1. The self-registering factory machinery in isolation (smbios/include/
-//    smbios/smbios_entry_factory.h), against a throwaway fake entry type
+//    smbios/smbios_entry_factory.hpp), against a throwaway fake entry type
 //    registered under an unused SMBiosHandler-shaped value (250, not one
-//    of SMBios::SMBiosHandler's real members - see smbios.h).
+//    of SMBios::SMBiosHandler's real members - see smbios.hpp).
 // 2. Milestone 0004 Story 01.0's own success criterion ("create() returns
 //    the correct concrete type for BIOSInformation, PortConnection, and
 //    MemoryDevice - verified by test, not just by inspection"): PortConnection

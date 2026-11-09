@@ -30,7 +30,7 @@
 namespace smbios {
 
 struct DMIHeader;
-// SMBiosVersion (smbios.h) is included for real, not just forward-declared:
+// SMBiosVersion (smbios.hpp) is included for real, not just forward-declared:
 // this class stores a copy of it (version_) for the Flags field's
 // version-gated abbreviated-format bit, so its full definition is needed
 // here.

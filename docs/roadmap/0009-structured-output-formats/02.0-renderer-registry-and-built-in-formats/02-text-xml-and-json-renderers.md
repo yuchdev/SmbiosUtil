@@ -11,7 +11,7 @@ JSON library decision this task has been deferring.
 
 ## Files
 
-- **Create** `smbios/include/smbios/text_formatter.h` / `.cpp`:
+- **Create** `smbios/include/smbios/text_formatter.hpp` / `.cpp`:
   ```cpp
   class TextFormatter : public IOutputFormatter {
   public:
@@ -22,7 +22,7 @@ JSON library decision this task has been deferring.
   };
   REGISTER_OUTPUT_FORMATTER(TextFormatter);
   ```
-- **Create** `smbios/include/smbios/xml_formatter.h` / `.cpp`: walks
+- **Create** `smbios/include/smbios/xml_formatter.hpp` / `.cpp`: walks
   `entry.get_fields()`, emitting one `<field name="...">value</field>`
   per `NamedField` inside a `<structure type="...">` element - using
   `std::variant::visit` to render each `FieldValue` alternative (string
@@ -32,7 +32,7 @@ JSON library decision this task has been deferring.
   and flat enough that pulling in a full XML library for escaping +
   five element tags is not justified - escaping itself is a five-line
   function: `&`, `<`, `>`, `"` substitution).
-- **Create** `smbios/include/smbios/json_formatter.h` / `.cpp`: same
+- **Create** `smbios/include/smbios/json_formatter.hpp` / `.cpp`: same
   walk, emitting a JSON object - library choice **decided at the start of
   this task** (Boost.JSON, if the pinned vcpkg Boost baseline is ≥ 1.75;
   otherwise record why a different choice was made in `status.md`).
