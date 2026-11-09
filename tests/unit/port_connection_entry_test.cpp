@@ -129,4 +129,33 @@ BOOST_AUTO_TEST_CASE(PortConnectionEntryTruncatedBelowMinimumDefaultsAllFieldsTe
     BOOST_CHECK_EQUAL(entry.get_port_type(), static_cast<uint8_t>(PortConnectionEntry::NonePort));
 }
 
+/// Regression case: internal_connection == NoneConnector (0x00) must render
+/// as the numeric string "0", not an embedded NUL character - streaming a
+/// uint8_t whose value is 0 through operator<<(uint8_t) previously invoked
+/// the char overload and spliced a NUL into the middle of the returned
+/// std::string.
+BOOST_AUTO_TEST_CASE(PortConnectionEntryNoneConnectorRendersNumericNotNulTestCase)
+{
+    std::vector<uint8_t> formatted_area{
+        0x01,                                 // 0x04 internal_designator_index
+        PortConnectionEntry::NoneConnector,   // 0x05 internal_connection == 0x00
+        0x02,                                 // 0x06 external_designator_index
+        PortConnectionEntry::NoneConnector,   // 0x07 external_connection == 0x00
+        PortConnectionEntry::Keyboard,        // 0x08 port_type
+    };
+
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::PortConnection, formatted_area);
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+
+    PortConnectionEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    std::string description = entry.render_to_description();
+
+    BOOST_CHECK_EQUAL(description.find('\0'), std::string::npos);
+    BOOST_CHECK_NE(description.find("Internal Connector Type: 0\n"), std::string::npos);
+    BOOST_CHECK_NE(description.find("External Connector Type: 0\n"), std::string::npos);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
