@@ -51,6 +51,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # Milestone 0008, R2: c-versions/ holds GPL-2.0-or-later dmidecode
+      # reference clones (git-ignored, never fetched in CI). Fail in
+      # seconds, before the slow vcpkg/build steps, if anything references
+      # it from a build file or #include, adds a submodule, or tracks a
+      # file under it. Stdlib-only Python; provenance comments are allowed.
+      - name: Check c-versions GPL isolation
+        run: ${{ runner.os == 'Windows' && 'python' || 'python3' }} scripts/check_cversions_isolation.py
+
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11.6
         with:
@@ -162,6 +170,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Milestone 0008, R2: c-versions/ holds GPL-2.0-or-later dmidecode
+      # reference clones (git-ignored, never fetched in CI). Fail in
+      # seconds, before the slow vcpkg/build steps, if anything references
+      # it from a build file or #include, adds a submodule, or tracks a
+      # file under it. Stdlib-only Python; provenance comments are allowed.
+      - name: Check c-versions GPL isolation
+        run: ${{ runner.os == 'Windows' && 'python' || 'python3' }} scripts/check_cversions_isolation.py
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11.6

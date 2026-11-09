@@ -1,0 +1,16 @@
+{
+  "upstreams": [
+    {
+      "name": "dmidecode_linux",
+      "path": "c-versions/dmidecode_linux",
+      "url": "https://github.com/mirror/dmidecode.git",
+      "baseline_sha": "b70f6ee0f2e879deebc630da20d27d350407889e"
+    },
+    {
+      "name": "dmidecode_macos",
+      "path": "c-versions/dmidecode_macos",
+      "url": "https://github.com/acidanthera/dmidecode.git",
+      "baseline_sha": "334e53aae57632329adf11fe5e852749b038a793"
+    }
+  ]
+}
