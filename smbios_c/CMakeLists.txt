@@ -104,3 +104,38 @@ generate_export_header(${TARGET}
     BASE_NAME smbios_c
     EXPORT_FILE_NAME ${CMAKE_CURRENT_BINARY_DIR}/include/smbios_c/smbios_c_export.h
 )
+
+# smbios_c has its own version, independent of the main project's (the
+# root CMakeLists.txt's project() call declares none) - plan.md's own
+# framing is "a thin, separately-versioned C ABI shim", so its version
+# should not be silently tied to a project version that does not exist.
+# 1.0.0 marks this milestone's initial release of the C API; bump it
+# only for a deliberate, documented C-API-level change going forward.
+set(SMBIOS_C_VERSION "1.0.0")
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/smbios_c.pc.in
+    ${CMAKE_CURRENT_BINARY_DIR}/smbios_c.pc
+    @ONLY
+)
+
+# No install() rule existed anywhere in this project before this task -
+# milestone 0001 established build presets and CI, never a packaging/
+# install step. Installing just the .pc file would be useless without
+# the library and public header it points at, so both are installed
+# here too, even though only the .pc file itself was explicitly listed
+# in this task's own Files section.
+install(TARGETS ${TARGET}
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+    ARCHIVE DESTINATION lib
+)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/smbios_c
+    DESTINATION include
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/smbios_c/smbios_c_export.h
+    DESTINATION include/smbios_c
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/smbios_c.pc
+    DESTINATION lib/pkgconfig
+)

@@ -1,0 +1,9 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: smbios_c
+Description: C ABI for libbios SMBIOS parsing
+Version: @SMBIOS_C_VERSION@
+Libs: -L${libdir} -lsmbios_c
+Cflags: -I${includedir}
