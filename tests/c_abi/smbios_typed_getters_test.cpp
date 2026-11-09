@@ -31,7 +31,7 @@ std::string fetch(smbios_error_t (*getter)(smbios_entry_handle_t, char*, size_t,
     std::vector<char> buf(needed);
     err = getter(entry, buf.data(), buf.size(), &needed);
     assert(err == SMBIOS_OK);
-    return std::string(buf.data());
+    return std::string(buf.data(), needed - 1); // explicit length, not the C-string ctor - see smbios_entry_iteration_test.cpp's comment on embedded NULs
 }
 
 } // namespace

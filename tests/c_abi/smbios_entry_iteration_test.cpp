@@ -64,7 +64,15 @@ int main()
         assert(render_err == SMBIOS_OK);
         assert(needed_len == reference_descriptions[i].size() + 1);
 
-        std::string rendered(buf.data());
+        // Construct with the explicit returned length, not the C-string
+        // constructor: at least one real entry type's render_to_description()
+        // can embed a literal NUL byte mid-string (PortConnectionEntry
+        // streams a raw uint8_t under operator<<(unsigned char), which
+        // inserts the byte as a character when its value happens to be 0 -
+        // a pre-existing C++-side quirk, not something smbios_c.cpp's
+        // byte-for-byte memcpy introduces). Stopping at the first NUL here
+        // would produce a false mismatch against the reference.
+        std::string rendered(buf.data(), needed_len - 1);
         if (rendered != reference_descriptions[i]) {
             std::printf("MISMATCH at entry %zu:\n  C API:      %s\n  Reference:  %s\n",
                 i, rendered.c_str(), reference_descriptions[i].c_str());
