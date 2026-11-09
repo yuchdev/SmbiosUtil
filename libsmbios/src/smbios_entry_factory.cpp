@@ -1,6 +1,6 @@
-#include <smbios/smbios_entry_factory.h>
-#include <smbios/abstract_smbios_entry.h>
-#include <smbios/smbios.h>
+#include <libsmbios/smbios_entry_factory.h>
+#include <libsmbios/abstract_smbios_entry.h>
+#include <libsmbios/smbios.h>
 
 #include <map>
 #include <sstream>

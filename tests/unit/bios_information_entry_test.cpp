@@ -1,8 +1,8 @@
 #include <cstdint>
 #include <vector>
 
-#include <smbios/smbios.h>
-#include <smbios/tables/bios_information_entry.h>
+#include <libsmbios/smbios.h>
+#include <libsmbios/tables/bios_information_entry.h>
 
 #include "synthetic_table_builder.h"
 

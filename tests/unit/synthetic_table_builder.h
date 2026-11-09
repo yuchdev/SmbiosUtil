@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-#include <smbios/smbios.h>
+#include <libsmbios/smbios.h>
 
 // Shared hermetic test-support seam (milestone 0006, Story 01.0, Task 01).
 //

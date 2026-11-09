@@ -3,11 +3,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "../bin")
 
 find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS program_options REQUIRED)
 
-# include/smbios_util/command_line_parser.h is this executable's own
-# private header - it stays at that literal path/namespace (not part of
-# the library renames), so its glob keeps the literal "smbios_util"
-# segment rather than following ${TARGET}.
-file(GLOB SOURCES *.cpp ../include/smbios_util/*.h)
+# include/smbios/command_line_parser.h is this executable's own private
+# header - it lives under this target's own include/smbios/ segment
+# (renamed from include/smbios_util/), distinct from libsmbios's own
+# public headers at libsmbios/include/libsmbios/.
+file(GLOB SOURCES *.cpp ../include/smbios/*.h)
 
 include_directories(${Boost_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}/../include

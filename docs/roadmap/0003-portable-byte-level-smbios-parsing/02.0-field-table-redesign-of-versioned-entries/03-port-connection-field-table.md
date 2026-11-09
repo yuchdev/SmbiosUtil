@@ -6,7 +6,7 @@
 ## Objective
 
 Convert `PortConnectionEntry`'s single `PortConnection` struct and
-`port_connection_` member ([port_connection_entry.h:20-27,175](/libsmbios/include/smbios/tables/port_connection_entry.h))
+`port_connection_` member ([port_connection_entry.h:20-27,175](/libsmbios/include/libsmbios/tables/port_connection_entry.h))
 to the same accessor pattern, for consistency (R5) - this entry has no
 version chain to collapse (confirmed: "fully compatible with all previous
 versions" per its own header comment), so this is the simplest of the

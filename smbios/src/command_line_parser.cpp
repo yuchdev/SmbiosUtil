@@ -1,10 +1,10 @@
-#include <smbios_util/command_line_parser.h>
+#include <smbios/command_line_parser.h>
 
 #include <string>
 #include <list>
 #include <iostream>
 #include <algorithm>
-#include <smbios/smbios.h>
+#include <libsmbios/smbios.h>
 
 using namespace smbios;
 namespace po = boost::program_options;

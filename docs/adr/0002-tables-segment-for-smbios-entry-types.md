@@ -205,3 +205,30 @@ in `tables/` instead of being written flat and moved again later.
 - **Roadmap story/task:** [docs/roadmap/0010-smbios-structure-coverage-expansion/01.0-tables-segment-reorg/README.md](/docs/roadmap/0010-smbios-structure-coverage-expansion/01.0-tables-segment-reorg/README.md)
 - **Supporting specs:** [docs/roadmap/0010-smbios-structure-coverage-expansion/plan.md](/docs/roadmap/0010-smbios-structure-coverage-expansion/plan.md)
 - **Diagrams:** _(none needed - a file-move, not a dependency-graph change)_
+
+## Addendum (2026-11-09): `include/smbios/` itself renamed to `include/libsmbios/`
+
+A follow-up, user-directed rename moved `libsmbios`'s entire public
+`include/` tree from `libsmbios/include/smbios/` to
+`libsmbios/include/libsmbios/` (headers now `#include <libsmbios/smbios.h>`,
+`#include <libsmbios/tables/*.h>`, etc.), at the same time renaming the
+`smbios` CLI's own private header directory from `smbios/include/smbios_util/`
+to `smbios/include/smbios/`. This addendum records it rather than rewriting
+the Decision/Consequences sections above, which remain the accurate
+historical record of the `tables/` segment decision itself - a separate,
+later decision, not a correction of this one.
+
+Rationale: every per-OS/legacy/interface library still places its headers
+under `include/smbios/<segment>/*.h` (unchanged), all compiling into the
+same `smbios::` namespace - but `libsmbios` is the one library whose
+headers are the project's actual public API surface, not an internal
+per-OS implementation detail. Giving it its own `include/libsmbios/` makes
+that distinction visible at the `#include` line, where `#include <smbios/...>`
+now unambiguously means "an internal per-OS/legacy header," never "the
+core library's own public API."
+
+No logic changed. Every `#include` site project-wide (library sources,
+tests, the CLI) was updated mechanically along the same lines as the
+original `tables/` move; `libsmbios/src/CMakeLists.txt`'s header glob and
+`smbios/src/CMakeLists.txt`'s private-header glob were updated to match.
+Full suite re-verified green after the rename (`ctest`, 4/4 targets).

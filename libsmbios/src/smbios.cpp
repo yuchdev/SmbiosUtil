@@ -1,5 +1,5 @@
 #include <sstream>
-#include <smbios/smbios.h>
+#include <libsmbios/smbios.h>
 #include <smbios/os_interface/smbios_source_chain.h>
 #include <smbios/os_interface/byte_reader.h>
 

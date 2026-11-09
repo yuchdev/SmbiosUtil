@@ -1,7 +1,7 @@
 #include <cstdint>
 #include <vector>
 
-#include <smbios/smbios.h>
+#include <libsmbios/smbios.h>
 
 #include "synthetic_table_builder.h"
 

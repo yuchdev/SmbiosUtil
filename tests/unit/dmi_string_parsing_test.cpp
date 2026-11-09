@@ -2,8 +2,8 @@
 #include <string>
 #include <vector>
 
-#include <smbios/abstract_smbios_entry.h>
-#include <smbios/smbios.h>
+#include <libsmbios/abstract_smbios_entry.h>
+#include <libsmbios/smbios.h>
 
 #include "synthetic_table_builder.h"
 

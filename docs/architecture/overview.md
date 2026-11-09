@@ -6,8 +6,8 @@ roadmap - milestone 0003's field-table accessor pattern and milestone
 real machine (or a synthetic test buffer) becomes a typed, human-readable
 SMBIOS entry. It is written for a reader who was not part of either
 milestone's design discussions. It is cross-checked against the current
-code (`libsmbios/src/smbios.cpp`, `libsmbios/include/smbios/smbios_entry_factory.h`,
-`libsmbios/include/smbios/bios_information_entry.h`/`.cpp`), not against
+code (`libsmbios/src/smbios.cpp`, `libsmbios/include/libsmbios/smbios_entry_factory.h`,
+`libsmbios/include/libsmbios/bios_information_entry.h`/`.cpp`), not against
 what any roadmap `plan.md` merely describes as intent - several renames
 (`smbios`/`libsmbios` swapping names, the repo-root library split) landed
 after those plan files were written.
@@ -22,7 +22,7 @@ job).
 
 - **Milestone 0003 - field-table accessors.** Every concrete SMBIOS entry
   class (`BiosInformationEntry`, `MemoryDeviceEntry`, etc., in
-  `libsmbios/include/smbios/`) reads its own fixed-offset fields through
+  `libsmbios/include/libsmbios/`) reads its own fixed-offset fields through
   the little-endian `read_u8`/`read_u16`/`read_u32`/`read_u64` helpers
   (`os_interface/include/smbios/os_interface/byte_reader.h`) plus a
   `get_entry_size()`-based length guard before every read, instead of
@@ -71,7 +71,7 @@ flowchart TD
     E --> F["DMIHeader per structure\n(type, length, handle, data pointer\ninto table_buffer_ - no copy)"]
     F --> G["headers_list_: std::vector<DMIHeader>\nSMBios::begin()/end() iterate this"]
     G --> H["Caller loop: for (const DMIHeader& header : bios)"]
-    H --> I["SMBiosEntryFactory::create(header, version, table_end)\n(libsmbios/include/smbios/smbios_entry_factory.h)"]
+    H --> I["SMBiosEntryFactory::create(header, version, table_end)\n(libsmbios/include/libsmbios/smbios_entry_factory.h)"]
     I --> J{"registered creator\nfor header.type?"}
     J -->|yes| K["Concrete AbstractSMBiosEntry subclass\n(e.g. BiosInformationEntry)\nconstructed from (header, version, table_end)"]
     J -->|no, unregistered type| K0["nullptr returned\n(caller skips this structure)"]
@@ -109,7 +109,7 @@ Walking this left to right in prose:
    `headers_list_`, so a caller (`smbios/src/main.cpp`, or a test) can
    write a plain `for (const DMIHeader& header : bios)` loop.
 5. **`SMBiosEntryFactory::create(header, version, table_end)`**
-   (`libsmbios/include/smbios/smbios_entry_factory.h`) looks up
+   (`libsmbios/include/libsmbios/smbios_entry_factory.h`) looks up
    `header.type` in a module-scope registry populated at static-init time
    by each concrete entry class's own `REGISTER_SMBIOS_ENTRY` invocation,
    and either returns a freshly-constructed concrete
@@ -134,12 +134,12 @@ Milestone 0004 established this pattern; it still holds today. To add
 support for an SMBIOS structure type this project does not yet decode:
 
 1. **Add the type code** to `SMBios::SMBiosHandler`
-   (`libsmbios/include/smbios/smbios.h`) if it is not already listed,
+   (`libsmbios/include/libsmbios/smbios.h`) if it is not already listed,
    using the numeric value from the DMTF SMBIOS specification's "Required
    structures and data" table.
 2. **Write one entry class** extending `AbstractSMBiosEntry`
-   (`libsmbios/include/smbios/abstract_smbios_entry.h`), in its own header
-   + `.cpp` pair under `libsmbios/include/smbios/` + `libsmbios/src/`
+   (`libsmbios/include/libsmbios/abstract_smbios_entry.h`), in its own header
+   + `.cpp` pair under `libsmbios/include/libsmbios/` + `libsmbios/src/`
    (matching every existing entry, e.g. `BiosInformationEntry`). The
    constructor takes `(const DMIHeader& header, const SMBiosVersion&
    version, const uint8_t* table_end)` and forwards `header`/`table_end`
@@ -165,7 +165,7 @@ support for an SMBIOS structure type this project does not yet decode:
    ```cpp
    REGISTER_SMBIOS_ENTRY(SMBios::YourNewHandlerValue, YourNewEntryClass);
    ```
-   This macro (`libsmbios/include/smbios/smbios_entry_factory.h`) expands
+   This macro (`libsmbios/include/libsmbios/smbios_entry_factory.h`) expands
    to a function-local-static-guarded, namespace-scope static initializer
    that calls `smbios::register_smbios_entry()` against a module-scope
    registry (`libsmbios/src/smbios_entry_factory.cpp`) the first time that

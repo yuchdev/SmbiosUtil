@@ -2,10 +2,10 @@
 #include <memory>
 #include <vector>
 
-#include <smbios/smbios.h>
-#include <smbios/tables/memory_array_mapped_address_entry.h>
-#include <smbios/smbios_entry_factory.h>
-#include <smbios/abstract_smbios_entry.h>
+#include <libsmbios/smbios.h>
+#include <libsmbios/tables/memory_array_mapped_address_entry.h>
+#include <libsmbios/smbios_entry_factory.h>
+#include <libsmbios/abstract_smbios_entry.h>
 
 #include "synthetic_table_builder.h"
 

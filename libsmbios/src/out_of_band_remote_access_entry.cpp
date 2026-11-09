@@ -1,7 +1,7 @@
-#include <smbios/tables/out_of_band_remote_access_entry.h>
-#include <smbios/smbios.h>
+#include <libsmbios/tables/out_of_band_remote_access_entry.h>
+#include <libsmbios/smbios.h>
 #include <smbios/os_interface/byte_reader.h>
-#include <smbios/smbios_entry_factory.h>
+#include <libsmbios/smbios_entry_factory.h>
 
 #include <sstream>
 

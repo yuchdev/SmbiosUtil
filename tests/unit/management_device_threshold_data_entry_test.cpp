@@ -2,10 +2,10 @@
 #include <memory>
 #include <vector>
 
-#include <smbios/smbios.h>
-#include <smbios/tables/management_device_threshold_data_entry.h>
-#include <smbios/smbios_entry_factory.h>
-#include <smbios/abstract_smbios_entry.h>
+#include <libsmbios/smbios.h>
+#include <libsmbios/tables/management_device_threshold_data_entry.h>
+#include <libsmbios/smbios_entry_factory.h>
+#include <libsmbios/abstract_smbios_entry.h>
 
 #include "synthetic_table_builder.h"
 

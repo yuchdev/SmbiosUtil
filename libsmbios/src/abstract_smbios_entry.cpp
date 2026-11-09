@@ -1,5 +1,5 @@
-#include <smbios/abstract_smbios_entry.h>
-#include <smbios/smbios.h>
+#include <libsmbios/abstract_smbios_entry.h>
+#include <libsmbios/smbios.h>
 
 #include <algorithm>
 #include <cassert>

@@ -7,7 +7,7 @@
 
 Delete `BiosInformationV24`/`BiosInformationV31` and the
 `bios_information24_`/`bios_information31_` pointer members
-([bios_information_entry.h:19-41,236-237](/libsmbios/include/smbios/tables/bios_information_entry.h)),
+([bios_information_entry.h:19-41,236-237](/libsmbios/include/libsmbios/tables/bios_information_entry.h)),
 and rebuild every accessor in `BiosInformationEntry` to read directly from
 `raw_data()` via `read_uN` plus a length guard.
 

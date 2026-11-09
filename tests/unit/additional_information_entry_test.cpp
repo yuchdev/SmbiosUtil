@@ -2,10 +2,10 @@
 #include <memory>
 #include <vector>
 
-#include <smbios/smbios.h>
-#include <smbios/tables/additional_information_entry.h>
-#include <smbios/smbios_entry_factory.h>
-#include <smbios/abstract_smbios_entry.h>
+#include <libsmbios/smbios.h>
+#include <libsmbios/tables/additional_information_entry.h>
+#include <libsmbios/smbios_entry_factory.h>
+#include <libsmbios/abstract_smbios_entry.h>
 
 #include "synthetic_table_builder.h"
 

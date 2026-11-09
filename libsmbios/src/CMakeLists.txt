@@ -6,8 +6,8 @@ set(TARGET libsmbios)
 # os_interface top-level libraries, each of which globs its own directory
 # in its own CMakeLists.txt.
 file(GLOB SOURCES *.cpp
-     ${CMAKE_CURRENT_SOURCE_DIR}/../include/smbios/*.h
-     ${CMAKE_CURRENT_SOURCE_DIR}/../include/smbios/tables/*.h)
+     ${CMAKE_CURRENT_SOURCE_DIR}/../include/libsmbios/*.h
+     ${CMAKE_CURRENT_SOURCE_DIR}/../include/libsmbios/tables/*.h)
 
 # fallback_source_chain.cpp supplies make_default_source_chain() only for
 # platforms with no per-OS library at all (SMBIOS_PLATFORM_LIB empty - BSD/
