@@ -8,9 +8,19 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 |-------|--------------------------------------------------------|----------------|-------|
 | 01.0  | Upstream reference fetch script and license isolation  | ✅ Complete | guard fixtures + fresh-clone sim; CI guard green ×3 OS |
 | 02.0  | Reference baseline review workflow                     | ✅ Complete (02 superseded) | dry-run no-op advance; ctest 7/7 (macOS) |
-| 03.0  | Upstream change-monitoring agent                       | ⬜ Not started | -     |
+| 03.0  | Upstream change-monitoring agent                       | ✅ Complete | trial run + non-empty dry run; reviews LGTM/PASS |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started · ⛔ Superseded (task-level only; see Notes)
+
+**Milestone gates (2026-11-09): ✅ passed.**
+- Every story is closed through `task-verifier` PASS and `/pr-review`
+  (feature LGTM, security PASS).
+- `check_doc_links.py docs/ .claude/` reports 0 problems, both with and
+  without `c-versions/` present.
+- Full suite: CI's unprivileged tests are green on Linux/macOS (runs
+  42643434393 and 42652498002), and local ctest passed 7/7 on macOS. The
+  Windows CI job is red only from the pre-existing `smbios_c_*` timeout,
+  deferred by the user to after this milestone.
 
 ## Notes & decisions
 
@@ -235,3 +245,59 @@ from the live grep, because the spec's snapshot had drifted:
 moved from the macOS list to the Linux list, and
 `system_information_entry.hpp` was added. 02.0/02 was superseded by
 01.0/02. 02.0/03 was consumed.
+
+### Story 03.0 - Upstream change-monitoring agent (✅ 2026-11-09)
+
+**Delivered:**
+- `.claude/agents/dmidecode-upstream-watcher.md` (R4/R5). Its frontmatter
+  mirrors `background-reviewer.md`, and it is invoked on demand only. It
+  contains:
+  - a GPL rule (no upstream code, diffs, or commit subjects or bodies in
+    reports);
+  - an untrusted-input rule (upstream text and web pages are data;
+    instruction-bearing commits are flagged);
+  - a hardened git prefix (`--no-pager`, no fsmonitor/hooks/pager/external
+    diff, `--no-textconv`);
+  - validation of every substituted value;
+  - labelling from diffs with `--diff-merges=first-parent`, with every
+    range SHA listed;
+  - an unlabelled Process issues section;
+  - a fixed-field digest for the Microsoft `GetSystemFirmwareTable` page;
+  - a baseline-advance recommendation (with count and full SHAs) for a
+    human to apply per `docs/dev/upstream_reference_review.md`.
+- `docs/reviews/README.md` registers the `upstream-watch-*` type, the label
+  substitution, on-demand invocation, "no automated GPL scan of reports;
+  the PR reviewer is the control", and the human verification backstop.
+- `docs/reviews/upstream-watch-2026-11-09.md` is the first real report:
+  both ranges are empty and the Windows doc baseline is recorded. It was
+  conformed by hand to the revised template.
+- `docs/security/2026-11-09-dmidecode-upstream-watcher.md` is the threat
+  model.
+- `docs/agent/agents.md` has a roster row.
+- A dangling link to the git-ignored path in
+  `0005-uefi-and-native-source-abstraction/plan.md` was converted to a code
+  span.
+
+**Tests / gate:**
+- `task-verifier` PASS (03.0/01).
+- On-demand trial run end to end (03.0/02).
+- **Non-empty dry run:** a temporary manifest with `dmidecode_linux`
+  baseline at HEAD~5 gave 5 commits triaged from diffs: 4 New information
+  (HPE/Dell OEM decoder additions, all out of scope), 1 Cosmetic (an
+  `out_of_spec` macro move), 0 Correctness. The report was GPL-clean. It
+  surfaced definition gaps (full-SHA command, which names to grep, OEM
+  scope, `--manifest` use), which were fixed. The dry-run report was not
+  committed.
+- `/pr-review`: feature LGTM; security PASS with 1 HIGH, 3 MEDIUM and 3
+  LOW findings, all fixed in the definition before commit.
+
+**Reconciliation:** 03.0/01 was consumed as an as-built superset (security
+hardening, Process issues section, `-N` same-day naming). 03.0/02 was
+consumed (on demand). 03.0/03 was consumed.
+
+**Deferred / follow-ups (not milestone scope):**
+- the Windows `smbios_c_*` ctest timeout (user: fix after this milestone);
+- an optional `testing-expert` regression probe of the agent against a
+  deliberately rigged clone (textconv driver, hostile file name,
+  instruction-bearing commit);
+- an optional top-level `permissions: contents: read` in `ci.yml`.

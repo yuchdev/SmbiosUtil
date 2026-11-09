@@ -1,7 +1,7 @@
 # Story 03.0 - Upstream Change-Monitoring Agent
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 **Depends on:** Story 02.0 (the baseline-advance procedure the agent's reports point back to)
 
 ## Scope
@@ -23,9 +23,9 @@ decision, 2026-11-09).
 
 | #  | Document                                                                | Status         | Blocks |
 |----|------------------------------------------------------------------------------|----------------|--------|
-| 01 | [Agent definition and evaluation criteria](01-agent-definition-and-evaluation-criteria.md) | ⬜ Not started | 02     |
-| 02 | [Invocation and report convention](02-scheduled-invocation-and-report-convention.md) | ⬜ Not started | 03     |
-| 03 | [Tests](03-tests.md)                                                        | ⬜ Not started | -      |
+| 01 | [Agent definition and evaluation criteria](01-agent-definition-and-evaluation-criteria.md) | ✅ Complete    | 02     |
+| 02 | [Invocation and report convention](02-scheduled-invocation-and-report-convention.md) | ✅ Complete    | 03     |
+| 03 | [Tests](03-tests.md)                                                        | ✅ Complete    | -      |
 
 ## Key constraints
 
