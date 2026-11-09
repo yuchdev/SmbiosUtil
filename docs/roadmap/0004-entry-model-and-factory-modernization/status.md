@@ -88,7 +88,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   real assertions (no root/hardware), the unchanged baseline. Real
   3-OS/sanitizer CI confirmation awaits the next push.
 - **2026-11-07: milestone 0004 Story 01.0 confirmed by real, green,
-  5-job CI** (`https://github.com/yuchdev/SmbiosUtil/actions/runs/42274156013`:
+  5-job CI** (`https://github.com/yuchdev/SmbiosSdk/actions/runs/42274156013`:
   `build` × ubuntu/macos/windows, `sanitizers` × ubuntu/macos).
 - **2026-11-07: Story 02.0 Task 01 complete** - `SystemInformationEntry`
   (type 1) and `SystemEnclosureEntry` (type 3) implemented, every offset

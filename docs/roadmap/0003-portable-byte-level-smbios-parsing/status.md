@@ -208,7 +208,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   unchanged baseline).
 - **2026-11-06: Story 03.0 Task 03 complete, Story 02.0 Task 04 complete,
   milestone exit gate confirmed by a real, green, 5-job CI run**
-  (`https://github.com/yuchdev/SmbiosUtil/actions/runs/42254866437`:
+  (`https://github.com/yuchdev/SmbiosSdk/actions/runs/42254866437`:
   `build` × ubuntu/macos/windows, `sanitizers` × ubuntu/macos, including
   the sanitizer job that originally caught the real SIGABRT/leak bug
   above). R9 (big-endian-safety proof) is satisfied by existing tests,

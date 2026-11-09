@@ -206,7 +206,7 @@ for the full milestone summary.
 
   `WindowsNativeSource` - written unverified against `win_bios.h`'s real
   interface, no Windows toolchain in this session - **confirmed by real
-  CI** (`https://github.com/yuchdev/SmbiosUtil/actions/runs/42290814193`:
+  CI** (`https://github.com/yuchdev/SmbiosSdk/actions/runs/42290814193`:
   `build (windows-latest)` succeeded, alongside all 4 other jobs). The
   shared `legacy_physical_memory_scan()` fallback it reuses is itself
   already platform-neutral (not new Windows-specific code), matching
@@ -652,7 +652,7 @@ file read at every task, not merely trusted from agent reports.
 `smbios_source_chain_test.cpp` ×3, `smbios_version_fixup_test.cpp` ×5,
 plus `legacy_memory_scan_source_test.cpp` ×3 - 11 new cases total across
 both tasks). Confirmed by real, green 5-job CI on both pushes
-(`https://github.com/yuchdev/SmbiosUtil/actions/runs/42290814193` for
+(`https://github.com/yuchdev/SmbiosSdk/actions/runs/42290814193` for
 Task 01, including `build (windows-latest)` succeeding on the
 previously-unverified `WindowsNativeSource`). `smbios_integration_test`/
 `smbios_perf_test` behave identically to the established pre-story
@@ -746,7 +746,7 @@ actually cares about.
   (`smbios_source_linux`) library compilation remain unverified by a
   real compile on this macOS sandbox, same as every per-OS-specific
   claim throughout this milestone - **confirmed by real CI**
-  (`https://github.com/yuchdev/SmbiosUtil/actions/runs/42295605341`:
+  (`https://github.com/yuchdev/SmbiosSdk/actions/runs/42295605341`:
   all 5 jobs green, `build (windows-latest)` and `build (ubuntu-latest)`
   included).
 - **2026-11-07: Story 01.1 Task 03 complete, closing this story.** Two new

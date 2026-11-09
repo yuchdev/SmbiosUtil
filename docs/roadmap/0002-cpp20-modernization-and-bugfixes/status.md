@@ -59,7 +59,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   (#2 missing `return`, #3 dishonest stubs, #4 dead `// DEBUG` include),
   none of which are touched by either fix above.
 - **2026-11-05: both fixes confirmed by a real, green, three-OS CI run**
-  (`https://github.com/yuchdev/SmbiosUtil/actions/runs/41996903863`), not
+  (`https://github.com/yuchdev/SmbiosSdk/actions/runs/41996903863`), not
   just local AppleClang testing - see milestone 0001's `status.md` for
   the full push-by-push account. That same CI run also surfaced several
   *additional* portability defects neither this milestone's plan nor the
@@ -116,9 +116,9 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   sanitizer job itself are not yet confirmed green - only AppleClang was
   locally verifiable; real confirmation needs a CI push.
 - **2026-11-05: Story 01.0 closed - real, green, 5-job CI run**
-  (`https://github.com/yuchdev/SmbiosUtil/actions/runs/42032334597`).
+  (`https://github.com/yuchdev/SmbiosSdk/actions/runs/42032334597`).
   The first push (`bd70622`/`28a377f`,
-  [run 42010524116](https://github.com/yuchdev/SmbiosUtil/actions/runs/42010524116))
+  [run 42010524116](https://github.com/yuchdev/SmbiosSdk/actions/runs/42010524116))
   landed both sanitizer jobs green on the first try plus Ubuntu/macOS
   builds green, but surfaced genuine, first-ever MSVC `/WX` failures on
   Windows-only source never previously compiled under warnings-as-errors:
@@ -134,7 +134,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   dynamically-resolved `RtlGetVersion` from `ntdll.dll` - not suppressed,
   since this project's own convention reserves pragma-suppression for
   third-party headers, never first-party API usage). Fixed in `496e78c`;
-  [run 42032334597](https://github.com/yuchdev/SmbiosUtil/actions/runs/42032334597)
+  [run 42032334597](https://github.com/yuchdev/SmbiosSdk/actions/runs/42032334597)
   came back green on all 5 jobs (`build` × ubuntu/macos/windows,
   `sanitizers` × ubuntu/macos). Story 01.0's own exit gate - "full suite
   passes on GCC, Clang and MSVC under C++20/`-Werror`; sanitizer CI job
@@ -170,7 +170,7 @@ OFF`), promoted warnings to errors on `smbios`/`smbios_util`
 (`-Werror`/`/WX`), and added a Linux+macOS AddressSanitizer+
 UndefinedBehaviorSanitizer CI job - proven by a real, green, 5-job CI run
 (build × ubuntu/macos/windows, sanitizers × ubuntu/macos,
-[run 42032334597](https://github.com/yuchdev/SmbiosUtil/actions/runs/42032334597))
+[run 42032334597](https://github.com/yuchdev/SmbiosSdk/actions/runs/42032334597))
 after fixing five genuine, first-ever MSVC `/WX` defects that real CI
 caught on Windows-only source never previously built under
 warnings-as-errors. Story 02.0 fixed the remaining three named latent

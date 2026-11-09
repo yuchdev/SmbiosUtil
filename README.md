@@ -13,8 +13,8 @@ Windows, Linux, and macOS all have native, unprivileged ways to read the table -
 Requires [vcpkg](https://github.com/microsoft/vcpkg) (set `VCPKG_ROOT`) and CMake 3.21+.
 
 ```bash
-git clone https://github.com/yuchdev/SmbiosUtil.git
-cd SmbiosUtil
+git clone https://github.com/yuchdev/SmbiosSdk.git
+cd SmbiosSdk
 cmake --preset <linux|macos|windows>
 cmake --build --preset <linux|macos|windows>
 ```

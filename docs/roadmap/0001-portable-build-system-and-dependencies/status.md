@@ -172,7 +172,7 @@ project has ever had**, and it found real, previously-unknown defects at
 every turn - none of them discoverable from this machine's AppleClang
 alone:
 
-1. **Run [41993079007](https://github.com/yuchdev/SmbiosUtil/actions/runs/41993079007):**
+1. **Run [41993079007](https://github.com/yuchdev/SmbiosSdk/actions/runs/41993079007):**
    macOS ✓ (Story 02.1's fix confirmed for real, not just locally).
    Ubuntu ✗ - `abstract_smbios_entry.h` uses `uint16_t` with no
    `#include <cstdint>` (only "worked" on libc++ via transitive luck).
@@ -188,7 +188,7 @@ alone:
    Windows generator entirely, letting CMake auto-detect whichever Visual
    Studio is actually installed - the durable fix, not a version bump
    that would break again next time the runner image updates.
-4. **Run [41995727388](https://github.com/yuchdev/SmbiosUtil/actions/runs/41995727388):**
+4. **Run [41995727388](https://github.com/yuchdev/SmbiosSdk/actions/runs/41995727388):**
    macOS ✓. Ubuntu ✗ - same `<limits>`-shaped gap, this time
    `std::numeric_limits` in `unix_bios.cpp`. **Windows got past Configure
    for the first time** (confirming fix #3), then failed to Build:
@@ -207,7 +207,7 @@ alone:
    header and the real definition - harmless under Itanium ABI, but MSVC
    itself flagged this as a real risk of "linker errors under the
    Microsoft C++ ABI").
-6. **Run [41996903863](https://github.com/yuchdev/SmbiosUtil/actions/runs/41996903863):
+6. **Run [41996903863](https://github.com/yuchdev/SmbiosSdk/actions/runs/41996903863):
    `completed success`, confirmed via `gh run view --json
    conclusion,status`.** Ubuntu ✓, Windows ✓, macOS ✓ - the first fully
    green 3-OS CI run in this project's history. Every remaining
