@@ -1,7 +1,7 @@
 #include <sstream>
-#include <libsmbios/smbios.h>
-#include <smbios/os_interface/smbios_source_chain.h>
-#include <smbios/os_interface/byte_reader.h>
+#include <libsmbios/smbios.hpp>
+#include <smbios/sys_interface/smbios_source_chain.hpp>
+#include <smbios/sys_interface/byte_reader.hpp>
 
 using namespace smbios;
 
@@ -42,7 +42,7 @@ SMBios::SMBios()
     static_assert(sizeof(uint32_t) == 4, "Very strange uint32_t size");
 
     // Try every source in this platform's chain (make_default_source_chain(),
-    // declared in smbios/include/smbios/os_interface/smbios_source_chain.h),
+    // declared in smbios/include/smbios/sys_interface/smbios_source_chain.h),
     // in priority order, stopping at the first one that is both available
     // and successfully reads a table. This loop itself is entirely
     // platform-neutral C++ - see plan.md's R8: milestone 0005, Story 01.1

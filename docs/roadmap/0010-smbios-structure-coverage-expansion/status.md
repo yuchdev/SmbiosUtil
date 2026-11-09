@@ -19,7 +19,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 ## Notes & decisions
 
 - This milestone depends on milestone 0006 (`SyntheticTableBuilder`,
-  `tests/unit/synthetic_table_builder.h`) for R6 - already complete as of
+  `tests/unit/synthetic_table_builder.hpppp`) for R6 - already complete as of
   this writing, so no blocking dependency in practice.
 - Story 01.0 must land before any of Stories 02.0-07.0 start (see plan.md's
   dependency graph and ADR 0002) - every new entry header is written
@@ -57,7 +57,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 **Tests / gate:** `tests/unit/system_event_log_entry_test.cpp` (new, 5 cases) - a version-2.0-shaped buffer (Length==0x14, confirming 2.1+ accessors report unavailable), a 2.1+ buffer with `x==0` descriptors (confirmed as the normal "list not present" case per the spec's own note, not an error), a 2.1+ buffer with 2 descriptors (confirming the trailing-list offset arithmetic uses the actually-read `y` value, not a hardcoded 2), a pre-2.1-version guard case with a long-enough buffer, and a factory-resolution case. `smbios_unit_test` 196 cases, 0 failures (up from 191 before this task). All 4 `ctest` targets green.
 
-**CLI:** `smbios/src/main.cpp` includes `system_event_log_entry.h` for display, mirroring existing precedent; the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
+**CLI:** `smbios/src/main.cpp` includes `system_event_log_entry.hpp` for display, mirroring existing precedent; the CLI-linking bug (`task_dc27f15d`) is unchanged by this task.
 
 **Task 02 delivered:** `MemoryErrorInformation32BitEntry` (`SMBios::MemoryErrorInformation32Bit` = 18, DSP0134 3.9.0 7.19, Table 81) and `MemoryErrorInformation64BitEntry` (`SMBios::MemoryErrorInformation64Bit` = 33, 7.34, Table 106) - deliberately not sharing a base beyond `AbstractSMBiosEntry`, each with its own verbatim-duplicated copy of the Error Type/Granularity/Operation lookup tables (7.19.1/7.19.2/7.19.3), referenced via `@see` rather than re-derived. Both expose `get_error_type()`/`get_error_granularity()`/`get_error_operation()` (+ `_string()` variants), `get_vendor_syndrome()` + `is_vendor_syndrome_known()` (all-zero sentinel), and known/unknown predicates for every address/resolution field at its own width.
 
@@ -209,7 +209,7 @@ Task 04 added types 39, 40, 41 to the consolidated factory-resolution test - all
 
 **Characteristics bit layout confirmed (7.44.1, Table 127):** read in full directly from `docs/standard/DSP0134_3.9.0.md`. Six listed bit positions (0-5): bits 0 and 1 are explicitly "Reserved" (not merely implicit, like bits 6:63); only bits 2-5 carry a decoded meaning - TPM Device Characteristics not supported (bit 2), family configurable via firmware update (bit 3), family configurable via platform software support (bit 4), family configurable via OEM proprietary mechanism (bit 5). Only these four values are populated in the properties map `bitset_to_properties<uint64_t>()` consults; bits 0/1/6:63 are deliberately absent from the map rather than mapped to an empty/placeholder string.
 
-**`bitset_to_properties<uint64_t>()` confirmed working without modification** - this is the project's first QWORD-width bitmask (every prior call site is `uint8_t`). The existing template in `AbstractSMBiosEntry` (`libsmbios/include/smbios/abstract_smbios_entry.h`) is already generic over any integral `T` (`std::is_integral<T>()` static_assert, loop driven by `T current_property = 0x1; current_property; current_property <<= 1`), so it instantiates and compiles cleanly at `uint64_t` with zero changes to the shared template itself. `CharacteristicsBitSetTestCase` (below) confirms correct rendering at this width, not just compilation.
+**`bitset_to_properties<uint64_t>()` confirmed working without modification** - this is the project's first QWORD-width bitmask (every prior call site is `uint8_t`). The existing template in `AbstractSMBiosEntry` (`libsmbios/include/smbios/abstract_smbios_entry.hpppp`) is already generic over any integral `T` (`std::is_integral<T>()` static_assert, loop driven by `T current_property = 0x1; current_property; current_property <<= 1`), so it instantiates and compiles cleanly at `uint64_t` with zero changes to the shared template itself. `CharacteristicsBitSetTestCase` (below) confirms correct rendering at this width, not just compilation.
 
 **Tests / gate:** `tests/unit/tpm_device_entry_test.cpp` (new, 8 cases: a TPM 1.2-shaped buffer, a TPM 2.0-shaped buffer with firmware version split across both DWORDs, a 3-character Vendor ID ("ABC" + trailing 0x00, confirmed trimmed to exactly "ABC", length 3), a 4-character Vendor ID ("ABCD", no null terminator, confirmed returned in full, length 4, not over-trimmed), a Characteristics-bits-set case (two of the four decoded bits set simultaneously, confirmed both rendered strings present and the other two decoded strings absent), a truncated-structure bounds-safety case, a wrong-type-throws case, a factory-resolution case). `smbios_unit_test` 389 cases, 0 failures (up from 381 before this task). All 4 `ctest` targets green.
 

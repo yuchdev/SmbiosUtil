@@ -10,7 +10,7 @@ temporary chain-factory stub inside - see
 ## Scope
 
 Adapt the existing Windows native firmware-table API source
-(`win_bios.h`/`win_bios.cpp`/`win_native_api_helper.h`) to implement
+(`win_bios.hpp`/`win_bios.cpp`/`win_native_api_helper.hpp`) to implement
 `ISmbiosSource` directly, with **zero behavior change** (R6) - this story
 exists only so Windows participates in the same runtime chain/diagnostics
 model (R1-R3) the other platforms now use, not to touch any of its actual
@@ -25,7 +25,7 @@ native-API logic.
 
 ## Key constraints
 
-- No change to `win_native_api_helper.h`'s actual Windows API calls.
+- No change to `win_native_api_helper.hpp`'s actual Windows API calls.
 - `make_default_source_chain()`'s Windows branch becomes
   `{WindowsNativeSource, LegacyMemoryScanSource}` - the legacy scan stays
   as a last resort on Windows too (R3), matching every other platform's
@@ -34,7 +34,7 @@ native-API logic.
 
 ## Files or directories created or modified by this story
 
-- `smbios/include/smbios/source_windows/win_bios.h` /
+- `smbios/include/smbios/source_windows/win_bios.hpp` /
   `smbios/src/source_windows/win_bios.cpp` (path updated per Story 01.1's
   `smbios_source_windows` library - was planned as a flat
   `smbios/include/smbios/` path before that story landed) - `SMBiosImpl`

@@ -57,12 +57,12 @@ variables - do not rename the file without updating every inbound link via
 
 ## Files or directories created or modified by this story
 
-- `smbios/include/smbios/source_macos/macos_efi_reader.h` /
+- `smbios/include/smbios/source_macos/macos_efi_reader.hpp` /
   `smbios/src/source_macos/macos_efi_reader.cpp` (new; path updated per
   Story 01.1's `smbios_source_macos` library - was planned as a flat
   `smbios/include/smbios/` path before that story landed) - low-level
   IORegistry property read, ported from `mem_chunk_ioreg()`.
-- `smbios/include/smbios/source_macos/macos_uefi_source.h` /
+- `smbios/include/smbios/source_macos/macos_uefi_source.hpp` /
   `smbios/src/source_macos/macos_uefi_source.cpp` (new; same path update)
   - the `ISmbiosSource` implementation, replacing Story 01.1's temporary
   `make_default_source_chain()` stub in this same library with the real

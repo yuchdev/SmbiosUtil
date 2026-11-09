@@ -14,7 +14,7 @@ up on a type this involved.
 
 ## Files
 
-- **Create** `smbios/include/smbios/processor_information_entry.h` / `.cpp`:
+- **Create** `smbios/include/smbios/processor_information_entry.hpp` / `.cpp`:
   socket designation, processor type/family/manufacturer, processor ID (8
   bytes), version string, voltage, external/max/current clock speed,
   status, upgrade, and the 2.3+/2.5+/2.6+ additions (L1/L2/L3 cache handle,
@@ -22,7 +22,7 @@ up on a type this involved.
   count/enabled/thread count, characteristics bitmask, and the 3.0+
   2-byte-wide core/thread count fields that supersede the original 1-byte
   ones when they read `0xFF`).
-- **Create** `smbios/include/smbios/cache_information_entry.h` / `.cpp`:
+- **Create** `smbios/include/smbios/cache_information_entry.hpp` / `.cpp`:
   socket designation, cache configuration bitmask, max/installed size,
   supported/current SRAM type bitmasks, cache speed, error correction
   type, system cache type, associativity, and the 3.1+ widened

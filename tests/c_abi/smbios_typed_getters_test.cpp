@@ -3,14 +3,14 @@
 // match the equivalent C++ getter exactly), and each on a mismatched
 // entry type (must return SMBIOS_ERR_INVALID_ARGUMENT). Not wired into
 // CMake yet (Story 03.0's job); compiled and run manually.
-#include <smbios_c/smbios_c.h>
+#include <smbios/smbios.h>
 
-#include <libsmbios/smbios.h>
-#include <libsmbios/abstract_smbios_entry.h>
-#include <libsmbios/smbios_entry_factory.h>
-#include <libsmbios/tables/bios_information_entry.h>
-#include <libsmbios/tables/system_information_entry.h>
-#include <libsmbios/tables/memory_device_entry.h>
+#include <libsmbios/smbios.hpp>
+#include <libsmbios/abstract_smbios_entry.hpp>
+#include <libsmbios/smbios_entry_factory.hpp>
+#include <libsmbios/tables/bios_information_entry.hpp>
+#include <libsmbios/tables/system_information_entry.hpp>
+#include <libsmbios/tables/memory_device_entry.hpp>
 
 #include <cassert>
 #include <cstdio>

@@ -39,13 +39,13 @@ story's source to reuse when decoding a raw entry point's version bytes.
 
 ## Files or directories created or modified by this story
 
-- `smbios/include/smbios/ismbios_source.h` (new).
-- `smbios/include/smbios/smbios.h` / `smbios/src/smbios.cpp` - constructor
+- `smbios/include/smbios/ismbios_source.hpp` (new).
+- `smbios/include/smbios/smbios.hpp` / `smbios/src/smbios.cpp` - constructor
   rewritten around the source chain; `scan_physical_memory`/
   `extract_dmi_version`/`checksum32`/`checksum64` and the
   `SMBIOSEntryPoint32`/`64` structs move into a new `LegacyMemoryScanSource`
   implementation (file location to be decided during Task 01 -
   likely `smbios/src/legacy_memory_scan_source.cpp`).
-- `smbios/include/smbios/smbios_version_fixup.h` (new, Task 02).
-- `smbios/include/smbios/win_bios.h`/`unix_bios.h` - unaffected by this
+- `smbios/include/smbios/smbios_version_fixup.hpp` (new, Task 02).
+- `smbios/include/smbios/win_bios.hpp`/`unix_bios.h` - unaffected by this
   story; Story 04.0 and Story 02.0/03.0 adapt them to the new interface.

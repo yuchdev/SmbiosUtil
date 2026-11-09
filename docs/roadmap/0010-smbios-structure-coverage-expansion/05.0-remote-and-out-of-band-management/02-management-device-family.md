@@ -12,7 +12,7 @@ Implement `ManagementDeviceEntry` (`SMBiosHandler` value `34`), DSP0134
 
 ## Files
 
-- **Create** `libsmbios/include/smbios/tables/management_device_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/management_device_entry.hpp` /
   `.cpp`:
   - 0x04 Description (STRING)
   - 0x05 Type (BYTE, ENUM - see 7.35.1; name the accessor
@@ -21,7 +21,7 @@ Implement `ManagementDeviceEntry` (`SMBiosHandler` value `34`), DSP0134
   - 0x06 Address (DWORD)
   - 0x0A Address Type (BYTE, ENUM - see 7.35.2)
 - **Create**
-  `libsmbios/include/smbios/tables/management_device_component_entry.h` /
+  `libsmbios/include/smbios/tables/management_device_component_entry.hpp` /
   `.cpp`:
   - 0x04 Description (STRING)
   - 0x05 Management Device Handle (WORD)
@@ -32,7 +32,7 @@ Implement `ManagementDeviceEntry` (`SMBiosHandler` value `34`), DSP0134
     "no threshold" sentinel value against the full spec table, since this
     task's own excerpt did not show that detail explicitly)
 - **Create**
-  `libsmbios/include/smbios/tables/management_device_threshold_data_entry.h` /
+  `libsmbios/include/smbios/tables/management_device_threshold_data_entry.hpp` /
   `.cpp`:
   - 0x04 Lower Threshold - Non-critical (WORD; `0x8000` = unavailable)
   - 0x06 Upper Threshold - Non-critical (WORD; `0x8000` = unavailable)

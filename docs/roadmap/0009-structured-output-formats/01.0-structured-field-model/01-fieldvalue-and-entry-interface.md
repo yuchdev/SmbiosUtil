@@ -29,7 +29,7 @@ Implement contract **C1** exactly, and add the pure virtual
 
   } // namespace smbios
   ```
-- **Modify** `smbios/include/smbios/abstract_smbios_entry.h`: add
+- **Modify** `smbios/include/smbios/abstract_smbios_entry.hpppp`: add
   ```cpp
   virtual std::vector<NamedField> get_fields() const = 0;
   ```

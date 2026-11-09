@@ -6,7 +6,7 @@ Windows, Linux, and macOS all have native, unprivileged ways to read the table -
 
 * **`libsmbios`** - the core library. All system calls, all structure parsing, no UI.
 * **`smbios`** - the command-line front end (`libsmbios`'s own namespace is `smbios::` everywhere; the CLI target happens to share that name).
-* **`smbios_c`** - a C ABI shim over `libsmbios`, for calling into it from Python, Rust, C#, or any other language with C FFI support, without linking C++. See [`smbios_c/include/smbios_c/smbios_c.h`](smbios_c/include/smbios_c/smbios_c.h) and [CLAUDE.md](CLAUDE.md) for details, and `pkg-config --cflags --libs smbios_c` for build flags after installing.
+* **`smbios_c`** - a C ABI shim over `libsmbios`, for calling into it from Python, Rust, C#, or any other language with C FFI support, without linking C++. See [`smbios_c/include/smbios/smbios.hpp`](smbios_c/include/smbios/smbios.hpp) and [CLAUDE.md](CLAUDE.md) for details, and `pkg-config --cflags --libs smbios_c` for build flags after installing.
 
 ## Quick start
 

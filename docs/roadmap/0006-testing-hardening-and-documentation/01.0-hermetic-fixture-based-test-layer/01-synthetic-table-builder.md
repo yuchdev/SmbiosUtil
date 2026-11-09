@@ -13,7 +13,7 @@ satisfying contract R1.
 
 ## Files
 
-- **Create** `smbios/test/unit/synthetic_table_builder.h` / `.cpp`:
+- **Create** `smbios/test/unit/synthetic_table_builder.hpp` / `.cpp`:
   ```cpp
   class SyntheticTableBuilder {
   public:

@@ -10,7 +10,7 @@ Implement `BaseboardInformationEntry` (`SMBiosHandler` value `2`), DSP0134
 
 ## Files
 
-- **Create** `libsmbios/include/smbios/tables/baseboard_information_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/baseboard_information_entry.hpp` /
   `libsmbios/src/baseboard_information_entry.cpp`:
   - 0x04 Manufacturer (STRING)
   - 0x05 Product (STRING)

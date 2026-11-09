@@ -11,8 +11,8 @@ about how much `#if defined(_WIN32)` can be removed from `smbios.cpp`.
 
 ## Files
 
-- **Create** `smbios/include/smbios/ismbios_source.h` per contract C1.
-- **Create** `smbios/include/smbios/smbios_source_chain.h` / `.cpp`:
+- **Create** `smbios/include/smbios/ismbios_source.hpp` per contract C1.
+- **Create** `smbios/include/smbios/smbios_source_chain.hpp` / `.cpp`:
   ```cpp
   std::vector<std::unique_ptr<ISmbiosSource>> make_default_source_chain();
   ```
@@ -22,7 +22,7 @@ about how much `#if defined(_WIN32)` can be removed from `smbios.cpp`.
   this platform," while `SMBios`'s own constructor logic (iterate the
   chain, call `is_available()` then `try_read()`, stop at first success)
   is platform-neutral C++ with no `#if` at all.
-- **Modify** `smbios/include/smbios/smbios.h` / `smbios/src/smbios.cpp`:
+- **Modify** `smbios/include/smbios/smbios.hpp` / `smbios/src/smbios.cpp`:
   constructor becomes
   ```cpp
   SMBios::SMBios() {
@@ -52,7 +52,7 @@ about how much `#if defined(_WIN32)` can be removed from `smbios.cpp`.
   on every platform returns a chain of exactly one element (the existing
   native impl, or the legacy scan, matching today's behavior) until
   Stories 02.0-04.0 add real entries.
-- `win_bios.h`'s existing `SMBiosImpl` is **not** deleted in this task -
+- `win_bios.hpp`'s existing `SMBiosImpl` is **not** deleted in this task -
   Story 04.0 adapts it to implement `ISmbiosSource` directly; until then,
   a thin wrapper (`WindowsNativeSource` delegating to the existing
   `SMBiosImpl`) is an acceptable intermediate shape if it unblocks this

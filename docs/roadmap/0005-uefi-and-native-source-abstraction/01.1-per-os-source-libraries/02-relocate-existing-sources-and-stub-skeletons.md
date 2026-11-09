@@ -22,10 +22,10 @@ stub `unix_bios.h`/`.cpp` Linux uses, via `smbios.cpp`'s `#else` branch).
   target_link_libraries(smbios_source_windows PUBLIC smbios_source_interface smbios_source_legacy)
   target_compile_options(smbios_source_windows PRIVATE ${SMBIOS_COMPILE_OPTIONS} ${SMBIOS_WARNING_OPTIONS})
   ```
-  **Move** `smbios/include/smbios/win_bios.h`, `smbios/src/win_bios.cpp`,
-  `smbios/include/smbios/win_native_api_helper.h`,
-  `smbios/include/smbios/win_handle_ptr.h`,
-  `smbios/include/smbios/win_system_information.h`,
+  **Move** `smbios/include/smbios/win_bios.hpp`, `smbios/src/win_bios.cpp`,
+  `smbios/include/smbios/win_native_api_helper.hpp`,
+  `smbios/include/smbios/win_handle_ptr.hpp`,
+  `smbios/include/smbios/win_system_information.hpp`,
   `smbios/src/win_system_information.cpp` into
   `smbios/include/smbios/source_windows/` / `smbios/src/source_windows/`
   verbatim - **no edit to any Windows API call site**, matching this
@@ -95,7 +95,7 @@ stub `unix_bios.h`/`.cpp` Linux uses, via `smbios.cpp`'s `#else` branch).
 - `unix_bios.h`'s existing class-level doc comment is **not** rewritten
   in this task (Story 02.0 already owns that, per its own Key
   constraints) - only its file location changes.
-- No change to `win_native_api_helper.h`'s Windows API calls (Story
+- No change to `win_native_api_helper.hpp`'s Windows API calls (Story
   04.0's own constraint, inherited here since this task moves the file
   that contains them).
 

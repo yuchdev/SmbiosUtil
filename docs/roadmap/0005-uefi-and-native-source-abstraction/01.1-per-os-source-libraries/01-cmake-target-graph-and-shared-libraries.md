@@ -21,12 +21,12 @@ C++ `#if defined(_WIN32)`. This is the resolution of contract **C3**
   target_include_directories(smbios_source_interface INTERFACE
       ${CMAKE_CURRENT_SOURCE_DIR}/../../include)
   ```
-  Move `smbios/include/smbios/byte_reader.h` and
-  `smbios/include/smbios/smbios_anchor.h` here verbatim (both are already
+  Move `smbios/include/smbios/byte_reader.hpp` and
+  `smbios/include/smbios/smbios_anchor.hpp` here verbatim (both are already
   fully header-only - no `.cpp` exists for either today, confirmed by
   `smbios/src/CMakeLists.txt`'s current `file(GLOB SOURCES *.cpp ...)`
-  list). `smbios/include/smbios/ismbios_source.h` and
-  `smbios/include/smbios/smbios_version_fixup.h` (both created by Story
+  list). `smbios/include/smbios/ismbios_source.hpp` and
+  `smbios/include/smbios/smbios_version_fixup.hpp` (both created by Story
   01.0, Tasks 01/02, inside core `smbios`'s own include tree) also move
   here - a relocation of files Story 01.0 already wrote, not a request to
   change Story 01.0's own task files.
@@ -49,7 +49,7 @@ C++ `#if defined(_WIN32)`. This is the resolution of contract **C3**
   target_compile_options(smbios_source_legacy PRIVATE ${SMBIOS_COMPILE_OPTIONS} ${SMBIOS_WARNING_OPTIONS})
   ```
   Contents moved here by Task 02: `PhysicalMemory`/`NativePhysicalMemory`
-  (today's `physical_memory.h`/`.cpp`, `posix_physical_memory.h`/`.cpp`,
+  (today's `physical_memory.hpp`/`.cpp`, `posix_physical_memory.h`/`.cpp`,
   `win_physical_memory.h`/`.cpp` - the existing `#if`-split pair stays
   exactly as-is internally, just relocated) and `LegacyMemoryScanSource`
   (wherever Story 01.0 Task 02 places it inside core `smbios`).
@@ -80,7 +80,7 @@ C++ `#if defined(_WIN32)`. This is the resolution of contract **C3**
   ```
   (exact variable/target names above are illustrative; reconcile with the
   file's existing `${TARGET}`-based conventions during implementation).
-- **Modify** `smbios/include/smbios/smbios.h` / `smbios/src/smbios.cpp`:
+- **Modify** `smbios/include/smbios/smbios.hpp` / `smbios/src/smbios.cpp`:
   delete the `#if defined(_WIN32) ... #include "win_bios.h" ... #else
   ... #include "unix_bios.h" ... #endif` block at the top entirely (Story
   01.0 Task 01 already rewrote the constructor's body to call

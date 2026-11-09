@@ -16,10 +16,10 @@ Prove R5 with a real, separately-built CSV formatter living outside
   CSV row: `type,field_name,field_value`), registered via
   `REGISTER_OUTPUT_FORMATTER(CsvFormatter)` from a file that only
   `#include <smbios/output_formatter.h>` and
-  `<smbios/abstract_smbios_entry.h>` - no access to any entry type's
+  `<smbios/abstract_smbios_entry.hpppp>` - no access to any entry type's
   concrete header, proving the registry's public surface alone is enough
   to add a format.
-- **Modify** `smbios_util/include/smbios_util/command_line_parser.h` /
+- **Modify** `smbios_util/include/smbios_util/command_line_parser.hpp` /
   `.cpp`: add `("format,f", po::value<string>(&_format)->default_value("text"),
   "Output format: text|xml|json|yaml|csv, or any registered custom format")`.
 - **Modify** `smbios_util/src/main.cpp`: look up
@@ -44,7 +44,7 @@ Prove R5 with a real, separately-built CSV formatter living outside
 ## Constraints
 
 - `csv_formatter.cpp` must not `#include` any concrete entry-type header
-  (`bios_information_entry.h`, etc.) - if it needs to, that's a sign
+  (`bios_information_entry.hpp`, etc.) - if it needs to, that's a sign
   `get_fields()`/`IOutputFormatter`'s public surface is insufficient, a
   Story 01.0/02.0 gap, not something to work around here.
 - An unknown `--format` value exits with a clear, actionable message

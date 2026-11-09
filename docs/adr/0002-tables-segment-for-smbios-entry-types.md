@@ -13,11 +13,11 @@
 `libsmbios` currently implements 11 of the 49 SMBIOS structure types the
 DMTF SMBIOS 3.9.0 specification (`docs/standard/DSP0134_3.9.0.md`) defines
 (Types 0, 1, 3, 4, 7, 8, 9, 16, 17, 19, 32). Every one of those 11 entry
-classes lives flat, directly under `libsmbios/include/smbios/*.h` and
+classes lives flat, directly under `libsmbios/include/smbios/*.hpp` and
 `libsmbios/src/*.cpp`, alongside genuinely different kinds of files in the
-same two directories: the acquisition/parsing core (`smbios.h`/`.cpp`), the
-entry base class (`abstract_smbios_entry.h`/`.cpp`), and the
-self-registering factory (`smbios_entry_factory.h`/`.cpp`).
+same two directories: the acquisition/parsing core (`smbios.hpp`/`.cpp`), the
+entry base class (`abstract_smbios_entry.hpppp`/`.cpp`), and the
+self-registering factory (`smbios_entry_factory.hpp`/`.cpp`).
 
 Milestone 0010 (`docs/roadmap/0010-smbios-structure-coverage-expansion/`)
 is about to add ~34 more entry classes (Types 2, 11-15, 18, 20-31, 33-46,
@@ -26,7 +26,7 @@ would leave 45 single-purpose entry-class files indistinguishable, by
 location alone, from the 4 files that are actually core infrastructure -
 exactly the kind of flat-directory sprawl this repo has already decided,
 elsewhere, not to tolerate: every other library in the tree
-(`libsmbios_linux`, `libsmbios_macos`, `libsmbios_win`, `os_interface`)
+(`libsmbios_linux`, `libsmbios_macos`, `libsmbios_win`, `sys_interface`)
 groups its own multi-file concern under a named subdirectory of
 `include/smbios/`.
 
@@ -34,8 +34,8 @@ groups its own multi-file concern under a named subdirectory of
 
 Reading `libsmbios_linux/` as the worked example:
 
-- `libsmbios_linux/include/smbios/linux/linux_sysfs_source.h` and
-  `linux_efi_source.h` - headers live under a `linux/` **segment
+- `libsmbios_linux/include/smbios/linux/linux_sysfs_source.hpppppp` and
+  `linux_efi_source.hpp` - headers live under a `linux/` **segment
   subdirectory** of `include/smbios/`.
 - `libsmbios_linux/src/linux_sysfs_source.cpp`,
   `linux_efi_source.cpp`, `linux_source_chain.cpp` - sources stay **flat**,
@@ -46,8 +46,8 @@ Reading `libsmbios_linux/` as the worked example:
   deliberate: "`file(GLOB)` is non-recursive, so this only ever picks up
   `*.cpp` sitting directly in `libsmbios/src/` itself").
 
-`os_interface` follows the same split
-(`os_interface/include/smbios/os_interface/*.h`, flat `src/`... actually
+`sys_interface` follows the same split
+(`sys_interface/include/smbios/sys_interface/*.h`, flat `src/`... actually
 header-only, no `src/` at all, but the include-side segmentation is
 identical).
 
@@ -77,7 +77,7 @@ smbios/` to distinguish them from.
   unmodified once the move lands (same bar ADR 0001's own Story 01.1
   rollout held itself to for its skeleton restructuring).
 - **DD4 - No `#include` churn beyond the files that actually move.** Every
-  `#include <smbios/xxx_entry.h>` site - `smbios_entry_factory.cpp`'s
+  `#include <smbios/xxx_entry.hpp>` site - `smbios_entry_factory.cpp`'s
   implicit discovery (it imports nothing; headers self-register via their
   own `.cpp`), `smbios_util`'s CLI, and every `tests/unit/*_entry_test.cpp`
   - must be updated to the new `tables/` path, but nothing else about those
@@ -87,43 +87,43 @@ smbios/` to distinguish them from.
 
 1. Every SMBIOS structure-type entry header moves to a new
    `libsmbios/include/smbios/tables/` segment subdirectory:
-   `bios_information_entry.h`, `system_information_entry.h`,
-   `system_enclosure_entry.h`, `processor_information_entry.h`,
-   `cache_information_entry.h`, `port_connection_entry.h`,
-   `system_slots_entry.h`, `physical_memory_array_entry.h`,
-   `memory_device_entry.h`, `memory_array_mapped_address_entry.h`,
-   `system_boot_information_entry.h`, plus every new entry header milestone
-   0010 adds. Call sites change from `#include <smbios/xxx_entry.h>` to
-   `#include <smbios/tables/xxx_entry.h>`.
+   `bios_information_entry.hpp`, `system_information_entry.hpp`,
+   `system_enclosure_entry.hpp`, `processor_information_entry.hpp`,
+   `cache_information_entry.hpp`, `port_connection_entry.hpp`,
+   `system_slots_entry.hpp`, `physical_memory_array_entry.hpp`,
+   `memory_device_entry.hpp`, `memory_array_mapped_address_entry.hpp`,
+   `system_boot_information_entry.hpp`, plus every new entry header milestone
+   0010 adds. Call sites change from `#include <smbios/xxx_entry.hpp>` to
+   `#include <smbios/tables/xxx_entry.hpp>`.
 2. The corresponding `.cpp` files **stay flat** in `libsmbios/src/` -
    matching `libsmbios_linux`'s own src-side precedent exactly. No
    `src/tables/` subdirectory is created. The `.cpp` files' own
-   `#include <smbios/tables/xxx_entry.h>` directive is the only change each
+   `#include <smbios/tables/xxx_entry.hpp>` directive is the only change each
    one needs.
-3. `libsmbios/include/smbios/*.h` keeps exactly the 4 files that are not
-   per-structure-type entry classes: `smbios.h` (acquisition/parsing core,
+3. `libsmbios/include/smbios/*.hpp` keeps exactly the 4 files that are not
+   per-structure-type entry classes: `smbios.hpp` (acquisition/parsing core,
    `SMBiosHandler` enum, `DMIHeader`, `SMBiosVersion`),
-   `abstract_smbios_entry.h` (the base class every `tables/` header
-   derives from), `smbios_entry_factory.h` (the self-registering factory),
-   `smbios_entry_interface.h` (`SMBiosInterface`). These stay at the flat
+   `abstract_smbios_entry.hpppp` (the base class every `tables/` header
+   derives from), `smbios_entry_factory.hpp` (the self-registering factory),
+   `smbios_entry_interface.hpp` (`SMBiosInterface`). These stay at the flat
    root because they are not entry-class headers, not because of an
    oversight - `tables/` is a segment *for structure-type entries
    specifically*, not a dumping ground for everything in `libsmbios`.
 4. `libsmbios/src/CMakeLists.txt`'s header glob changes from
    ```cmake
-   file(GLOB SOURCES *.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../include/smbios/*.h)
+   file(GLOB SOURCES *.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../include/smbios/*.hpp)
    ```
    to
    ```cmake
    file(GLOB SOURCES *.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/../include/smbios/*.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/../include/smbios/tables/*.h)
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include/smbios/*.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include/smbios/tables/*.hpp)
    ```
    (The header glob entries exist for IDE/project-file visibility only -
    `add_library()` does not need headers listed to compile - so this change
    has no effect on what actually gets compiled; `*.cpp` is unaffected
    since every `.cpp` stays in `src/` directly per point 2.)
-5. `smbios_entry_factory.h`/`.cpp` need **no edit** - the self-registering
+5. `smbios_entry_factory.hpp`/`.cpp` need **no edit** - the self-registering
    `REGISTER_SMBIOS_ENTRY` macro (ADR-adjacent design from milestone 0004)
    already means the factory never names a concrete entry class or its
    header; moving 45 entry headers changes zero lines in the factory
@@ -140,9 +140,9 @@ in `tables/` instead of being written flat and moved again later.
 | Alternative | Pros | Cons | Reason rejected |
 |-------------|------|------|-----------------|
 | **A - Status quo**: leave all entry headers/sources flat, let the ~34 new types land flat too | Zero migration work | 45 single-purpose files indistinguishable from 4 infrastructure files; diverges from every other library's own `include/<segment>/` convention; the inconsistency this ADR exists to fix | Rejected - the user explicitly asked for the reorg, and DD1 makes "do nothing" the one option that actively works against repo consistency |
-| **B - Segment both `include/` and `src/`** (`include/smbios/tables/*.h` **and** `src/tables/*.cpp`) | Headers and sources colocate under the same segment name, arguably more intuitive at a glance | Diverges from `libsmbios_linux`'s own `src/` being flat; requires changing `file(GLOB)` into a two-directory (or recursive) glob instead of appending one more non-recursive line; invents a second convention where DD1 says there should be only one | Rejected - inconsistent with the one other multi-file library (`libsmbios_linux`) this repo already has to compare against |
-| **C - One flat `include/smbios/*.h` namespace, with filename prefixes instead of a subdirectory** (e.g. `table_bios_information_entry.h`) | No new directory, no include-path churn beyond adding a prefix | Does not match any existing convention in this repo (no library uses filename prefixing instead of a subdirectory); `tables/` as a directory is strictly more discoverable (tab-completion, IDE tree view) than a shared filename prefix | Rejected - doesn't solve the sprawl problem, just renames it |
-| **D - Recommended**: `include/smbios/tables/*.h`, flat `src/*.cpp`, unchanged factory | Matches `libsmbios_linux`'s exact precedent; one-line CMake glob change; zero factory edits; zero behavior change | Every existing entry header's `#include` site must be updated (11 files today, more as milestone 0010 lands); a maintainer scanning `src/` alone still can't tell entry-class `.cpp`s apart from infrastructure `.cpp`s by directory (only `include/` is segmented) | Adopted |
+| **B - Segment both `include/` and `src/`** (`include/smbios/tables/*.hpp` **and** `src/tables/*.cpp`) | Headers and sources colocate under the same segment name, arguably more intuitive at a glance | Diverges from `libsmbios_linux`'s own `src/` being flat; requires changing `file(GLOB)` into a two-directory (or recursive) glob instead of appending one more non-recursive line; invents a second convention where DD1 says there should be only one | Rejected - inconsistent with the one other multi-file library (`libsmbios_linux`) this repo already has to compare against |
+| **C - One flat `include/smbios/*.hpp` namespace, with filename prefixes instead of a subdirectory** (e.g. `table_bios_information_entry.hpp`) | No new directory, no include-path churn beyond adding a prefix | Does not match any existing convention in this repo (no library uses filename prefixing instead of a subdirectory); `tables/` as a directory is strictly more discoverable (tab-completion, IDE tree view) than a shared filename prefix | Rejected - doesn't solve the sprawl problem, just renames it |
+| **D - Recommended**: `include/smbios/tables/*.hpp`, flat `src/*.cpp`, unchanged factory | Matches `libsmbios_linux`'s exact precedent; one-line CMake glob change; zero factory edits; zero behavior change | Every existing entry header's `#include` site must be updated (11 files today, more as milestone 0010 lands); a maintainer scanning `src/` alone still can't tell entry-class `.cpp`s apart from infrastructure `.cpp`s by directory (only `include/` is segmented) | Adopted |
 
 ## Consequences
 
@@ -176,9 +176,9 @@ in `tables/` instead of being written flat and moved again later.
   group, sources don't) - mitigated by it already being true, unremarked,
   of `libsmbios_linux` today, so it is at least a *consistent* asymmetry
   across the codebase, not a new one.
-- `libsmbios/include/smbios/*.h`'s remaining 4 files (`smbios.h`,
-  `abstract_smbios_entry.h`, `smbios_entry_factory.h`,
-  `smbios_entry_interface.h`) are themselves not segmented into any
+- `libsmbios/include/smbios/*.hpp`'s remaining 4 files (`smbios.hpp`,
+  `abstract_smbios_entry.hpppp`, `smbios_entry_factory.hpp`,
+  `smbios_entry_interface.hpp`) are themselves not segmented into any
   subdirectory of their own (e.g. a hypothetical `core/`) - left flat
   deliberately per Decision point 3, but a future reader could reasonably
   ask why `tables/` exists and `core/` doesn't; worth a one-line comment at
@@ -210,8 +210,8 @@ in `tables/` instead of being written flat and moved again later.
 
 A follow-up, user-directed rename moved `libsmbios`'s entire public
 `include/` tree from `libsmbios/include/smbios/` to
-`libsmbios/include/libsmbios/` (headers now `#include <libsmbios/smbios.h>`,
-`#include <libsmbios/tables/*.h>`, etc.), at the same time renaming the
+`libsmbios/include/libsmbios/` (headers now `#include <libsmbios/smbios.hpppp>`,
+`#include <libsmbios/tables/*.hpp>`, etc.), at the same time renaming the
 `smbios` CLI's own private header directory from `smbios/include/smbios_util/`
 to `smbios/include/smbios/`. This addendum records it rather than rewriting
 the Decision/Consequences sections above, which remain the accurate
@@ -219,7 +219,7 @@ historical record of the `tables/` segment decision itself - a separate,
 later decision, not a correction of this one.
 
 Rationale: every per-OS/legacy/interface library still places its headers
-under `include/smbios/<segment>/*.h` (unchanged), all compiling into the
+under `include/smbios/<segment>/*.hpp` (unchanged), all compiling into the
 same `smbios::` namespace - but `libsmbios` is the one library whose
 headers are the project's actual public API surface, not an internal
 per-OS implementation detail. Giving it its own `include/libsmbios/` makes

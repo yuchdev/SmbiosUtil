@@ -24,7 +24,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   port is known to exist; inventing one or guessing a URL was explicitly
   rejected as an option. Windows's reference is Microsoft's own
   `GetSystemFirmwareTable`/WMI documentation (already the basis for
-  `win_bios.h`), watched by Story 03.0's agent as a documentation page,
+  `win_bios.hpp`), watched by Story 03.0's agent as a documentation page,
   not a git submodule. Revisit only if a credible port is identified later
   - see `plan.md`'s "Confirmed upstreams" section.
 - Confirmed submodule URLs (verified via `git remote -v` against the

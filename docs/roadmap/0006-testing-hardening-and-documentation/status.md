@@ -43,7 +43,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   coverage via direct `AbstractSMBiosEntry` subclass construction, not a
   `SMBios`-level buffer-input path.
 - **2026-11-08, Story 01.0 Task 01 (`SyntheticTableBuilder`) landed:**
-  `tests/unit/synthetic_table_builder.h`/`.cpp` (namespace
+  `tests/unit/synthetic_table_builder.hpppp`/`.cpp` (namespace
   `smbios::test`), reusing the existing `SmbiosTableWalkTestAccess` friend
   seam (moved there from `smbios_table_walk_test.cpp`, which now includes
   the shared header instead of duplicating it) rather than adding the
@@ -95,7 +95,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   4 `ctest` targets green. The spec's own proxy grep
   (`std::vector<uint8_t>.*{0x`) only moves 9 -> 10 (it was never a
   reliable signal for this codebase's push_back-style construction); the
-  real signal is `grep -rl synthetic_table_builder.h tests/unit/*.cpp`:
+  real signal is `grep -rl synthetic_table_builder.hpp tests/unit/*.cpp`:
   3 files before this task, 16 after. Task 03 remains.
 - **2026-11-08, Story 01.0 Task 03 (CI wiring, R3) landed - Story 01.0
   complete:** found that the full hermetic suite was *already* running
@@ -180,7 +180,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   (new) is a standard libFuzzer `LLVMFuzzerTestOneInput` entry point driving
   arbitrary bytes into `SMBios::read_smbios_table()` via the same
   `SmbiosTableWalkTestAccess::parse_synthetic_table()` seam Story 01.0 Task 01
-  built (`tests/unit/synthetic_table_builder.h`) - the task spec's own code
+  built (`tests/unit/synthetic_table_builder.hpppp`) - the task spec's own code
   sample called a `smbios::read_headers_from_buffer()` free function that
   Task 01 deliberately never added (see that task's own note above); this
   task uses the real seam instead, adding no second parallel mechanism.
@@ -243,7 +243,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 ## Story 01.0 - Hermetic Fixture-Based Test Layer (✅ 2026-11-08)
 
 **Delivered:**
-- `smbios::test::SyntheticTableBuilder` (`tests/unit/synthetic_table_builder.h`/`.cpp`) - fluent, well-formed-by-default in-memory SMBIOS table construction (R1), with an `add_raw_bytes()` escape hatch reserved for Story 02.0's malformed-table tests.
+- `smbios::test::SyntheticTableBuilder` (`tests/unit/synthetic_table_builder.hpppp`/`.cpp`) - fluent, well-formed-by-default in-memory SMBIOS table construction (R1), with an `add_raw_bytes()` escape hatch reserved for Story 02.0's malformed-table tests.
 - Reused rather than duplicated the pre-existing `SmbiosTableWalkTestAccess` friend seam for feeding a synthetic buffer into `SMBios`'s private table walk - no new production API surface was added.
 - 13 `tests/unit/*_test.cpp` files migrated off hand-rolled byte buffers onto the shared builder (R2); 13 duplicate `append_string_terminator()` helpers deleted as dead code.
 - Confirmed (not newly built) that CI already runs the full hermetic suite unprivileged on every push across Windows/Linux/macOS (R3); added one traceability comment rather than a redundant job.
@@ -268,22 +268,22 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   landed - 1/3 tasks of this story:** audited every header under every
   `include/smbios/` tree across all 7 repo-root libraries (`libsmbios`,
   `libsmbios_linux`, `libsmbios_macos`, `libsmbios_posix_legacy`,
-  `libsmbios_win`, `libsmbios_win_legacy`, `os_interface`) - 29 header
+  `libsmbios_win`, `libsmbios_win_legacy`, `sys_interface`) - 29 header
   files, ~140 classes/structs/enums/functions/templates. Most of
-  `libsmbios/include/smbios/` (the 10 entry classes, `smbios_entry_factory.h`,
-  `smbios_entry_interface.h`, `abstract_smbios_entry.h`) and all of
-  `os_interface/`'s `ismbios_source.h`/`smbios_source_chain.h`/
-  `smbios_version_fixup.h`, plus both macOS headers and both Linux
+  `libsmbios/include/smbios/` (the 10 entry classes, `smbios_entry_factory.hpp`,
+  `smbios_entry_interface.hpp`, `abstract_smbios_entry.hpppp`) and all of
+  `sys_interface/`'s `ismbios_source.hpp`/`smbios_source_chain.hpp`/
+  `smbios_version_fixup.hpp`, plus both macOS headers and both Linux
   headers, were already complete per the skill's contract and left
   untouched (confirming the task spec's own expectation that
   `BiosInformationEntry`-style comments are already the norm, not the
-  exception). Comment-only gaps closed in 9 files: `smbios.h` (undocumented
+  exception). Comment-only gaps closed in 9 files: `smbios.hpp` (undocumented
   `DMIHeader`/`SMBiosVersion` fields and `operator>`/`operator<`, a vague
   `SMBiosHandler` block comment, `get_structures_count()`'s undocumented
   disagreement with `read_smbios_table()` on malformed input - see Story
   02.0's own finding - and a "make compiler happy"-style destructor
-  comment), `memory_device_entry.h` (a reworded-name class brief, one
-  wholly undocumented enum), `port_connection_entry.h` (a genuine
+  comment), `memory_device_entry.hpp` (a reworded-name class brief, one
+  wholly undocumented enum), `port_connection_entry.hpp` (a genuine
   **comment-vs-code mismatch, fixed as documentation per this agent's own
   "trust the code over the comment" rule, not a logic change**:
   `get_internal_connection_type()`/`get_external_connection_type()`/
@@ -292,12 +292,12 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   Designator* DMI string, but actually read/render the Connector *Type*
   code at a different offset - the Reference Designator string indices
   have no accessor in this class at all, now flagged explicitly in the
-  comment rather than silently misdescribed), `smbios_anchor.h`
-  (undocumented enum + template function), `smbios_entry_point.h`
+  comment rather than silently misdescribed), `smbios_anchor.hpp`
+  (undocumented enum + template function), `smbios_entry_point.hpp`
   (every wire-format field of both `SMBIOSEntryPoint32`/`64` was
-  completely uncommented), `win_bios.h`/`win_system_information.h`/
-  `physical_memory.h` (×2, Windows and POSIX legacy) and
-  `win_native_api_helper.h` (Windows-only code, doc-only edits, not
+  completely uncommented), `win_bios.hpp`/`win_system_information.hpp`/
+  `physical_memory.hpp` (×2, Windows and POSIX legacy) and
+  `win_native_api_helper.hpp` (Windows-only code, doc-only edits, not
   exercised by the macOS build used to verify this task - see below).
   **New:** `docs/architecture/overview.md` - a Mermaid data-flow diagram
   of the real `ISmbiosSource` chain (`make_default_source_chain()` ->
@@ -307,7 +307,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   accessors), tying milestone 0003's field-table accessor pattern to
   milestone 0005's source chain, plus a "how to add a new structure type"
   walkthrough - cross-checked directly against `libsmbios/src/smbios.cpp`,
-  `smbios_entry_factory.h`/`.cpp`, and `bios_information_entry.h`/`.cpp`
+  `smbios_entry_factory.hpp`/`.cpp`, and `bios_information_entry.hpp`/`.cpp`
   rather than against any roadmap plan file's description of intent.
   Build: `cmake --build --preset macos` clean, zero new warnings/errors
   (pre-existing unrelated linker visibility warnings only).
@@ -320,7 +320,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 ## Story 03.0 - Documentation and Release Pass (✅ 2026-11-08)
 
 **Delivered:**
-- Doxygen audit across all 29 headers in every `include/smbios/` tree (not just `libsmbios/`) - 9 files had gaps closed; most of the codebase already met the bar. One real comment-vs-code mismatch found and fixed as documentation: `port_connection_entry.h`'s connector accessors were documented as the Reference Designator *string* but actually read the Connector *Type* code - now documented accurately, with the missing accessor noted as a gap (not implemented in this pass - out of scope, doc-only task).
+- Doxygen audit across all 29 headers in every `include/smbios/` tree (not just `libsmbios/`) - 9 files had gaps closed; most of the codebase already met the bar. One real comment-vs-code mismatch found and fixed as documentation: `port_connection_entry.hpp`'s connector accessors were documented as the Reference Designator *string* but actually read the Connector *Type* code - now documented accurately, with the missing accessor noted as a gap (not implemented in this pass - out of scope, doc-only task).
 - `docs/architecture/overview.md` (new) - `ISmbiosSource` chain data-flow diagram (Mermaid) and a "how to add a new structure type" walkthrough, cross-checked against the real current code.
 - `CLAUDE.md` - targeted additions (not a full rewrite - most of the as-built description was already current from this session's earlier repo-root restructuring pass): the hermetic `SyntheticTableBuilder`-based unit suite and its unprivileged CI coverage, the `SMBIOS_BUILD_FUZZERS` local-only fuzz harness, and a cross-reference to the new architecture overview. Root `README.md`'s platform-support statement was already corrected in an earlier pass (confirmed, not re-touched).
 - `python3 scripts/check_doc_links.py docs/` - 183 files scanned, 0 problems.

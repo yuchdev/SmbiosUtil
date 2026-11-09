@@ -11,7 +11,7 @@ C++ compiler.
 
 ## Files
 
-- **Create** `smbios_c/include/smbios_c/smbios_c.h` (the opaque types and
+- **Create** `smbios_c/include/smbios/smbios.hpp` (the opaque types and
   error enum from contract C1, plus an `#include <stddef.h>` for `size_t`
   and `#include <stdint.h>` for fixed-width integers - no other includes).
 
@@ -37,7 +37,7 @@ C++ compiler.
 ## Tests
 
 - `tests/c_abi/compile_as_c_test.c` (new): a trivial `.c` file that
-  `#include <smbios_c/smbios_c.h>` and compiles under a C compiler as part
+  `#include <smbios/smbios.hpp>` and compiles under a C compiler as part
   of the build, proving the header is genuinely C-compatible and not
   merely "C++ with `extern "C"`" that happens to also parse.
 

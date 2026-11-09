@@ -12,7 +12,7 @@ DSP0134 3.9.0 section 7.19, and `MemoryErrorInformation64BitEntry` (value
 ## Files
 
 - **Create**
-  `libsmbios/include/smbios/tables/memory_error_information_32bit_entry.h` /
+  `libsmbios/include/smbios/tables/memory_error_information_32bit_entry.hpp` /
   `.cpp`:
   - 0x04 Error Type (BYTE, ENUM - see 7.19.1)
   - 0x05 Error Granularity (BYTE, ENUM - see 7.19.2)
@@ -23,7 +23,7 @@ DSP0134 3.9.0 section 7.19, and `MemoryErrorInformation64BitEntry` (value
   - 0x0F Device Error Address (DWORD, unknown sentinel `0x80000000`)
   - 0x13 Error Resolution (DWORD, unknown sentinel `0x80000000`)
 - **Create**
-  `libsmbios/include/smbios/tables/memory_error_information_64bit_entry.h` /
+  `libsmbios/include/smbios/tables/memory_error_information_64bit_entry.hpp` /
   `.cpp`:
   - 0x04 Error Type (BYTE, same enum as above, 7.19.1)
   - 0x05 Error Granularity (BYTE, same enum, 7.19.2)

@@ -174,14 +174,14 @@ alone:
 
 1. **Run [41993079007](https://github.com/yuchdev/SmbiosSdk/actions/runs/41993079007):**
    macOS ✓ (Story 02.1's fix confirmed for real, not just locally).
-   Ubuntu ✗ - `abstract_smbios_entry.h` uses `uint16_t` with no
+   Ubuntu ✗ - `abstract_smbios_entry.hpppp` uses `uint16_t` with no
    `#include <cstdint>` (only "worked" on libc++ via transitive luck).
    Windows ✗ - configure itself failed: `CMakePresets.json` hardcoded
    `"Visual Studio 17 2022"`, but the `windows-latest` runner image now
    ships a newer Visual Studio CMake's generator-name matching has no
    fallback for.
-2. **Fix + push (`5b0ffd2`):** added `<cstdint>` to `abstract_smbios_entry.h`
-   and (defensively, same gap, not yet triggered) `smbios_anchor.h`; swept
+2. **Fix + push (`5b0ffd2`):** added `<cstdint>` to `abstract_smbios_entry.hpppp`
+   and (defensively, same gap, not yet triggered) `smbios_anchor.hpp`; swept
    every header in `smbios/` for the same class of bug, found no others
    at that point.
 3. **Fix + push (`d4ef30b`):** removed `CMakePresets.json`'s hardcoded
@@ -192,7 +192,7 @@ alone:
    macOS ✓. Ubuntu ✗ - same `<limits>`-shaped gap, this time
    `std::numeric_limits` in `unix_bios.cpp`. **Windows got past Configure
    for the first time** (confirming fix #3), then failed to Build:
-   `win_system_information.h` uses `std::string` throughout with no
+   `win_system_information.hpp` uses `std::string` throughout with no
    `#include <string>` (only `<memory>`/`<map>`) - this file had
    **literally never been compiled by any CI before**, on any platform.
 5. **Fix + push (`cb1efb7`):** `<limits>` in `unix_bios.cpp`; proactively
@@ -200,9 +200,9 @@ alone:
    (`<cstdlib>`/`<clocale>` for `EXIT_SUCCESS`/`setlocale`) and
    `posix_physical_memory.cpp` (`<unistd.h>` for `sysconf`/`getpagesize`,
    previously relying entirely on Boost.Iostreams happening to pull it in
-   first); `<string>` in `win_system_information.h`; `<Windows.h>` in
-   `win_handle_ptr.h` (same transitive-luck fragility, not yet triggered);
-   and `smbios_entry_factory.h`'s `class DMIHeader;`/`class SMBiosVersion;`
+   first); `<string>` in `win_system_information.hpp`; `<Windows.h>` in
+   `win_handle_ptr.hpp` (same transitive-luck fragility, not yet triggered);
+   and `smbios_entry_factory.hpp`'s `class DMIHeader;`/`class SMBiosVersion;`
    forward declarations corrected to `struct` (matching every other
    header and the real definition - harmless under Itanium ABI, but MSVC
    itself flagged this as a real risk of "linker errors under the

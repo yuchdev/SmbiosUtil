@@ -62,7 +62,7 @@ time - see ADR 0002 for the full reorg design and rationale.
 ## Requirements
 
 1. **R1** - Every existing entry header (11 files) is relocated to
-   `libsmbios/include/smbios/tables/*.h` per ADR 0002; every corresponding
+   `libsmbios/include/smbios/tables/*.hpp` per ADR 0002; every corresponding
    `.cpp` stays flat in `libsmbios/src/` (ADR 0002's Decision point 2); the
    one `CMakeLists.txt` glob line is updated; every `#include` call site
    (CLI, tests) is updated to the new path. Full existing test suite passes
@@ -94,7 +94,7 @@ time - see ADR 0002 for the full reorg design and rationale.
    pass of its own).
 6. **R6** - Each new entry type's tests are built via
    `smbios::test::SyntheticTableBuilder`
-   (`tests/unit/synthetic_table_builder.h`, milestone 0006 Story 01.0) -
+   (`tests/unit/synthetic_table_builder.hpppp`, milestone 0006 Story 01.0) -
    no hand-rolled byte arrays, per that builder's own stated purpose.
 7. **R7** - `smbios/src/command_line_parser.cpp`/`main.cpp` (the CLI) gains
    display support for every new type as part of the same task that adds

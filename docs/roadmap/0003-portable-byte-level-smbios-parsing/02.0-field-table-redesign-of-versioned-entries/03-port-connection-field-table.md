@@ -6,7 +6,7 @@
 ## Objective
 
 Convert `PortConnectionEntry`'s single `PortConnection` struct and
-`port_connection_` member ([port_connection_entry.h:20-27,175](/libsmbios/include/libsmbios/tables/port_connection_entry.h))
+`port_connection_` member ([port_connection_entry.hpp:20-27,175](/libsmbios/include/libsmbios/tables/port_connection_entry.hpppppp))
 to the same accessor pattern, for consistency (R5) - this entry has no
 version chain to collapse (confirmed: "fully compatible with all previous
 versions" per its own header comment), so this is the simplest of the
@@ -14,7 +14,7 @@ three conversions in this story.
 
 ## Files
 
-- **Modify** `smbios/include/smbios/port_connection_entry.h`: delete the
+- **Modify** `smbios/include/smbios/port_connection_entry.hpp`: delete the
   `PortConnection` struct and its `#pragma pack` wrapper; delete
   `port_connection_` member.
 - **Modify** `smbios/src/port_connection_entry.cpp`: rebuild the three

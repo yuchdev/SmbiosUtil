@@ -77,5 +77,5 @@ or logic changes anywhere in any of these five files.
 - [ ] `unix_bios.h`'s `SMBiosImpl` and `posix_physical_memory.h`'s
       `NativePhysicalMemory` are concrete (non-empty) types when compiled
       with `__APPLE__` defined.
-- [ ] No other guard condition anywhere in `smbios/` (e.g. `win_bios.h`,
+- [ ] No other guard condition anywhere in `smbios/` (e.g. `win_bios.hpp`,
       `win_physical_memory.h`) is touched.

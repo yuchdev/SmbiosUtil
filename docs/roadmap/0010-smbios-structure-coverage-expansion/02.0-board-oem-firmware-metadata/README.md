@@ -70,15 +70,15 @@ parsing shape from every other type in this story.
 
 ## Files or directories created or modified by this story
 
-- `libsmbios/include/smbios/tables/baseboard_information_entry.h` /
+- `libsmbios/include/smbios/tables/baseboard_information_entry.hpp` /
   `libsmbios/src/baseboard_information_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/oem_strings_entry.h` /
+- `libsmbios/include/smbios/tables/oem_strings_entry.hpp` /
   `libsmbios/src/oem_strings_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/system_configuration_options_entry.h` /
+- `libsmbios/include/smbios/tables/system_configuration_options_entry.hpp` /
   `libsmbios/src/system_configuration_options_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/firmware_language_information_entry.h` /
+- `libsmbios/include/smbios/tables/firmware_language_information_entry.hpp` /
   `libsmbios/src/firmware_language_information_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/group_associations_entry.h` /
+- `libsmbios/include/smbios/tables/group_associations_entry.hpp` /
   `libsmbios/src/group_associations_entry.cpp` (new)
 - `smbios/src/command_line_parser.cpp` / `main.cpp` - display support for
   all 5 (R7).

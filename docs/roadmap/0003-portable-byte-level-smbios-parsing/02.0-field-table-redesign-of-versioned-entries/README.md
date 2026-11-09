@@ -2,7 +2,7 @@
 
 **Parent milestone:** [plan.md](../plan.md)
 **Status:** ✅ Complete (2026-11-06)
-**Depends on:** Story 01.0 (`byte_reader.h`)
+**Depends on:** Story 01.0 (`byte_reader.hpp`)
 
 ## Scope
 
@@ -46,15 +46,15 @@ currently carry.
 
 ## Files or directories created or modified by this story
 
-- `smbios/include/smbios/abstract_smbios_entry.h` /
+- `smbios/include/smbios/abstract_smbios_entry.hpppp` /
   `smbios/src/abstract_smbios_entry.cpp` - add `raw_data()`.
-- `smbios/include/smbios/bios_information_entry.h` /
+- `smbios/include/smbios/bios_information_entry.hpp` /
   `smbios/src/bios_information_entry.cpp` - struct chain deleted; accessors
   rebuilt.
-- `smbios/include/smbios/memory_device_entry.h` /
+- `smbios/include/smbios/memory_device_entry.hpp` /
   `smbios/src/memory_device_entry.cpp` - struct chain deleted; accessors
   rebuilt.
-- `smbios/include/smbios/port_connection_entry.h` /
+- `smbios/include/smbios/port_connection_entry.hpp` /
   `smbios/src/port_connection_entry.cpp` - single struct deleted;
   accessors rebuilt (simpler conversion - no version chain to collapse,
   see milestone `status.md`'s resolved note).

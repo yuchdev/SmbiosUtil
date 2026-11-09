@@ -19,7 +19,7 @@ not an implicit extension of this one.
 
 ## Files
 
-- **Modify** `smbios_c/include/smbios_c/smbios_c.h`:
+- **Modify** `smbios_c/include/smbios/smbios.hpp`:
   ```c
   smbios_error_t smbios_bios_vendor(smbios_entry_handle_t, char* buf, size_t buf_len, size_t* out_needed_len);
   smbios_error_t smbios_bios_version(smbios_entry_handle_t, char* buf, size_t buf_len, size_t* out_needed_len);

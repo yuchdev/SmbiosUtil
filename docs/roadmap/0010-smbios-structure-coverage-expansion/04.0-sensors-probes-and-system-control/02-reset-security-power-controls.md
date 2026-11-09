@@ -11,7 +11,7 @@ section 7.24; `HardwareSecurityEntry` (value `24`), section 7.25; and
 
 ## Files
 
-- **Create** `libsmbios/include/smbios/tables/system_reset_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/system_reset_entry.hpp` /
   `.cpp`:
   - 0x04 Capabilities (BYTE, bitmask - this task spec's own source
     excerpt redacted this row's detail; confirm its exact bit layout
@@ -23,7 +23,7 @@ section 7.24; `HardwareSecurityEntry` (value `24`), section 7.25; and
   - 0x07 Reset Limit (WORD; `0xFFFF` = unknown)
   - 0x09 Timer Interval (WORD, minutes; `0xFFFF` = unknown)
   - 0x0B Timeout (WORD, minutes; `0xFFFF` = unknown)
-- **Create** `libsmbios/include/smbios/tables/hardware_security_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/hardware_security_entry.hpp` /
   `.cpp`:
   - 0x04 Hardware Security Settings (BYTE, bitmask - this task spec's own
     source excerpt redacted this row too; confirm against the full
@@ -32,7 +32,7 @@ section 7.24; `HardwareSecurityEntry` (value `24`), section 7.25; and
     Status, Keyboard Password Status, Administrator Password Status, and
     Front Panel Reset Status)
 - **Create**
-  `libsmbios/include/smbios/tables/system_power_controls_entry.h` /
+  `libsmbios/include/smbios/tables/system_power_controls_entry.hpp` /
   `.cpp`:
   - 0x04 Next Scheduled Power-on Month (BYTE, BCD, 01h-12h)
   - 0x05 Next Scheduled Power-on Day-of-month (BYTE, BCD, 01h-31h)
@@ -95,8 +95,8 @@ section 7.24; `HardwareSecurityEntry` (value `24`), section 7.25; and
 
 - [x] Capabilities/Settings bit layouts confirmed against the full spec
       table (not left as this task spec's placeholder names) - see
-      `libsmbios/include/smbios/tables/system_reset_entry.h` and
-      `hardware_security_entry.h`'s class doc comments for the confirmed
+      `libsmbios/include/smbios/tables/system_reset_entry.hpp` and
+      `hardware_security_entry.hpp`'s class doc comments for the confirmed
       Table 92/93 layouts.
 - [x] All three types register and resolve through the factory
       (`SMBiosHandler` values 23, 24, 25).

@@ -21,7 +21,7 @@ flat `smbios/include/smbios/` layout to `smbios/include/smbios/source_linux/`
 / `smbios/src/source_linux/`, inside the new `smbios_source_linux` library.
 The class/logic content below is unchanged.)*
 
-- **Create** `smbios/include/smbios/source_linux/linux_sysfs_source.h` / `.cpp`:
+- **Create** `smbios/include/smbios/source_linux/linux_sysfs_source.hpp` / `.cpp`:
   ```cpp
   class LinuxSysfsSource : public ISmbiosSource {
   public:
@@ -51,7 +51,7 @@ The class/logic content below is unchanged.)*
   reintroduce `reinterpret_cast` onto `SMBIOSEntryPoint32`/`64` just
   because this is new, unrelated-looking code; the anchor/checksum
   validation logic (`_SM_`/`_SM3_`/`_DMI_` detection via
-  `smbios_anchor.h`'s existing `detect_smbios_anchor()`) is reused as-is.
+  `smbios_anchor.hpp`'s existing `detect_smbios_anchor()`) is reused as-is.
 - Decoded major/minor are passed through Story 01.0 Task 02's
   `fixup_smbios_version()` (R9) before being written to the
   `try_read()` out-parameters - the reference applies this fixup

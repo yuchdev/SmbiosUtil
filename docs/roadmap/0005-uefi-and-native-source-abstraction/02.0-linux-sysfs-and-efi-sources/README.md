@@ -46,11 +46,11 @@ line format (`address_from_efi()`'s `SMBIOS=`/`SMBIOS3=` parsing) - see
 
 ## Files or directories created or modified by this story
 
-- `smbios/include/smbios/source_linux/linux_sysfs_source.h` /
+- `smbios/include/smbios/source_linux/linux_sysfs_source.hpp` /
   `smbios/src/source_linux/linux_sysfs_source.cpp` (new; path updated per
   Story 01.1's `smbios_source_linux` library - was planned as a flat
   `smbios/include/smbios/` path before that story landed).
-- `smbios/include/smbios/source_linux/linux_efi_source.h` /
+- `smbios/include/smbios/source_linux/linux_efi_source.hpp` /
   `smbios/src/source_linux/linux_efi_source.cpp` (new; same path update).
 - `smbios/include/smbios/source_linux/unix_bios.h` /
   `smbios/src/source_linux/unix_bios.cpp` - the old `SMBiosImpl` class

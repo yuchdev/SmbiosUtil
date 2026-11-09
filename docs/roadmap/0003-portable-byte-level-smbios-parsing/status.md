@@ -21,14 +21,14 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   accessors. See `plan.md`'s intro for the three concrete problems this
   fixes (non-portability to big-endian hosts, strict-aliasing UB, and
   linear struct proliferation per SMBIOS revision).
-- **Resolved:** `PortConnectionEntry` ([port_connection_entry.h](/libsmbios/include/libsmbios/tables/port_connection_entry.h))
+- **Resolved:** `PortConnectionEntry` ([port_connection_entry.hpp](/libsmbios/include/libsmbios/tables/port_connection_entry.hpppppp))
   has **no** version chain - a single `PortConnection` struct and a single
   `const PortConnection* port_connection_` member, matching its own header
   comment ("By 3.1 version fully compatible with all previous versions").
   It still uses the same `reinterpret_cast` technique (R1 applies), but
   Story 02.0's Task 03 is a one-struct conversion, not a multi-version
   collapse like `BiosInformationEntry`/`MemoryDeviceEntry`.
-- **2026-11-06: Story 01.0 complete.** Added `smbios/include/smbios/byte_reader.h`
+- **2026-11-06: Story 01.0 complete.** Added `smbios/include/smbios/byte_reader.hpp`
   (`read_u8`/`u16`/`u32`/`u64`, contract C1) with a new
   `tests/unit/byte_reader_test.cpp` (5 cases including the classic
   `read_u16({0x34,0x12}) == 0x1234` endian-swap check and `static_assert`-
@@ -38,7 +38,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   calls at the same byte offsets (type@0, length@1, handle@2) - verified
   bit-identical by construction, since `DMIHeader`'s field types
   (`uint8_t`/`uint8_t`/`uint16_t`) match the accessors' return types
-  exactly, no `static_cast` needed. Deliberately left `smbios.h`'s
+  exactly, no `static_cast` needed. Deliberately left `smbios.hpp`'s
   `#pragma pack(push, 1)` and `SMBios::count_smbios_structures()`'s own
   `reinterpret_cast<const DMIHeader*>` untouched - that function is Story
   03.0's scope, not yet started, and still relies on the packed layout.
@@ -52,7 +52,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   rebuilt on the new accessors; `BiosInformationV24`/`V31` and both
   pointer members deleted entirely (confirmed by grep across `smbios/`,
   `tests/`, `smbios_util/`). Added `AbstractSMBiosEntry::raw_data()` as a
-  new protected accessor (declared in `abstract_smbios_entry.h`, defined
+  new protected accessor (declared in `abstract_smbios_entry.hpppp`, defined
   in the `.cpp` since `DMIHeader` is only forward-declared in the header
   and `header_->data` needs the complete type). Added a previously-
   missing public getter, `get_extended_rom_size()` (offset `0x18`), for
@@ -142,7 +142,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   `smbios_integration_test` still fails cleanly on real assertions (no
   root/hardware on this Mac) exactly as documented - unchanged baseline.
   Added a narrowly-scoped `friend class SmbiosTableWalkTestAccess;` to
-  `smbios.h` as the test seam (same underlying mechanism as Story 01.0's
+  `smbios.hpp` as the test seam (same underlying mechanism as Story 01.0's
   `SMBiosImpl::read_from_physical_memory()` seam, extended to drive
   `SMBios`'s own private walk). AddressSanitizer confirmation (this
   task's own stated success criterion) awaits the next CI push.

@@ -23,9 +23,9 @@ struct, from the first line of each new class.
 
 Grouped by implementation session rather than one task per type (eleven
 total entry types fit this project's existing granularity of "a handful of
-closely-related classes per task," matching how `smbios_entry_factory.h`
-already imports `bios_information_entry.h`, `port_connection_entry.h`, and
-`memory_device_entry.h` side by side today). `SystemBootInformation`
+closely-related classes per task," matching how `smbios_entry_factory.hpp`
+already imports `bios_information_entry.hpp`, `port_connection_entry.hpp`, and
+`memory_device_entry.hpp` side by side today). `SystemBootInformation`
 (enum value `32`) is included in Task 03 as the smallest of the remaining
 types, to balance task size.
 
@@ -50,21 +50,21 @@ types, to balance task size.
 
 ## Files or directories created or modified by this story
 
-- `smbios/include/smbios/system_information_entry.h` /
+- `smbios/include/smbios/system_information_entry.hpp` /
   `smbios/src/system_information_entry.cpp` (new)
-- `smbios/include/smbios/system_enclosure_entry.h` /
+- `smbios/include/smbios/system_enclosure_entry.hpp` /
   `smbios/src/system_enclosure_entry.cpp` (new)
-- `smbios/include/smbios/processor_information_entry.h` /
+- `smbios/include/smbios/processor_information_entry.hpp` /
   `smbios/src/processor_information_entry.cpp` (new)
-- `smbios/include/smbios/cache_information_entry.h` /
+- `smbios/include/smbios/cache_information_entry.hpp` /
   `smbios/src/cache_information_entry.cpp` (new)
-- `smbios/include/smbios/system_slots_entry.h` /
+- `smbios/include/smbios/system_slots_entry.hpp` /
   `smbios/src/system_slots_entry.cpp` (new)
-- `smbios/include/smbios/physical_memory_array_entry.h` /
+- `smbios/include/smbios/physical_memory_array_entry.hpp` /
   `smbios/src/physical_memory_array_entry.cpp` (new)
-- `smbios/include/smbios/memory_array_mapped_address_entry.h` /
+- `smbios/include/smbios/memory_array_mapped_address_entry.hpp` /
   `smbios/src/memory_array_mapped_address_entry.cpp` (new)
-- `smbios/include/smbios/system_boot_information_entry.h` /
+- `smbios/include/smbios/system_boot_information_entry.hpp` /
   `smbios/src/system_boot_information_entry.cpp` (new)
 - `smbios_util/src/command_line_parser.cpp` / `main.cpp` - display support
   for all eight.

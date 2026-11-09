@@ -19,7 +19,7 @@ never does.
     and c-versions/dmidecode_macos (git submodules pinned per
     docs/dev/submodule_bump_procedure.md) have upstream changes worth
     porting into libbios, and whether Microsoft's GetSystemFirmwareTable/
-    WMI documentation has changed in a way relevant to win_bios.h. Writes
+    WMI documentation has changed in a way relevant to win_bios.hpp. Writes
     a triage report to docs/reviews/. Never edits product code.
   model: claude-sonnet-5-5
   tools: Read, Grep, Glob, Bash, Write, WebFetch, WebSearch
@@ -53,7 +53,7 @@ never does.
   ## What you never do
 
   - Edit any file under this project's own build-product directories
-    (libsmbios/, smbios/ [the CLI], os_interface/, libsmbios_win/,
+    (libsmbios/, smbios/ [the CLI], sys_interface/, libsmbios_win/,
     libsmbios_macos/, libsmbios_linux/, libsmbios_win_legacy/,
     libsmbios_posix_legacy/, or smbios_c/ once it exists - see CLAUDE.md).
   - Merge, fast-forward, or otherwise change either submodule's pinned

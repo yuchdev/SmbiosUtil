@@ -11,10 +11,10 @@
 #include <iostream>
 #include <string>
 
-#include <smbios/os_interface/byte_reader.h>
-#include <smbios/os_interface/smbios_anchor.h>
-#include <smbios/os_interface/smbios_version_fixup.h>
-#include <smbios/macos/macos_uefi_source.h>
+#include <smbios/sys_interface/byte_reader.hpp>
+#include <smbios/sys_interface/smbios_anchor.hpp>
+#include <smbios/sys_interface/smbios_version_fixup.hpp>
+#include <smbios/macos/macos_uefi_source.hpp>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>

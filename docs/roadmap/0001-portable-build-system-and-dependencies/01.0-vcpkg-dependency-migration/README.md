@@ -9,7 +9,7 @@ Introduce a vcpkg manifest (`vcpkg.json` + `vcpkg-configuration.json`)
 declaring the four Boost components this project actually uses
 (`boost-iostreams`, `boost-program-options`, `boost-test`,
 `boost-date-time`, plus `boost-functional`/`boost-bind`/`boost-function`
-transitively for the factory in `smbios_entry_factory.h`), then remove the
+transitively for the factory in `smbios_entry_factory.hpp`), then remove the
 `WINDOWS_BOOST_DIR` / `MY_BOOST_DIR` / manual `BOOST_ROOT` path-pointing
 logic from the root `CMakeLists.txt` in favor of vcpkg's toolchain file.
 

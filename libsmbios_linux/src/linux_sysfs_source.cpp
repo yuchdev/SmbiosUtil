@@ -4,10 +4,10 @@
 #include <utility>
 #include <vector>
 
-#include <smbios/linux/linux_sysfs_source.h>
-#include <smbios/os_interface/byte_reader.h>
-#include <smbios/os_interface/smbios_anchor.h>
-#include <smbios/os_interface/smbios_version_fixup.h>
+#include <smbios/linux/linux_sysfs_source.hpp>
+#include <smbios/sys_interface/byte_reader.hpp>
+#include <smbios/sys_interface/smbios_anchor.hpp>
+#include <smbios/sys_interface/smbios_version_fixup.hpp>
 
 using namespace smbios;
 

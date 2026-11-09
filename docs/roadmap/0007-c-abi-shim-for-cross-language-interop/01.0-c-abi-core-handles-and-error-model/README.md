@@ -25,11 +25,11 @@ both for every later function in Story 02.0 to follow.
   crosses the boundary in either direction - every exported function's
   signature uses only C-ABI-safe types (`const char*` + length, raw
   pointers, fixed-width integers, the opaque handle typedefs).
-- `smbios_c/include/smbios_c/smbios_c.h` is a pure C header - it must
-  compile under a C compiler (`gcc -std=c11 -c smbios_c.h`-style check),
+- `smbios_c/include/smbios/smbios.hpp` is a pure C header - it must
+  compile under a C compiler (`gcc -std=c11 -c smbios.hpp`-style check),
   not just under a C++ compiler with `extern "C"` ignored.
 
 ## Files or directories created or modified by this story
 
-- `smbios_c/include/smbios_c/smbios_c.h` (new) - the public C header.
+- `smbios_c/include/smbios/smbios.hpp` (new) - the public C header.
 - `smbios_c/src/smbios_c.cpp` (new) - the C++ implementation behind it.

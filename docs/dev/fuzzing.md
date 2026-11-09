@@ -14,8 +14,8 @@ and `docs/dev/cpp_coding_standard.md`'s Testing section.
 bytes directly into `smbios::SMBios::read_smbios_table()` via the same
 test-only seam the hermetic unit-test layer uses
 (`smbios::SmbiosTableWalkTestAccess::parse_synthetic_table()`, declared in
-`tests/unit/synthetic_table_builder.h`, friended by
-`libsmbios/include/libsmbios/smbios.h`) - no `ISmbiosSource`, no real hardware
+`tests/unit/synthetic_table_builder.hpppp`, friended by
+`libsmbios/include/libsmbios/smbios.hpppppp`) - no `ISmbiosSource`, no real hardware
 access, is ever involved.
 
 To avoid reconstructing a real `smbios::SMBios` (which walks the real

@@ -12,7 +12,7 @@ section 7.27; `CoolingDeviceEntry` (value `27`), section 7.28;
 
 ## Files
 
-- **Create** `libsmbios/include/smbios/tables/voltage_probe_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/voltage_probe_entry.hpp` /
   `.cpp`:
   - 0x04 Description (STRING)
   - 0x05 Location and Status (BYTE, bit-field - see 7.27.1)
@@ -22,7 +22,7 @@ section 7.27; `CoolingDeviceEntry` (value `27`), section 7.28;
   - 0x0C Tolerance (WORD, +/- mV; `0x8000` = unknown)
   - 0x0E Accuracy (WORD, +/- 1/100 %; `0x8000` = unknown)
   - 0x10 OEM-defined (DWORD)
-- **Create** `libsmbios/include/smbios/tables/cooling_device_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/cooling_device_entry.hpp` /
   `.cpp`:
   - 0x04 Temperature Probe Handle (WORD)
   - 0x06 Device Type and Status (BYTE, bit-field - see 7.28.1)
@@ -31,12 +31,12 @@ section 7.27; `CoolingDeviceEntry` (value `27`), section 7.28;
   - 0x0C Nominal Speed (WORD, rpm; `0x8000` = unknown/non-rotating;
     **present only if `Length > 0x0C`**)
   - 0x0E Description (STRING; **present only if `Length >= 0x0F`**)
-- **Create** `libsmbios/include/smbios/tables/temperature_probe_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/temperature_probe_entry.hpp` /
   `.cpp`: identical shape to Voltage Probe at the same offsets, units in
   1/10 degree C instead of mV (Maximum/Minimum Value, Resolution in
   1/1000 degree C, Tolerance in 1/10 degree C, Accuracy in 1/100 %).
 - **Create**
-  `libsmbios/include/smbios/tables/electrical_current_probe_entry.h` /
+  `libsmbios/include/smbios/tables/electrical_current_probe_entry.hpp` /
   `.cpp`: identical shape to Voltage/Temperature Probe at the same
   offsets through 0x10 (units in milliamps), **plus** 0x14 Nominal Value
   (WORD, mA; `0x8000` = unknown; **present only if `Length > 0x14`**).

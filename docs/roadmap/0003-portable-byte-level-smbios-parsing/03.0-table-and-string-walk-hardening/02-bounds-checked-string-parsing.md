@@ -34,7 +34,7 @@ buffer ends) causes an unbounded read.
       }
   }
   ```
-- **Modify** `smbios/include/smbios/abstract_smbios_entry.h`: update
+- **Modify** `smbios/include/smbios/abstract_smbios_entry.hpppp`: update
   `parse_dmi_strings()`'s signature and its one call site in the
   constructor (`AbstractSMBiosEntry(const DMIHeader&, const uint8_t*
   table_end)` or equivalent - exact signature change to be finalized

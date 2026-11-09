@@ -21,7 +21,7 @@ the three built-in formats `text`/`xml`/`json`.
 ## Key constraints
 
 - The registry's shape **deliberately mirrors**
-  `smbios_entry_factory.h`/`.cpp` (post milestone 0004) - same
+  `smbios_entry_factory.hpp`/`.cpp` (post milestone 0004) - same
   self-registration macro idiom, same "look up by string key, return
   `nullptr`/throw on miss" contract - so a reader who understands one
   already understands the other.

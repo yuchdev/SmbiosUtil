@@ -75,15 +75,15 @@ give it a dedicated task).
 
 ## Files or directories created or modified by this story
 
-- `libsmbios/include/smbios/tables/tpm_device_entry.h` /
+- `libsmbios/include/smbios/tables/tpm_device_entry.hpp` /
   `libsmbios/src/tpm_device_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/processor_additional_information_entry.h` /
+- `libsmbios/include/smbios/tables/processor_additional_information_entry.hpp` /
   `libsmbios/src/processor_additional_information_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/firmware_inventory_information_entry.h` /
+- `libsmbios/include/smbios/tables/firmware_inventory_information_entry.hpp` /
   `libsmbios/src/firmware_inventory_information_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/string_property_entry.h` /
+- `libsmbios/include/smbios/tables/string_property_entry.hpp` /
   `libsmbios/src/string_property_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/inactive_entry.h` /
+- `libsmbios/include/smbios/tables/inactive_entry.hpp` /
   `libsmbios/src/inactive_entry.cpp` (new, minimal)
 - `smbios/src/command_line_parser.cpp` / `main.cpp` - display support for
   all five.

@@ -11,7 +11,7 @@ Information Entry array (7.41.1).
 
 ## Files
 
-- **Create** `libsmbios/include/smbios/tables/additional_information_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/additional_information_entry.hpp` /
   `.cpp`:
   - 0x04 Number of Additional Information entries `n` (BYTE)
   - 0x05.. Additional Information entries (`n` variable-length entries,

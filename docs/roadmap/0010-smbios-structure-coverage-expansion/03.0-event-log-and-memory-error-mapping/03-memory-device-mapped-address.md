@@ -11,7 +11,7 @@ DSP0134 3.9.0 section 7.21.
 ## Files
 
 - **Create**
-  `libsmbios/include/smbios/tables/memory_device_mapped_address_entry.h` /
+  `libsmbios/include/smbios/tables/memory_device_mapped_address_entry.hpp` /
   `.cpp`:
   - 0x04 Starting Address (DWORD, kibibytes; `0xFFFFFFFF` sentinel ->
     Extended Starting Address, 2.7+)

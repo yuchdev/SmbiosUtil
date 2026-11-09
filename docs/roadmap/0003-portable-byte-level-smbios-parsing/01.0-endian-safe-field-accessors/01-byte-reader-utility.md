@@ -13,7 +13,7 @@ regardless of host).
 
 ## Files
 
-- **Create** `smbios/include/smbios/byte_reader.h`:
+- **Create** `smbios/include/smbios/byte_reader.hpp`:
   ```cpp
   #pragma once
   #include <cstdint>

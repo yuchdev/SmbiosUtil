@@ -20,7 +20,7 @@ structure table.
 the new `smbios_source_macos` library. The class/logic content below is
 unchanged.)*
 
-- **Create** `smbios/include/smbios/source_macos/macos_uefi_source.h` / `.cpp`:
+- **Create** `smbios/include/smbios/source_macos/macos_uefi_source.hpp` / `.cpp`:
   ```cpp
   class MacOsUefiSource : public ISmbiosSource {
   public:
@@ -43,7 +43,7 @@ unchanged.)*
   out_table = std::move(*table);
   return true;
   ```
-- **Modify** `smbios/include/smbios/smbios_source_chain.h` / `.cpp`:
+- **Modify** `smbios/include/smbios/smbios_source_chain.hpp` / `.cpp`:
   `make_default_source_chain()`'s `__APPLE__` branch becomes
   `{MacOsUefiSource, LegacyMemoryScanSource}` (the legacy scan stays as a
   fallback per R3, even though it is very unlikely to find anything
@@ -66,7 +66,7 @@ unchanged.)*
   **address** field is meaningless for this source and must not be used
   to construct an offset into anything.
 - Entry-point and table parsing reuse milestone 0003's `read_uN`
-  accessors and `smbios_anchor.h`'s `detect_smbios_anchor()` exactly as
+  accessors and `smbios_anchor.hpp`'s `detect_smbios_anchor()` exactly as
   the Linux sources do - no macOS-specific byte-decoding logic beyond the
   IORegistry retrieval itself (Task 01).
 - Apply the version-fixup helper from Story 01.0, Task 02 (R9) after

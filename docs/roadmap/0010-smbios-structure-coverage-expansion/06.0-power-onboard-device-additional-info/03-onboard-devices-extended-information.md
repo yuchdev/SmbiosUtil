@@ -12,7 +12,7 @@ Implement `OnboardDevicesExtendedInformationEntry` (`SMBiosHandler` value
 ## Files
 
 - **Create**
-  `libsmbios/include/smbios/tables/onboard_devices_extended_information_entry.h` /
+  `libsmbios/include/smbios/tables/onboard_devices_extended_information_entry.hpp` /
   `.cpp`:
   - 0x04 Reference Designation (STRING - typically the silkscreen label,
     7.42.1)

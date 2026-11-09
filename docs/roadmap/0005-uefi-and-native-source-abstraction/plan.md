@@ -7,7 +7,7 @@ names directly: "Mac has no native SMBIOS source (README asks for a UEFI
 implementation)," and the gap milestone 0002 documented honestly rather
 than fixed - `unix_bios.cpp`'s `sysfs_table_exists()` hardcoded `false`,
 `reading_from_efi()`/`reading_from_sysfs()` empty `// TODO` bodies. It
-replaces the `#if defined(_WIN32) / win_bios.h / else / unix_bios.h`
+replaces the `#if defined(_WIN32) / win_bios.hpp / else / unix_bios.h`
 compile-time dispatch (`smbios.cpp:1-4`) with a runtime **strategy**
 interface, `ISmbiosSource`, and implements real sources: Linux sysfs,
 Linux/macOS UEFI, and an explicit, demoted-to-last-resort legacy
@@ -132,7 +132,7 @@ implementation's historical `#if` guard.
    implementation that decodes a raw entry point, not reimplemented
    per-source.
 6. **R6** - Windows keeps its exact current behavior
-   (`win_bios.h`/`win_native_api_helper.h`) - this milestone adapts it to
+   (`win_bios.hpp`/`win_native_api_helper.hpp`) - this milestone adapts it to
    implement `ISmbiosSource`, it does not rewrite its native-API logic.
 7. **R7** - No elevated-privilege requirement is *introduced* by this
    milestone beyond what each native mechanism already needs (sysfs reads
@@ -151,7 +151,7 @@ implementation's historical `#if` guard.
 
 ## Shared contracts
 
-### C1 - `ISmbiosSource` interface (`smbios/include/smbios/ismbios_source.h`, new)
+### C1 - `ISmbiosSource` interface (`smbios/include/smbios/ismbios_source.hpp`, new)
 
 ```cpp
 namespace smbios {

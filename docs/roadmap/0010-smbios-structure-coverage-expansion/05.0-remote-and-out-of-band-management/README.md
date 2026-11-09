@@ -86,21 +86,21 @@ alternative ways to describe the same kind of interface.
 
 ## Files or directories created or modified by this story
 
-- `libsmbios/include/smbios/tables/out_of_band_remote_access_entry.h` /
+- `libsmbios/include/smbios/tables/out_of_band_remote_access_entry.hpp` /
   `libsmbios/src/out_of_band_remote_access_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/boot_integrity_services_entry.h` /
+- `libsmbios/include/smbios/tables/boot_integrity_services_entry.hpp` /
   `libsmbios/src/boot_integrity_services_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/management_device_entry.h` /
+- `libsmbios/include/smbios/tables/management_device_entry.hpp` /
   `libsmbios/src/management_device_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/management_device_component_entry.h` /
+- `libsmbios/include/smbios/tables/management_device_component_entry.hpp` /
   `libsmbios/src/management_device_component_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/management_device_threshold_data_entry.h` /
+- `libsmbios/include/smbios/tables/management_device_threshold_data_entry.hpp` /
   `libsmbios/src/management_device_threshold_data_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/memory_channel_entry.h` /
+- `libsmbios/include/smbios/tables/memory_channel_entry.hpp` /
   `libsmbios/src/memory_channel_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/ipmi_device_information_entry.h` /
+- `libsmbios/include/smbios/tables/ipmi_device_information_entry.hpp` /
   `libsmbios/src/ipmi_device_information_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/management_controller_host_interface_entry.h` /
+- `libsmbios/include/smbios/tables/management_controller_host_interface_entry.hpp` /
   `libsmbios/src/management_controller_host_interface_entry.cpp` (new)
 - `smbios/src/command_line_parser.cpp` / `main.cpp` - display support for
   all eight.

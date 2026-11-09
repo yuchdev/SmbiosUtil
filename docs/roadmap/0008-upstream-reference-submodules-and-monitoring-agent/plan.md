@@ -31,7 +31,7 @@ be diffed, pinned, or watched for updates.
 **Windows is deliberately excluded from this milestone** (user decision,
 2026-11-03): no canonical, actively-maintained "dmidecode for Windows"
 port is known to exist - upstream dmidecode's own build model assumes
-`/dev/mem`, which Windows has no equivalent of, and `win_bios.h`
+`/dev/mem`, which Windows has no equivalent of, and `win_bios.hpp`
 (milestone 0005, Story 04.0) already wraps the real Windows-native
 mechanism (`GetSystemFirmwareTable`) directly rather than through a ported
 C parser. Windows's "upstream reference" is Microsoft's own public API
@@ -68,7 +68,7 @@ submodule is a small follow-up to this milestone, not a redesign of it.
    submodule's path is ever referenced from any `CMakeLists.txt`,
    `vcpkg.json`, or `#include` directive anywhere under any of this
    project's own build-product directories: `libsmbios/`, `smbios/`
-   (the CLI), `os_interface/`, `libsmbios_win/`, `libsmbios_macos/`,
+   (the CLI), `sys_interface/`, `libsmbios_win/`, `libsmbios_macos/`,
    `libsmbios_linux/`, `libsmbios_win_legacy/`, `libsmbios_posix_legacy/`,
    or `smbios_c/` once it exists - the full repo-root library set as of
    the later build-layout restructure (see CLAUDE.md), not just the two

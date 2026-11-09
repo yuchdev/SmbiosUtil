@@ -14,13 +14,13 @@ respectively).
 
 ## Files
 
-- **Create** `smbios/include/smbios/system_information_entry.h` / `.cpp`:
+- **Create** `smbios/include/smbios/system_information_entry.hpp` / `.cpp`:
   fields per the DMTF spec's "System Information" table - manufacturer,
   product name, version, serial number string indices (`0x04`-`0x07`),
   UUID (`0x08`, 16 bytes - note this is **not** a simple `read_uN`, it
   needs a dedicated UUID-to-string formatter, new in this task), wake-up
   type (`0x18`), SKU number and family string indices (`0x19`-`0x1A`, 2.4+).
-- **Create** `smbios/include/smbios/system_enclosure_entry.h` / `.cpp`:
+- **Create** `smbios/include/smbios/system_enclosure_entry.hpp` / `.cpp`:
   manufacturer string index, enclosure type, version/serial/asset tag
   string indices, boot-up/power/thermal/security status enums, OEM-defined
   (`0x12`), height/power cords/contained elements (2.1+), SKU number (2.7+).

@@ -35,6 +35,6 @@ formatter registered from outside `smbios`'s own source tree), and wire
 - `smbios/include/smbios/yaml_formatter.h` / `.cpp` (new).
 - `smbios_util/examples/csv_formatter.cpp` (new) - the custom-format
   proof.
-- `smbios_util/include/smbios_util/command_line_parser.h` /
+- `smbios_util/include/smbios_util/command_line_parser.hpp` /
   `smbios_util/src/command_line_parser.cpp` / `main.cpp` - `--format`
   option.

@@ -73,23 +73,23 @@ rather than forced into Task 01 or 02 where it fits worse.
 
 ## Files or directories created or modified by this story
 
-- `libsmbios/include/smbios/tables/pointing_device_entry.h` /
+- `libsmbios/include/smbios/tables/pointing_device_entry.hpp` /
   `libsmbios/src/pointing_device_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/portable_battery_entry.h` /
+- `libsmbios/include/smbios/tables/portable_battery_entry.hpp` /
   `libsmbios/src/portable_battery_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/system_reset_entry.h` /
+- `libsmbios/include/smbios/tables/system_reset_entry.hpp` /
   `libsmbios/src/system_reset_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/hardware_security_entry.h` /
+- `libsmbios/include/smbios/tables/hardware_security_entry.hpp` /
   `libsmbios/src/hardware_security_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/system_power_controls_entry.h` /
+- `libsmbios/include/smbios/tables/system_power_controls_entry.hpp` /
   `libsmbios/src/system_power_controls_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/voltage_probe_entry.h` /
+- `libsmbios/include/smbios/tables/voltage_probe_entry.hpp` /
   `libsmbios/src/voltage_probe_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/cooling_device_entry.h` /
+- `libsmbios/include/smbios/tables/cooling_device_entry.hpp` /
   `libsmbios/src/cooling_device_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/temperature_probe_entry.h` /
+- `libsmbios/include/smbios/tables/temperature_probe_entry.hpp` /
   `libsmbios/src/temperature_probe_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/electrical_current_probe_entry.h` /
+- `libsmbios/include/smbios/tables/electrical_current_probe_entry.hpp` /
   `libsmbios/src/electrical_current_probe_entry.cpp` (new)
 - `smbios/src/command_line_parser.cpp` / `main.cpp` - display support for
   all nine.

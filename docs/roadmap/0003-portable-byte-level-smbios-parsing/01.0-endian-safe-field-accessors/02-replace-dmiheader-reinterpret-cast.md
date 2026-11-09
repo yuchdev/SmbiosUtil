@@ -2,7 +2,7 @@
 
 **Parent story:** [README.md](README.md)
 **Status:** ⬜ Not started
-**Depends on:** Task 01 (`byte_reader.h`)
+**Depends on:** Task 01 (`byte_reader.hpp`)
 
 ## Objective
 
@@ -24,7 +24,7 @@ the header every downstream entry type already relies on.
   header.data   = current_structure_begin;
   ```
   replacing the single-line `reinterpret_cast` assignment.
-- **Modify** `smbios/include/smbios/smbios.h`: `DMIHeader` itself can keep
+- **Modify** `smbios/include/smbios/smbios.hpp`: `DMIHeader` itself can keep
   its current field layout (it is no longer overlaid onto raw memory by
   this code path) - no change needed unless `count_smbios_structures()`
   (Story 03.0) also needs an update, tracked separately there.
@@ -39,7 +39,7 @@ the header every downstream entry type already relies on.
 - `header.data` keeps pointing at the raw buffer unchanged - entry classes
   in Story 02.0 read their own fields from `header.data` via the same
   accessors, not from any new copy.
-- `#pragma pack(push, 1)` around `DMIHeader` in `smbios.h` may be removed
+- `#pragma pack(push, 1)` around `DMIHeader` in `smbios.hpp` may be removed
   once nothing in the codebase overlays it onto raw memory - confirm this
   is true (Story 02.0 and 03.0 must also stop doing so) before removing the
   pragma; if any caller still relies on it, leave it and note why in

@@ -54,7 +54,7 @@ overlay technique has three concrete problems, all fixed here:
    alongside the new accessors as a fallback.
 5. **R5** - `PortConnectionEntry` (not reviewed in the earlier conversation
    but following the same `AbstractSMBiosEntry` pattern per
-   `smbios_entry_factory.h`) is converted to the same accessor pattern for
+   `smbios_entry_factory.hpp`) is converted to the same accessor pattern for
    consistency, even though it was not called out as using versioned
    structs - confirm during Story 02.0's first task whether it has the same
    pattern or a simpler one, and record the finding in `status.md`.
@@ -82,7 +82,7 @@ overlay technique has three concrete problems, all fixed here:
 
 ## Shared contracts
 
-### C1 - Endian-safe accessor signatures (`smbios/include/smbios/byte_reader.h`, new)
+### C1 - Endian-safe accessor signatures (`smbios/include/smbios/byte_reader.hpp`, new)
 
 ```cpp
 namespace smbios {

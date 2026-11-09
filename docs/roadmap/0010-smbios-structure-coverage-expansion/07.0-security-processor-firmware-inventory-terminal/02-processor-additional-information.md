@@ -13,7 +13,7 @@ inside it opaque (see this story's own documented scope cutoff).
 ## Files
 
 - **Create**
-  `libsmbios/include/smbios/tables/processor_additional_information_entry.h` /
+  `libsmbios/include/smbios/tables/processor_additional_information_entry.hpp` /
   `.cpp`:
   - 0x04 Referenced Handle (WORD, references a Type 4 Processor
     Information structure)

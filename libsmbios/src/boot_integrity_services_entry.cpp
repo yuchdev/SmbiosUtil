@@ -1,6 +1,6 @@
-#include <libsmbios/tables/boot_integrity_services_entry.h>
-#include <libsmbios/smbios.h>
-#include <libsmbios/smbios_entry_factory.h>
+#include <libsmbios/tables/boot_integrity_services_entry.hpp>
+#include <libsmbios/smbios.hpp>
+#include <libsmbios/smbios_entry_factory.hpp>
 
 #include <sstream>
 

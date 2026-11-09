@@ -16,9 +16,9 @@ story's exit gate.
 
 ## Success criteria
 
-- [ ] `grep -rn "pragma pack" smbios/include/smbios/bios_information_entry.h
-      smbios/include/smbios/memory_device_entry.h
-      smbios/include/smbios/port_connection_entry.h` returns no matches
+- [ ] `grep -rn "pragma pack" smbios/include/smbios/bios_information_entry.hpp
+      smbios/include/smbios/memory_device_entry.hpp
+      smbios/include/smbios/port_connection_entry.hpp` returns no matches
       (every `#pragma pack` struct in these three headers is gone).
 - [ ] All three entry types' synthetic-buffer tests pass.
 - [ ] Full existing functional suite passes unmodified on real hardware.

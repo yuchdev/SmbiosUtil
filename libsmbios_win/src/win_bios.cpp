@@ -1,6 +1,6 @@
 #if defined(_WIN32) || defined(_WIN64)
-#include <smbios/windows/win_system_information.h>
-#include <smbios/windows/win_bios.h>
+#include <smbios/windows/win_system_information.hpp>
+#include <smbios/windows/win_bios.hpp>
 
 #define NOMINMAX
 #include <limits>

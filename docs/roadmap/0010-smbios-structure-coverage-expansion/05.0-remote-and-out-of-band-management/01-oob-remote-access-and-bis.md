@@ -13,7 +13,7 @@ constraints and status.md's note).
 ## Files
 
 - **Create**
-  `libsmbios/include/smbios/tables/out_of_band_remote_access_entry.h` /
+  `libsmbios/include/smbios/tables/out_of_band_remote_access_entry.hpp` /
   `.cpp`:
   - 0x04 Manufacturer Name (STRING)
   - 0x05 Connections (BYTE, bit-field - this task spec's own source
@@ -21,7 +21,7 @@ constraints and status.md's note).
     DSP0134 3.9.0's full Table 103 directly before implementing - known
     from the prose summary to cover at least "Outbound Connection
     Enabled" and "Inbound Connection Enabled" bits)
-- **Create** `libsmbios/include/smbios/tables/boot_integrity_services_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/boot_integrity_services_entry.hpp` /
   `.cpp`: no decoded fields - constructor performs the usual type check,
   `render_to_description()` states this structure is reserved for the
   external Boot Integrity Services API and carries no DSP0134-defined

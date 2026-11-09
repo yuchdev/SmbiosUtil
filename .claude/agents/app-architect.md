@@ -19,23 +19,23 @@ You are the **Architect** for libbios, The library/application parses SMBIOS fir
 
 **Acquisition pipeline (`SMBios::SMBios()` in `smbios/src/smbios.cpp`).**
 
-1. `SMBiosImpl` is the native source. `smbios.cpp` picks it with a compile-time `#if` on `_WIN32`/`_WIN64`: `win_bios.h` on Windows, otherwise `unix_bios.h`. Both headers declare a class with the same name, so this is a header-swap backend, not a virtual interface.
+1. `SMBiosImpl` is the native source. `smbios.cpp` picks it with a compile-time `#if` on `_WIN32`/`_WIN64`: `win_bios.hpp` on Windows, otherwise `unix_bios.h`. Both headers declare a class with the same name, so this is a header-swap backend, not a virtual interface.
    - Windows (`win_bios.cpp`) calls `GetSystemFirmwareTable('RSMB', ...)` into `table_buffer_` and overlays `RawSMBIOSData` (calling method, major/minor version, DMI revision, `length`, then table bytes).
    - Unix (`unix_bios.cpp`) is mostly stubbed. `sysfs_table_exists()` is hard-wired to `false`. `efi_table_exists()` only greps `/sys/firmware/efi/systab` or `/proc/efi/systab` for `SMBIOS`, and `reading_from_efi()`/`reading_from_sysfs()` are empty. On Linux the effective source is therefore always the `/dev/mem` fallback.
 2. If `smbios_read_success()` is false, `SMBios` falls back to physical memory:
    - `PhysicalMemory` (`physical_memory.cpp`) is a second PImpl, over `NativePhysicalMemory`. The POSIX version (`posix_physical_memory.cpp`) is a Boost.Iostreams `mapped_file_source` on `/dev/mem`. The Windows version (`win_physical_memory.cpp`) uses `NtOpenSection`/`NtMapViewOfSection` on `\device\physicalmemory`.
-   - `SMBios` copies 0xF0000-0xFFFFF into a `std::vector<uint8_t>`. `scan_physical_memory()` steps through it in 16-byte increments looking for the `_SM_`/`_SM3_` anchor (`detect_smbios_anchor`, `smbios_anchor.h`), then validates with `checksum32()`/`checksum64()`.
+   - `SMBios` copies 0xF0000-0xFFFFF into a `std::vector<uint8_t>`. `scan_physical_memory()` steps through it in 16-byte increments looking for the `_SM_`/`_SM3_` anchor (`detect_smbios_anchor`, `smbios_anchor.hpp`), then validates with `checksum32()`/`checksum64()`.
    - It then maps `structure_table_address` for `structure_table_length` (32-bit entry point) or `max_structure_size` (64-bit), and moves that dump into `SMBiosImpl::read_from_physical_memory()`.
 3. `read_smbios_table()` (with `count_smbios_structures()`) walks the formatted area plus the double-NUL-terminated string set of each structure. It caches one `DMIHeader` per structure in `headers_list_` and stops at `EndOfTable` (type 127) or a length below 4.
 
 **Key types.**
 
-- `SMBIOSEntryPoint32`/`SMBIOSEntryPoint64` and `DMIHeader` (`smbios.h`, `#pragma pack(1)`) are overlays on firmware byte layouts.
+- `SMBIOSEntryPoint32`/`SMBIOSEntryPoint64` and `DMIHeader` (`smbios.hpp`, `#pragma pack(1)`) are overlays on firmware byte layouts.
 - `SMBiosVersion {major_version, minor_version}` gates which spec-revision fields may be read.
 - `SMBios::SMBiosHandler` enumerates structure types.
 - `SMBios::iterator` is a bidirectional iterator over `headers_list_`, so callers use `for (const DMIHeader& h : bios)`.
 - `AbstractSMBiosEntry` (implementing `SMBiosInterface`: `get_type()`, `render_to_description()`, `get_entry_size()`) is the base for `BiosInformationEntry` (type 0), `PortConnectionEntry` (type 8) and `MemoryDeviceEntry` (type 17). Each subclass `reinterpret_cast`s `header.data` to per-revision packed structs, for example `MemoryDeviceV21`...`V28` and `BiosInformationV24`/`V31`, but only when `header.length` and `SMBiosVersion` both allow it.
-- `SMBiosEntryFactory` (`smbios_entry_factory.cpp`) maps the type byte to a `boost::function` built with `boost::factory` + `boost::bind`. It returns `nullptr` for unregistered types. Adding a type means writing an entry class, including it in `smbios_entry_factory.h`, and registering it in the factory constructor.
+- `SMBiosEntryFactory` (`smbios_entry_factory.cpp`) maps the type byte to a `boost::function` built with `boost::factory` + `boost::bind`. It returns `nullptr` for unregistered types. Adding a type means writing an entry class, including it in `smbios_entry_factory.hpp`, and registering it in the factory constructor.
 
 **Entry points.**
 

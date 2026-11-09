@@ -1,8 +1,8 @@
 #include <memory>
 #include <vector>
 
-#include <smbios/os_interface/smbios_source_chain.h>
-#include <smbios/legacy/legacy_memory_scan_source.h>
+#include <smbios/sys_interface/smbios_source_chain.hpp>
+#include <smbios/legacy/legacy_memory_scan_source.hpp>
 
 // Temporary fallback for BSD/Solaris/other *nix targets that have no
 // dedicated per-OS source library (ADR 0001, milestone 0005 Story 01.1):

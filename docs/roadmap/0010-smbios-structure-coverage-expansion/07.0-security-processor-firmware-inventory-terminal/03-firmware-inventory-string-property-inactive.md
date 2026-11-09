@@ -14,7 +14,7 @@ explicit Non-goals decision rather than given a dedicated task.
 ## Files
 
 - **Create**
-  `libsmbios/include/smbios/tables/firmware_inventory_information_entry.h` /
+  `libsmbios/include/smbios/tables/firmware_inventory_information_entry.hpp` /
   `.cpp`:
   - 0x04 Firmware Component Name (STRING)
   - 0x05 Firmware Version (STRING)
@@ -34,12 +34,12 @@ explicit Non-goals decision rather than given a dedicated task.
     source excerpt was cut off exactly at this point; confirm the exact
     starting offset and any intervening field against the full Table 133
     before implementing, since the excerpt's next row was omitted)
-- **Create** `libsmbios/include/smbios/tables/string_property_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/string_property_entry.hpp` /
   `.cpp`:
   - 0x04 String Property ID (WORD - see 7.47.1)
   - 0x06 String Property Value (STRING)
   - 0x07 Parent Handle (WORD)
-- **Create** `libsmbios/include/smbios/tables/inactive_entry.h` / `.cpp`:
+- **Create** `libsmbios/include/smbios/tables/inactive_entry.hpp` / `.cpp`:
   no decoded fields - constructor performs the usual type check,
   `get_type()` returns "Inactive," `render_to_description()` states the
   structure should be bypassed by upper-level software (7.48's own

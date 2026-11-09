@@ -12,6 +12,6 @@ target_include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # PUBLIC libsmbios_posix_legacy: UnixNativeOrLegacyScanSource's internal
 # fallback (linux_source_chain.cpp) needs LegacyMemoryScanSource.
-target_link_libraries(${TARGET} PUBLIC os_interface libsmbios_posix_legacy)
+target_link_libraries(${TARGET} PUBLIC sys_interface libsmbios_posix_legacy)
 
 target_compile_options(${TARGET} PRIVATE ${SMBIOS_COMPILE_OPTIONS} ${SMBIOS_WARNING_OPTIONS})

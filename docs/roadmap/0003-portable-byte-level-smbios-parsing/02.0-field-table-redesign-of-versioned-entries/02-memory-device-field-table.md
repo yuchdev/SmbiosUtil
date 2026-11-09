@@ -6,13 +6,13 @@
 ## Objective
 
 Delete `MemoryDeviceV21`/`V23`/`V26`/`V27`/`V28` and all five pointer
-members ([memory_device_entry.h:20-63,346-350](/libsmbios/include/libsmbios/tables/memory_device_entry.h)) -
+members ([memory_device_entry.hpp:20-63,346-350](/libsmbios/include/libsmbios/tables/memory_device_entry.hpppppp)) -
 the deepest version chain in the current codebase - and rebuild every
 accessor in `MemoryDeviceEntry` the same way as Task 01.
 
 ## Files
 
-- **Modify** `smbios/include/smbios/memory_device_entry.h`: delete all five
+- **Modify** `smbios/include/smbios/memory_device_entry.hpp`: delete all five
   `MemoryDeviceV2x`/`V3x`-equivalent structs and pointer members.
 - **Modify** `smbios/src/memory_device_entry.cpp`: rebuild each getter from
   its documented offset, e.g.:

@@ -7,19 +7,19 @@
 
 Delete `BiosInformationV24`/`BiosInformationV31` and the
 `bios_information24_`/`bios_information31_` pointer members
-([bios_information_entry.h:19-41,236-237](/libsmbios/include/libsmbios/tables/bios_information_entry.h)),
+([bios_information_entry.hpp:19-41,236-237](/libsmbios/include/libsmbios/tables/bios_information_entry.hpppppp)),
 and rebuild every accessor in `BiosInformationEntry` to read directly from
 `raw_data()` via `read_uN` plus a length guard.
 
 ## Files
 
-- **Modify** `smbios/include/smbios/abstract_smbios_entry.h` /
+- **Modify** `smbios/include/smbios/abstract_smbios_entry.hpppp` /
   `.cpp`: add
   ```cpp
   protected:
       const uint8_t* raw_data() const { return header_->data; }
   ```
-- **Modify** `smbios/include/smbios/bios_information_entry.h`: delete the
+- **Modify** `smbios/include/smbios/bios_information_entry.hpp`: delete the
   `BiosInformationV24`/`V31` structs and their `#pragma pack` wrapper;
   delete `bios_information24_`/`bios_information31_` members.
 - **Modify** `smbios/src/bios_information_entry.cpp`: rebuild each getter,

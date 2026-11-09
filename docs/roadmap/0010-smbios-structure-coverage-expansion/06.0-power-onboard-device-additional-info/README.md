@@ -70,11 +70,11 @@ own task rather than being batched.
 
 ## Files or directories created or modified by this story
 
-- `libsmbios/include/smbios/tables/system_power_supply_entry.h` /
+- `libsmbios/include/smbios/tables/system_power_supply_entry.hpp` /
   `libsmbios/src/system_power_supply_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/additional_information_entry.h` /
+- `libsmbios/include/smbios/tables/additional_information_entry.hpp` /
   `libsmbios/src/additional_information_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/onboard_devices_extended_information_entry.h` /
+- `libsmbios/include/smbios/tables/onboard_devices_extended_information_entry.hpp` /
   `libsmbios/src/onboard_devices_extended_information_entry.cpp` (new)
 - `smbios/src/command_line_parser.cpp` / `main.cpp` - display support for
   all three.

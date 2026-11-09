@@ -33,7 +33,7 @@ three concrete entry classes.
 
 ## Files or directories created or modified by this story
 
-- `smbios/include/smbios/byte_reader.h` - new, header-only accessor
+- `smbios/include/smbios/byte_reader.hpp` - new, header-only accessor
   functions.
 - `smbios/src/smbios.cpp` - `read_smbios_table()`'s `DMIHeader` extraction
   converted to use the new accessors for `type`/`length`/`handle`.

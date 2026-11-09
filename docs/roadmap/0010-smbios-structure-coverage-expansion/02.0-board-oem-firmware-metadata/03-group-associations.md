@@ -10,7 +10,7 @@ Implement `GroupAssociationsEntry` (`SMBiosHandler` value `14`), DSP0134
 
 ## Files
 
-- **Create** `libsmbios/include/smbios/tables/group_associations_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/group_associations_entry.hpp` /
   `.cpp`:
   - 0x04 Group Name (BYTE, STRING)
   - 0x05 + `3*i` Item Type (BYTE), for `i` in `0 .. item_count-1`

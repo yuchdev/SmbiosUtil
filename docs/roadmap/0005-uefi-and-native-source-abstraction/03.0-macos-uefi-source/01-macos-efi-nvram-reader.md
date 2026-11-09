@@ -20,7 +20,7 @@ confirmed by reading that reference directly).
 the new `smbios_source_macos` library, replacing that story's temporary
 chain-factory stub. The class/logic content below is unchanged.)*
 
-- **Create** `smbios/include/smbios/source_macos/macos_efi_reader.h` / `.cpp`:
+- **Create** `smbios/include/smbios/source_macos/macos_efi_reader.hpp` / `.cpp`:
   ```cpp
   std::optional<std::vector<uint8_t>>
   read_apple_smbios_property(const char* property_name, size_t max_len);

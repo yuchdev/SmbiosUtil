@@ -36,7 +36,7 @@
 > `LegacyMemoryScanSource`'s ~180 lines across the two new libraries -
 > **a deliberate exception to this ADR's own DD3** below, made because
 > the user asked for exactly these two libraries with no third shared
-> one, not because DD3's reasoning stopped applying. `os_interface`
+> one, not because DD3's reasoning stopped applying. `sys_interface`
 > (renamed from `smbios_source_interface` by the first addendum above)
 > is unaffected by the split, and `#include <smbios/legacy/...>` is
 > unchanged at every call site either way (both flavors expose it at the
@@ -155,7 +155,7 @@ out the legacy scan (DD3) worthwhile.
 | **A - Status quo**: classes inside one `smbios` library, runtime-selected chain, no new CMake targets (Stories 01.0-04.0 as originally scoped) | Smallest diff; no new build-graph complexity; already fully specced | Does not satisfy the user's explicit "package each platform as a separate library" ask; no independent-linkability for DD4's per-library test isolation | User-rejected scope; kept as the reason this ADR exists |
 | **B - 3 libraries only** (Windows/macOS/Linux), no shared interface/legacy library - each OS library embeds its own copy of `PhysicalMemory`/`LegacyMemoryScanSource`/decode primitives | Matches the user's literal example count exactly; conceptually simple | Violates DD2 (still need `ISmbiosSource`/decode primitives shared somewhere acyclic) and DD3 (triples identical legacy-scan logic, or forces an arbitrary "one OS library depends on another's copy" rule) | Duplication with no corresponding benefit; the cycle problem resurfaces the moment any two OS libraries both need the same decode helper |
 | **C - 5 libraries, mechanical split** along the milestone's existing 4 stories (windows, macos, linux-sysfs, linux-efi, +legacy or embedded) - the user's own example taken literally | Maps 1:1 onto existing story boundaries; "more libraries" literally satisfies the prompt's wording | Splits Linux sysfs/EFI despite DD1 finding no real consumer that wants one without the other; adds build-graph edges and two more CMakeLists.txt to maintain for zero architectural benefit | Rejected per DD1 - a library boundary with no corresponding "someone wants to link one without the other" case is complexity without payoff |
-| **D - Recommended**: 3 per-OS libraries + 1 shared `smbios_legacy` + 1 shared header-only `smbios_source_interface` | Satisfies the user's "package per platform" ask; resolves DD2's cycle by construction (decode primitives sit below both core `smbios` and every per-OS library); resolves DD3 by sharing the one piece of logic that is genuinely OS-agnostic already; each library independently testable per DD4 | More CMake targets than a literal "3" reading of the user's example; requires moving `byte_reader.h`/`smbios_anchor.h` out of core `smbios`'s conceptual ownership | Adopted |
+| **D - Recommended**: 3 per-OS libraries + 1 shared `smbios_legacy` + 1 shared header-only `smbios_source_interface` | Satisfies the user's "package per platform" ask; resolves DD2's cycle by construction (decode primitives sit below both core `smbios` and every per-OS library); resolves DD3 by sharing the one piece of logic that is genuinely OS-agnostic already; each library independently testable per DD4 | More CMake targets than a literal "3" reading of the user's example; requires moving `byte_reader.hpp`/`smbios_anchor.hpp` out of core `smbios`'s conceptual ownership | Adopted |
 
 ## Consequences
 
@@ -180,7 +180,7 @@ out the legacy scan (DD3) worthwhile.
   library - more `CMakeLists.txt` files to keep in sync, and one more
   place (`smbios/src/CMakeLists.txt`'s OS-selection branch) that must be
   updated if a new platform is ever added.
-- `byte_reader.h` and `smbios_anchor.h` move out of `smbios/include/smbios/`
+- `byte_reader.hpp` and `smbios_anchor.hpp` move out of `smbios/include/smbios/`
   flat namespace into the new interface library's own include root - a
   real, if mechanical, header-relocation that every file including them
   today must update.

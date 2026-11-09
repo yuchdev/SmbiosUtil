@@ -163,7 +163,7 @@ delegating to `cpp-expert` if the task touches any of the following:
 - parsing of firmware-supplied bytes: the table walk and anchor scan in
   `smbios/src/smbios.cpp`, `AbstractSMBiosEntry::parse_dmi_strings()`/`dmi_string()`, any
   `reinterpret_cast` overlay in an `*_entry.cpp`, or the packed structs in
-  `smbios/include/smbios/smbios.h`;
+  `smbios/include/smbios/smbios.hpp`;
 - physical-memory mapping: `posix_physical_memory.cpp` (`/dev/mem`) or
   `win_physical_memory.cpp` (`NtOpenSection`/`NtMapViewOfSection`);
 - a native table source: `win_bios.cpp` or `unix_bios.cpp`;

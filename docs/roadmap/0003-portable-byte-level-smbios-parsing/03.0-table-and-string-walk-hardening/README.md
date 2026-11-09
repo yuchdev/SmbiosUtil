@@ -2,7 +2,7 @@
 
 **Parent milestone:** [plan.md](../plan.md)
 **Status:** ✅ Complete (2026-11-06)
-**Depends on:** Story 01.0 (`byte_reader.h`, for the already-converted `DMIHeader` extraction this story builds bounds checks around)
+**Depends on:** Story 01.0 (`byte_reader.hpp`, for the already-converted `DMIHeader` extraction this story builds bounds checks around)
 
 ## Scope
 

@@ -76,16 +76,16 @@ branch instead of `smbios.cpp`'s current C++ `#if defined(_WIN32)`.
 ## Files or directories created or modified by this story
 
 - **New:** `smbios/src/source_interface/` + `smbios/include/smbios/source_interface/`
-  - `smbios_source_chain.h` (moved from Story 01.0's planned location,
+  - `smbios_source_chain.hpp` (moved from Story 01.0's planned location,
     declaration only).
 - **New:** `smbios/src/source_legacy/` + `smbios/include/smbios/source_legacy/`
-  - `physical_memory.h`/`.cpp`, `posix_physical_memory.h`/`.cpp`,
+  - `physical_memory.hpp`/`.cpp`, `posix_physical_memory.h`/`.cpp`,
     `win_physical_memory.h`/`.cpp` (moved verbatim from `smbios/include/smbios/`
-    and `smbios/src/`), `legacy_memory_scan_source.h`/`.cpp` (moved from
+    and `smbios/src/`), `legacy_memory_scan_source.hpp`/`.cpp` (moved from
     wherever Story 01.0 Task 02 lands it inside core `smbios`).
 - **New:** `smbios/src/source_windows/` + `smbios/include/smbios/source_windows/`
-  - `win_bios.h`/`.cpp`, `win_native_api_helper.h`, `win_handle_ptr.h`,
-    `win_system_information.h`/`.cpp` (moved verbatim).
+  - `win_bios.hpp`/`.cpp`, `win_native_api_helper.hpp`, `win_handle_ptr.hpp`,
+    `win_system_information.hpp`/`.cpp` (moved verbatim).
 - **New:** `smbios/src/source_linux/` + `smbios/include/smbios/source_linux/`
   - `unix_bios.h`/`.cpp` (moved verbatim; still the same stub Story 02.0
     will later replace with real `LinuxSysfsSource`/`LinuxEfiSource`
@@ -102,8 +102,8 @@ branch instead of `smbios.cpp`'s current C++ `#if defined(_WIN32)`.
   `if(WIN32)/elseif(APPLE)/elseif(Linux)/else()` branch selecting which
   per-OS library (if any) `smbios` links, replacing the role
   `smbios.cpp`'s `#if` used to play.
-- **Modified:** `smbios/include/smbios/smbios.h` / `smbios/src/smbios.cpp`
-  - the `#if defined(_WIN32) ... win_bios.h ... #else ... unix_bios.h ... #endif`
+- **Modified:** `smbios/include/smbios/smbios.hpp` / `smbios/src/smbios.cpp`
+  - the `#if defined(_WIN32) ... win_bios.hpp ... #else ... unix_bios.h ... #endif`
     block at the top is deleted entirely; the constructor calls
     `smbios::make_default_source_chain()` with no `#if` around the call
     site (Story 01.0 Task 01 already wrote this call; only the now-fully-`#if`-free

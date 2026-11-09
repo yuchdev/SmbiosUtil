@@ -3,11 +3,11 @@
 #include <stdexcept>
 #include <vector>
 
-#include <libsmbios/smbios.h>
-#include <libsmbios/smbios_entry_factory.h>
-#include <libsmbios/abstract_smbios_entry.h>
-#include <libsmbios/tables/bios_information_entry.h>
-#include <libsmbios/tables/memory_device_entry.h>
+#include <libsmbios/smbios.hpp>
+#include <libsmbios/smbios_entry_factory.hpp>
+#include <libsmbios/abstract_smbios_entry.hpp>
+#include <libsmbios/tables/bios_information_entry.hpp>
+#include <libsmbios/tables/memory_device_entry.hpp>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>

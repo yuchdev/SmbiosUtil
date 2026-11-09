@@ -38,6 +38,6 @@ without exception.
 
 ## Files or directories created or modified by this story
 
-- `smbios_c/include/smbios_c/smbios_c.h` - iteration, type/length/handle,
+- `smbios_c/include/smbios/smbios.hpp` - iteration, type/length/handle,
   render, and the curated typed getters.
 - `smbios_c/src/smbios_c.cpp` - implementations.

@@ -17,7 +17,7 @@ formats.
   #pragma once
   #include <memory>
   #include <string>
-  #include <smbios/abstract_smbios_entry.h>
+  #include <smbios/abstract_smbios_entry.hpppp>
 
   namespace smbios {
 

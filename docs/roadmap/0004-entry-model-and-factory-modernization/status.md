@@ -19,13 +19,13 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   technique.
 - The eight new structure types (Story 02.0) are exactly the remaining
   members of `SMBios::SMBiosHandler`
-  ([smbios.h:104-118](/libsmbios/include/libsmbios/smbios.h)) that
+  ([smbios.hpp:104-118](/libsmbios/include/libsmbios/smbios.hpppppp)) that
   `SMBiosEntryFactory::create()` currently returns `nullptr` for:
   `SystemInformation`, `SystemEnclosure`, `ProcessorInformation`,
   `CacheInformation`, `SystemSlots`, `PhysicalMemoryArray`,
   `MemoryArrayMappedAddress`, `SystemBootInformation`.
 - **2026-11-07, correction found at `implement-milestone` cold-start R3**
-  (direct read of the real `smbios_entry_factory.h`/`.cpp`, not the
+  (direct read of the real `smbios_entry_factory.hpp`/`.cpp`, not the
   spec's example code): Story 01.0's own "Key constraints" and Task 01's
   literal code sample both describe/assume
   `create(const DMIHeader&, const SMBiosVersion&)` - a 2-argument
@@ -44,8 +44,8 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   (`01-registration-macro-and-registry.md`) and Task 02's file
   (`02-migrate-existing-entries.md`) both suggest placing the new
   `REGISTER_SMBIOS_ENTRY(...)` invocation in each entry's *header*
-  (`bios_information_entry.h`/`port_connection_entry.h`/
-  `memory_device_entry.h`). That placement was not used: each of those
+  (`bios_information_entry.hpp`/`port_connection_entry.hpp`/
+  `memory_device_entry.hpp`). That placement was not used: each of those
   headers is `#include`d both by its own `.cpp` and by a separate
   `tests/unit/*_entry_test.cpp` that links into the same
   `smbios_unit_test` binary, so a header-placed invocation would run its

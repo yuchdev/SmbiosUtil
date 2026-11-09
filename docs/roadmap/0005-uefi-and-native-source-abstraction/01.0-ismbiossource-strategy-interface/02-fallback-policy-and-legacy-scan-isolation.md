@@ -8,7 +8,7 @@
 
 Move `SMBios::scan_physical_memory()`, `extract_dmi_version()`,
 `checksum32()`/`checksum64()`/`smbios_crc()`, and the
-`SMBIOSEntryPoint32`/`SMBIOSEntryPoint64` structs + `smbios_anchor.h`'s
+`SMBIOSEntryPoint32`/`SMBIOSEntryPoint64` structs + `smbios_anchor.hpp`'s
 `detect_smbios_anchor()` usage out of `SMBios` itself and into a new
 `LegacyMemoryScanSource : public ISmbiosSource`, so the legacy scan is an
 ordinary, swappable, last-priority chain entry (R3) rather than logic
@@ -18,13 +18,13 @@ version extraction already lives after the move.
 
 ## Files
 
-- **Create** `smbios/include/smbios/legacy_memory_scan_source.h` / `.cpp`:
+- **Create** `smbios/include/smbios/legacy_memory_scan_source.hpp` / `.cpp`:
   `LegacyMemoryScanSource::is_available()` returns `true` unconditionally
   (it is only ever reached as the last resort, so it always "tries"); its
   `try_read()` contains exactly today's `scan_physical_memory` +
   `extract_dmi_version` + checksum-validated base/length extraction logic,
   moved verbatim where possible.
-- **Modify** `smbios/include/smbios/smbios.h` / `smbios/src/smbios.cpp`:
+- **Modify** `smbios/include/smbios/smbios.hpp` / `smbios/src/smbios.cpp`:
   remove the moved members (`smbios_entry32_`, `smbios_entry64_`,
   `checksum_validated_`, `devmem_base_`, `devmem_length_`, `entry_point_buffer_`,
   the `scan_physical_memory`/`extract_dmi_version`/`checksum32`/`checksum64`/
@@ -35,7 +35,7 @@ version extraction already lives after the move.
   as a `LegacyMemoryScanSource`-specific accessor `SMBios::render_to_description()`
   delegates to when the legacy source was the one that succeeded (exact
   shape: resolve during implementation, record the decision in `status.md`).
-- **Create** `smbios/include/smbios/smbios_version_fixup.h` (header-only):
+- **Create** `smbios/include/smbios/smbios_version_fixup.hpp` (header-only):
   ```cpp
   // Ported from c-versions/dmidecode_linux/dmidecode.c::dmi_fixup_version()
   // "Some BIOS report weird SMBIOS version, fix that up."

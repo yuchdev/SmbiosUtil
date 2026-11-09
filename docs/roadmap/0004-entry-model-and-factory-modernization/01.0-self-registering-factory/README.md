@@ -40,7 +40,7 @@ eight more.
 
 ## Files or directories created or modified by this story
 
-- `smbios/include/smbios/smbios_entry_factory.h` / `.cpp` - rebuilt.
-- `smbios/include/smbios/bios_information_entry.h`,
-  `port_connection_entry.h`, `memory_device_entry.h` - each gains one
+- `smbios/include/smbios/smbios_entry_factory.hpp` / `.cpp` - rebuilt.
+- `smbios/include/smbios/bios_information_entry.hpp`,
+  `port_connection_entry.hpp`, `memory_device_entry.hpp` - each gains one
   `REGISTER_SMBIOS_ENTRY(...)` line.

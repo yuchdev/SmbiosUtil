@@ -68,13 +68,13 @@ enough difference to warrant its own task rather than folding into Task
 
 ## Files or directories created or modified by this story
 
-- `libsmbios/include/smbios/tables/system_event_log_entry.h` /
+- `libsmbios/include/smbios/tables/system_event_log_entry.hpp` /
   `libsmbios/src/system_event_log_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/memory_error_information_32bit_entry.h` /
+- `libsmbios/include/smbios/tables/memory_error_information_32bit_entry.hpp` /
   `libsmbios/src/memory_error_information_32bit_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/memory_error_information_64bit_entry.h` /
+- `libsmbios/include/smbios/tables/memory_error_information_64bit_entry.hpp` /
   `libsmbios/src/memory_error_information_64bit_entry.cpp` (new)
-- `libsmbios/include/smbios/tables/memory_device_mapped_address_entry.h` /
+- `libsmbios/include/smbios/tables/memory_device_mapped_address_entry.hpp` /
   `libsmbios/src/memory_device_mapped_address_entry.cpp` (new)
 - `smbios/src/command_line_parser.cpp` / `main.cpp` - display support for
   all four.

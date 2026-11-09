@@ -13,21 +13,21 @@ update the one `CMakeLists.txt` glob line that lists headers - per ADR
 ## Files
 
 - **Move** (`git mv`, preserving history) each of:
-  `libsmbios/include/smbios/bios_information_entry.h`,
-  `system_information_entry.h`, `system_enclosure_entry.h`,
-  `processor_information_entry.h`, `cache_information_entry.h`,
-  `port_connection_entry.h`, `system_slots_entry.h`,
-  `physical_memory_array_entry.h`, `memory_device_entry.h`,
-  `memory_array_mapped_address_entry.h`,
-  `system_boot_information_entry.h` -> the same filename under
+  `libsmbios/include/smbios/bios_information_entry.hpp`,
+  `system_information_entry.hpp`, `system_enclosure_entry.hpp`,
+  `processor_information_entry.hpp`, `cache_information_entry.hpp`,
+  `port_connection_entry.hpp`, `system_slots_entry.hpp`,
+  `physical_memory_array_entry.hpp`, `memory_device_entry.hpp`,
+  `memory_array_mapped_address_entry.hpp`,
+  `system_boot_information_entry.hpp` -> the same filename under
   `libsmbios/include/smbios/tables/`.
 - **Modify** each of the corresponding 11 `.cpp` files in `libsmbios/src/`
-  (unchanged location): update their own `#include <smbios/xxx_entry.h>`
-  to `#include <smbios/tables/xxx_entry.h>`.
+  (unchanged location): update their own `#include <smbios/xxx_entry.hpp>`
+  to `#include <smbios/tables/xxx_entry.hpp>`.
 - **Modify** `libsmbios/src/CMakeLists.txt`: the header glob line (ADR
   0002's Decision point 4, exact replacement text given there).
 - **Modify** `smbios/src/main.cpp` / `command_line_parser.cpp`: update any
-  `#include <smbios/xxx_entry.h>` to the new `tables/` path.
+  `#include <smbios/xxx_entry.hpp>` to the new `tables/` path.
 - **Modify** every `tests/unit/*_entry_test.cpp` that includes an entry
   header directly (grep `#include <smbios/.*_entry\.h>` across `tests/` to
   find the complete list before starting - do not rely on this task spec's
@@ -49,10 +49,10 @@ directives and one CMake glob line only.
   moving them) that none of them includes a sibling entry header - if one
   does, its own `#include` also needs the `tables/` prefix added at move
   time.
-- Do not touch `smbios_entry_factory.h`/`.cpp` (ADR 0002 point 5) or any of
+- Do not touch `smbios_entry_factory.hpp`/`.cpp` (ADR 0002 point 5) or any of
   the 4 non-entry headers staying flat in `include/smbios/`
-  (`smbios.h`, `abstract_smbios_entry.h`, `smbios_entry_factory.h`,
-  `smbios_entry_interface.h`).
+  (`smbios.hpp`, `abstract_smbios_entry.hpppp`, `smbios_entry_factory.hpp`,
+  `smbios_entry_interface.hpp`).
 
 ## Tests
 

@@ -14,12 +14,12 @@ it required.
 
 ## Files
 
-- **Modify** `smbios/include/smbios/bios_information_entry.h`: add
+- **Modify** `smbios/include/smbios/bios_information_entry.hpp`: add
   `REGISTER_SMBIOS_ENTRY(SMBios::BIOSInformation, BiosInformationEntry);`
   at namespace scope (bottom of file, after the class definition).
-- **Modify** `smbios/include/smbios/port_connection_entry.h`: add
+- **Modify** `smbios/include/smbios/port_connection_entry.hpp`: add
   `REGISTER_SMBIOS_ENTRY(SMBios::PortConnection, PortConnectionEntry);`.
-- **Modify** `smbios/include/smbios/memory_device_entry.h`: add
+- **Modify** `smbios/include/smbios/memory_device_entry.hpp`: add
   `REGISTER_SMBIOS_ENTRY(SMBios::MemoryDevice, MemoryDeviceEntry);`.
 - **Modify** `smbios/src/smbios_entry_factory.cpp`: delete the
   `SMBiosEntryFactory::SMBiosEntryFactory()` constructor body entirely (no
@@ -38,9 +38,9 @@ it required.
 
 ## Constraints
 
-- `smbios_entry_factory.h`'s `#include` list for the three concrete entry
-  headers (`bios_information_entry.h`, `port_connection_entry.h`,
-  `memory_device_entry.h`) can be removed once the factory header no
+- `smbios_entry_factory.hpp`'s `#include` list for the three concrete entry
+  headers (`bios_information_entry.hpp`, `port_connection_entry.hpp`,
+  `memory_device_entry.hpp`) can be removed once the factory header no
   longer needs to know about concrete entry types at all - the whole point
   of self-registration is that the factory header stops listing every
   entry class. Confirm this and update the include list accordingly.

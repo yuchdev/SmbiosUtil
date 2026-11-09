@@ -170,8 +170,8 @@ for the full milestone summary.
   diagnostic method's prose.
 - **2026-11-07: Story 01.0 Task 01 complete.** `ISmbiosSource` (C1) and
   `make_default_source_chain()` (C2) implemented in
-  `smbios/include/smbios/ismbios_source.h` /
-  `smbios/include/smbios/smbios_source_chain.h` /
+  `smbios/include/smbios/ismbios_source.hpp` /
+  `smbios/include/smbios/smbios_source_chain.hpp` /
   `smbios/src/smbios_source_chain.cpp`. `SMBios::SMBios()`'s constructor
   is now entirely `#if`-free, walking the chain generically - the one
   remaining `#if defined(_WIN32)` in the whole native-read path lives
@@ -204,7 +204,7 @@ for the full milestone summary.
   on this unprivileged Mac (`Source: none`, matching the expected
   no-native-source-available state).
 
-  `WindowsNativeSource` - written unverified against `win_bios.h`'s real
+  `WindowsNativeSource` - written unverified against `win_bios.hpp`'s real
   interface, no Windows toolchain in this session - **confirmed by real
   CI** (`https://github.com/yuchdev/SmbiosSdk/actions/runs/42290814193`:
   `build (windows-latest)` succeeded, alongside all 4 other jobs). The
@@ -236,7 +236,7 @@ for the full milestone summary.
   the detailed entry-point dump does **not** come back, and
   `render_to_description()` is not touched by this task at all.
 - **2026-11-07: Story 01.0 Task 02 complete.** `LegacyMemoryScanSource`
-  (`smbios/include/smbios/legacy_memory_scan_source.h`/`.cpp`) is now a
+  (`smbios/include/smbios/legacy_memory_scan_source.hpp`/`.cpp`) is now a
   real, standalone `ISmbiosSource` - the scan/checksum logic that Task
   01 had already moved once (from `SMBios` into free functions in
   `smbios_source_chain.cpp`) now lives a second and final time inside
@@ -245,7 +245,7 @@ for the full milestone summary.
   read) to delegate to `LegacyMemoryScanSource{}.try_read(...)` instead
   of calling a free function - the old free functions are gone from
   `smbios_source_chain.cpp` entirely. `fixup_smbios_version()`
-  (`smbios/include/smbios/smbios_version_fixup.h`, R9) ported and
+  (`smbios/include/smbios/smbios_version_fixup.hpp`, R9) ported and
   independently re-verified against `dmi_fixup_version()`
   (`c-versions/dmidecode_linux/dmidecode.c:5967`): packed `0x021F`/
   `0x0221` → corrected to major 2/minor 3, packed `0x0233` → major
@@ -253,7 +253,7 @@ for the full milestone summary.
   `LegacyMemoryScanSource::try_read()` before the real table mapping
   stage, genuinely new correctness this codebase never had.
   `render_to_description()` confirmed untouched by direct `git diff`
-  (empty) against both `smbios.cpp` and `smbios.h` - the reconciliation
+  (empty) against both `smbios.cpp` and `smbios.hpp` - the reconciliation
   above held. Verified independently: direct file read of the fixup
   table, the delegation call sites, and the diff confirming
   `render_to_description()` wasn't touched; a real local macOS rebuild;
@@ -429,15 +429,15 @@ for the full milestone summary.
   design decision ratified.** `WindowsNativeSource`
   (`smbios/src/source_windows/windows_native_source.cpp`) already existed
   as a thin delegating wrapper around the unchanged `SMBiosImpl`
-  (`win_bios.h`), built during Story 01.1 and marked "temporary" pending
-  this story's decision. Checked `win_bios.h` directly: `SMBiosImpl` has
+  (`win_bios.hpp`), built during Story 01.1 and marked "temporary" pending
+  this story's decision. Checked `win_bios.hpp` directly: `SMBiosImpl` has
   no `is_available()`/`try_read()`/`source_name()`-shaped methods and is
   constructed nowhere except inside this one wrapper, so giving it `:
   public ISmbiosSource` directly would mean editing a file this story's
   own R6 ("zero Windows API call site changed") is meant to leave alone,
   for no behavioral gain. Ratified: keep the wrapper permanently - the
-  genuinely zero-diff choice, not merely the smaller one. `win_bios.h`/
-  `.cpp`/`win_native_api_helper.h` are untouched by this story.
+  genuinely zero-diff choice, not merely the smaller one. `win_bios.hpp`/
+  `.cpp`/`win_native_api_helper.hpp` are untouched by this story.
   **Real gap found and fixed while implementing, not left for Task 02:**
   `make_default_source_chain()` had only one chain entry
   (`WindowsNativeSource`), with the legacy-scan fallback called *inside*
@@ -464,7 +464,7 @@ for the full milestone summary.
   confirm this story's own exit criterion ("full existing functional
   suite passes... `source_name()` reports the adapted native source's
   name"). **Could not build or syntax-check any of this locally** -
-  `win_bios.h` is entirely guarded behind `#if defined(_WIN32)`, and
+  `win_bios.hpp` is entirely guarded behind `#if defined(_WIN32)`, and
   macOS's own libc++ headers actively break when `_WIN32` is defined
   (tried; `_aligned_malloc`/`_aligned_free` errors from `<new>`) - manual
   review of the diff is all that's possible here; real Windows CI is the
@@ -503,9 +503,9 @@ for the full milestone summary.
 
 **Delivered:** `WindowsNativeSource` (`smbios/src/source_windows/windows_native_source.cpp`)
 ratified as the permanent `ISmbiosSource` wrapper around the unchanged
-`SMBiosImpl`/`win_bios.h` - the genuinely zero-diff choice, since
+`SMBiosImpl`/`win_bios.hpp` - the genuinely zero-diff choice, since
 `SMBiosImpl` has no `ISmbiosSource`-shaped methods of its own and is
-constructed nowhere else. `win_bios.h`/`.cpp`/`win_native_api_helper.h`
+constructed nowhere else. `win_bios.hpp`/`.cpp`/`win_native_api_helper.hpp`
 are byte-for-byte unmodified (R6 honored literally). Fixed a real
 architectural gap found while implementing, not left standing:
 `make_default_source_chain()` previously had one chain entry with the
@@ -532,7 +532,7 @@ assertions true - strong direct evidence `WindowsNativeSource`
 succeeded, since the legacy-scan fallback that could otherwise explain
 a pass needs raw physical-memory access removed from Windows user-mode
 since Server 2003 SP1. Zero API-call-site diff in `win_bios.cpp`/
-`win_native_api_helper.h`, confirmed by `git diff` showing no changes to
+`win_native_api_helper.hpp`, confirmed by `git diff` showing no changes to
 either file at any point in this story.
 
 **Milestone 0005 closeout.** All four stories (01.0/01.1/02.0/03.0/04.0
@@ -680,9 +680,9 @@ actually cares about.
   coexistence infeasible" situation milestone 0004's Story 01.0 Task 01
   hit for an analogous reason. Final target graph:
   `smbios_source_interface` (`INTERFACE`, header-only: `ISmbiosSource`,
-  the chain-factory declaration, `byte_reader.h`, `smbios_anchor.h`,
-  `smbios_version_fixup.h`, and a newly-relocated
-  `smbios_entry_point.h`) ← `smbios_source_legacy` (`STATIC`:
+  the chain-factory declaration, `byte_reader.hpp`, `smbios_anchor.hpp`,
+  `smbios_version_fixup.hpp`, and a newly-relocated
+  `smbios_entry_point.hpp`) ← `smbios_source_legacy` (`STATIC`:
   `PhysicalMemory`/`NativePhysicalMemory`, `LegacyMemoryScanSource`) ←
   exactly one of `smbios_source_windows`/`smbios_source_macos`/
   `smbios_source_linux` (`STATIC`), selected by a CMake-time
@@ -695,11 +695,11 @@ actually cares about.
   implementation, not pre-judged by either task's own file list:**
   `SMBIOSEntryPoint32`/`SMBIOSEntryPoint64` (used only by
   `LegacyMemoryScanSource`, assigned to `smbios_source_legacy`) were
-  extracted out of core `smbios.h` into
-  `source_interface/smbios_entry_point.h` - leaving them in `smbios.h`
+  extracted out of core `smbios.hpp` into
+  `source_interface/smbios_entry_point.hpp` - leaving them in `smbios.hpp`
   would have made `smbios_source_legacy` depend on core `smbios`,
   backwards from ADR 0001's intended acyclic direction.
-  `win_native_api_helper.h`/`win_handle_ptr.h` (used only by
+  `win_native_api_helper.hpp`/`win_handle_ptr.hpp` (used only by
   `win_physical_memory.cpp`, itself assigned to `smbios_source_legacy`,
   not `win_bios.cpp`) were moved into `source_legacy`, not
   `source_windows` as Task 02's literal file list said - moving them to
@@ -724,7 +724,7 @@ actually cares about.
   reading the final `smbios/src/CMakeLists.txt`).
 
   `git diff`-confirmed pure moves (no logic change, only `#include`
-  path updates) for `win_bios.cpp`/`win_bios.h` and
+  path updates) for `win_bios.cpp`/`win_bios.hpp` and
   `unix_bios.cpp`/`unix_bios.h` - re-verified directly here via `diff`
   against the pre-move committed content, not just trusted from the
   report. `tests/unit/unit_tests.cpp`'s `SMBiosImpl`-based regression

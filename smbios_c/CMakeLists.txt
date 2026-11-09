@@ -11,7 +11,7 @@ target_include_directories(${TARGET} PUBLIC
 
 target_include_directories(${TARGET} PRIVATE
     ${CMAKE_SOURCE_DIR}/libsmbios/include
-    ${CMAKE_SOURCE_DIR}/os_interface/include
+    ${CMAKE_SOURCE_DIR}/sys_interface/include
 )
 
 target_compile_options(${TARGET} PRIVATE ${SMBIOS_COMPILE_OPTIONS} ${SMBIOS_WARNING_OPTIONS})
@@ -130,7 +130,7 @@ install(TARGETS ${TARGET}
     RUNTIME DESTINATION bin
     ARCHIVE DESTINATION lib
 )
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/smbios_c
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/smbios
     DESTINATION include
 )
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/smbios_c/smbios_c_export.h

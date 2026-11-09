@@ -11,16 +11,16 @@ section 7.12), `SystemConfigurationOptionsEntry` (value `12`, section
 
 ## Files
 
-- **Create** `libsmbios/include/smbios/tables/oem_strings_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/oem_strings_entry.hpp` /
   `.cpp`: 0x04 Count (BYTE) - the only fixed field; content is entirely
   the trailing DMI string list.
 - **Create**
-  `libsmbios/include/smbios/tables/system_configuration_options_entry.h` /
+  `libsmbios/include/smbios/tables/system_configuration_options_entry.hpp` /
   `.cpp`: 0x04 Count (BYTE) - identical shape to OEM Strings, different
   semantic meaning (jumper/switch configuration text, not OEM free-form
   text).
 - **Create**
-  `libsmbios/include/smbios/tables/firmware_language_information_entry.h` /
+  `libsmbios/include/smbios/tables/firmware_language_information_entry.hpp` /
   `.cpp`:
   - 0x04 Installable Languages (BYTE)
   - 0x05 Flags (BYTE, bit 0 = abbreviated-format flag, 2.1+)

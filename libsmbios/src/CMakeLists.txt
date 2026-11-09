@@ -3,7 +3,7 @@ set(TARGET libsmbios)
 # file(GLOB) is non-recursive, so this only ever picks up *.cpp sitting
 # directly in libsmbios/src/ itself (the SMBios class, the entry-type
 # classes, the factory) - never any of the sibling per-OS/legacy/
-# os_interface top-level libraries, each of which globs its own directory
+# sys_interface top-level libraries, each of which globs its own directory
 # in its own CMakeLists.txt.
 file(GLOB SOURCES *.cpp
      ${CMAKE_CURRENT_SOURCE_DIR}/../include/libsmbios/*.h
@@ -37,4 +37,4 @@ set_target_properties(${TARGET} PROPERTIES PREFIX "")
 target_compile_options(${TARGET} PRIVATE ${SMBIOS_COMPILE_OPTIONS} ${SMBIOS_WARNING_OPTIONS})
 target_link_options(${TARGET} PRIVATE ${SMBIOS_LINK_OPTIONS})
 
-target_link_libraries(${TARGET} PUBLIC os_interface ${SMBIOS_LEGACY_LIB} ${SMBIOS_PLATFORM_LIB})
+target_link_libraries(${TARGET} PUBLIC sys_interface ${SMBIOS_LEGACY_LIB} ${SMBIOS_PLATFORM_LIB})

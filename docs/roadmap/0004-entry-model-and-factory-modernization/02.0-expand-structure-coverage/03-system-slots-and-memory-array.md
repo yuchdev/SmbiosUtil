@@ -16,21 +16,21 @@ size per the story's Key constraints).
 
 ## Files
 
-- **Create** `smbios/include/smbios/system_slots_entry.h` / `.cpp`: slot
+- **Create** `smbios/include/smbios/system_slots_entry.hpp` / `.cpp`: slot
   designation string index, slot type, data bus width, current usage,
   length, slot ID, characteristics bitmasks 1/2 (2.1+), segment
   group/bus/device-function number (2.6+).
-- **Create** `smbios/include/smbios/physical_memory_array_entry.h` / `.cpp`:
+- **Create** `smbios/include/smbios/physical_memory_array_entry.hpp` / `.cpp`:
   location, use, memory error correction, maximum capacity (with the
   `0x80000000` sentinel meaning "see extended maximum capacity"), memory
   error information handle, number of memory devices, extended maximum
   capacity (2.7+, 8 bytes).
-- **Create** `smbios/include/smbios/memory_array_mapped_address_entry.h` /
+- **Create** `smbios/include/smbios/memory_array_mapped_address_entry.hpp` /
   `.cpp`: starting/ending address, memory array handle, partition width,
   and the 2.7+ 8-byte extended starting/ending address pair (same "legacy
   field sentinel → wider field" pattern as `PhysicalMemoryArrayEntry`'s
   maximum capacity).
-- **Create** `smbios/include/smbios/system_boot_information_entry.h` /
+- **Create** `smbios/include/smbios/system_boot_information_entry.hpp` /
   `.cpp`: reserved (6 bytes) + boot status data (variable length, 1-9+
   bytes depending on the boot status code's own encoding per spec - this
   is the one new type whose "payload" is not a flat set of fixed-offset

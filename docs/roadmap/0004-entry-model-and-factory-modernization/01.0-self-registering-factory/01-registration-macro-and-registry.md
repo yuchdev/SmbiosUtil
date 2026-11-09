@@ -12,7 +12,7 @@ add a new entry type.
 
 ## Files
 
-- **Modify** `smbios/include/smbios/smbios_entry_factory.h`:
+- **Modify** `smbios/include/smbios/smbios_entry_factory.hpp`:
   ```cpp
   #pragma once
   #include <cstdint>

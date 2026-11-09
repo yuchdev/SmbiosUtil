@@ -10,7 +10,7 @@ section 7.44, through its Characteristics bitmask (7.44.1).
 
 ## Files
 
-- **Create** `libsmbios/include/smbios/tables/tpm_device_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/tpm_device_entry.hpp` /
   `.cpp`:
   - 0x04 Vendor ID (4 raw ASCII BYTEs - **not** a DMI string index, see
     this story's own Key constraints note)

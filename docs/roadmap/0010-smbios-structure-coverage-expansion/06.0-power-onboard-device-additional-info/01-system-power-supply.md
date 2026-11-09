@@ -10,7 +10,7 @@ Implement `SystemPowerSupplyEntry` (`SMBiosHandler` value `39`), DSP0134
 
 ## Files
 
-- **Create** `libsmbios/include/smbios/tables/system_power_supply_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/system_power_supply_entry.hpp` /
   `.cpp`:
   - 0x04 Power Unit Group (BYTE; 0 = not redundant)
   - 0x05 Location (STRING)

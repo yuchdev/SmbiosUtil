@@ -1,6 +1,6 @@
-#include <smbios/legacy/physical_memory.h>
-#include <smbios/legacy/win_native_api_helper.h>
-#include <smbios/legacy/win_handle_ptr.h>
+#include <smbios/legacy/physical_memory.hpp>
+#include <smbios/legacy/win_native_api_helper.hpp>
+#include <smbios/legacy/win_handle_ptr.hpp>
 
 #include <memory>
 #include <system_error>

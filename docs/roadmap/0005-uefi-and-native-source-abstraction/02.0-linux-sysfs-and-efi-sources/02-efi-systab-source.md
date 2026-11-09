@@ -23,7 +23,7 @@ parsing logic are confirmed against
 the new `smbios_source_linux` library. The class/logic content below is
 unchanged.)*
 
-- **Create** `smbios/include/smbios/source_linux/linux_efi_source.h` / `.cpp`:
+- **Create** `smbios/include/smbios/source_linux/linux_efi_source.hpp` / `.cpp`:
   ```cpp
   class LinuxEfiSource : public ISmbiosSource {
   public:

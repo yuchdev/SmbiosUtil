@@ -12,7 +12,7 @@ cutoff below).
 
 ## Files
 
-- **Create** `libsmbios/include/smbios/tables/system_event_log_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/system_event_log_entry.hpp` /
   `.cpp`:
   - 0x04 Log Area Length (WORD)
   - 0x06 Log Header Start Offset (WORD)

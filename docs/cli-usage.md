@@ -2,7 +2,7 @@
 
 The `smbios` executable reads the local machine's SMBIOS/DMI table and prints every structure it can decode.
 
-Not writing C++? `smbios_c` (milestone 0007) is a separate C ABI shim over this project's core library (`libsmbios`), for calling into it from Python, Rust, C#, or any other language with C FFI support, without linking C++ directly - see its header at `smbios_c/include/smbios_c/smbios_c.h` and [CLAUDE.md](../CLAUDE.md)'s Overview section for the full rationale.
+Not writing C++? `smbios_c` (milestone 0007) is a separate C ABI shim over this project's core library (`libsmbios`), for calling into it from Python, Rust, C#, or any other language with C FFI support, without linking C++ directly - see its header at `smbios_c/include/smbios/smbios.hpp` and [CLAUDE.md](../CLAUDE.md)'s Overview section for the full rationale.
 
 ## Running it
 

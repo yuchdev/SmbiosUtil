@@ -10,7 +10,7 @@ Implement `PointingDeviceEntry` (`SMBiosHandler` value `21`), DSP0134
 
 ## Files
 
-- **Create** `libsmbios/include/smbios/tables/pointing_device_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/pointing_device_entry.hpp` /
   `.cpp`:
   - 0x04 Type (BYTE, ENUM - see 7.22.1; note: same field name as the
     structure header's own `Type` byte at offset 0x00 - name the accessor
@@ -18,7 +18,7 @@ Implement `PointingDeviceEntry` (`SMBiosHandler` value `21`), DSP0134
     "structure kind" meaning)
   - 0x05 Interface (BYTE, ENUM - see 7.22.2)
   - 0x06 Number of Buttons (BYTE)
-- **Create** `libsmbios/include/smbios/tables/portable_battery_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/portable_battery_entry.hpp` /
   `.cpp`:
   - 0x04 Location (STRING)
   - 0x05 Manufacturer (STRING)

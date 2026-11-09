@@ -13,7 +13,7 @@ cutoff).
 
 ## Files
 
-- **Create** `libsmbios/include/smbios/tables/memory_channel_entry.h` /
+- **Create** `libsmbios/include/smbios/tables/memory_channel_entry.hpp` /
   `.cpp`:
   - 0x04 Channel Type (BYTE, ENUM - see 7.38.1)
   - 0x05 Maximum Channel Load (BYTE)
@@ -21,7 +21,7 @@ cutoff).
   - 0x07 + `3*i` Memory Device `i` Load (BYTE), for `i` in `0..n-1`
   - 0x08 + `3*i` Memory Device `i` Handle (WORD), for `i` in `0..n-1`
 - **Create**
-  `libsmbios/include/smbios/tables/ipmi_device_information_entry.h` /
+  `libsmbios/include/smbios/tables/ipmi_device_information_entry.hpp` /
   `.cpp`:
   - 0x04 Interface Type (BYTE, ENUM - see 7.39.1)
   - 0x05 IPMI Specification Revision (BYTE, BCD - e.g. `0x10` = rev 1.0)
@@ -35,7 +35,7 @@ cutoff).
     finalizing offsets)
   - 0x11 Interrupt Number (BYTE; `0x00` = unspecified/unsupported)
 - **Create**
-  `libsmbios/include/smbios/tables/management_controller_host_interface_entry.h` /
+  `libsmbios/include/smbios/tables/management_controller_host_interface_entry.hpp` /
   `.cpp` (3.2+ shape):
   - 0x04 Interface Type (BYTE, ENUM - see 7.43.1)
   - 0x05 Interface Type Specific Data Length `N` (BYTE)

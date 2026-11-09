@@ -1,11 +1,11 @@
-#include <smbios_c/smbios_c.h>
+#include <smbios/smbios.h>
 
-#include <libsmbios/smbios.h>
-#include <libsmbios/abstract_smbios_entry.h>
-#include <libsmbios/smbios_entry_factory.h>
-#include <libsmbios/tables/bios_information_entry.h>
-#include <libsmbios/tables/system_information_entry.h>
-#include <libsmbios/tables/memory_device_entry.h>
+#include <libsmbios/smbios.hpp>
+#include <libsmbios/abstract_smbios_entry.hpp>
+#include <libsmbios/smbios_entry_factory.hpp>
+#include <libsmbios/tables/bios_information_entry.hpp>
+#include <libsmbios/tables/system_information_entry.hpp>
+#include <libsmbios/tables/memory_device_entry.hpp>
 
 #include <cstring>
 #include <memory>

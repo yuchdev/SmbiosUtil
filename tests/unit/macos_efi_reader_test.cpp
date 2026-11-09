@@ -12,8 +12,8 @@
 
 #include <iostream>
 
-#include <smbios/os_interface/smbios_anchor.h>
-#include <smbios/macos/macos_efi_reader.h>
+#include <smbios/sys_interface/smbios_anchor.hpp>
+#include <smbios/macos/macos_efi_reader.hpp>
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
