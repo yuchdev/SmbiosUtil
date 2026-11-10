@@ -23,7 +23,7 @@ This story has four parts:
 | 01 | [YAML renderer](01-yaml-renderer.md)                                           | ✅ Complete (`ff606d3`) | 02     |
 | 02 | [Custom-format extensibility example and CLI wiring](02-custom-format-extensibility-example-and-cli-wiring.md) | ✅ Complete (`0d7d781`, `ef62ca0`, `184b692`) | 03     |
 | 03 | [Examples and documentation](03-examples-and-documentation.md)                 | ✅ Complete (`3174884`..`c730694`) | 04     |
-| 04 | [Tests](04-tests.md)                                                          | ⬜ Not started | -      |
+| 04 | [Tests](04-tests.md)                                                          | ✅ Complete (`95ffc71`, `927ca5f`; CI run 42821726781) | -      |
 
 Task 03 depends on Tasks 01 and 02, because its samples need `yaml` and
 `csv`, and its CLI smoke test needs `--format`. Task 04 is the exit gate

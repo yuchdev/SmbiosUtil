@@ -1,7 +1,7 @@
 # 04 - Tests
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-10)
 **Depends on:** Task 03 ([Examples and documentation](03-examples-and-documentation.md))
 
 > *Renumbered 2026-11-10* from `03-tests.md`. The user added examples and
@@ -24,21 +24,21 @@ owns the example, doc-sample and documentation files.
 
 ## Success criteria
 
-- [ ] `smbios --format <name>` produces valid, correctly structured output
+- [x] `smbios --format <name>` produces valid, correctly structured output
       on real hardware for every one of `text`, `xml`, `json`, `yaml` and
       `csv`. This must hold across Windows, Linux and macOS (the native
       sources from milestone 0005).
-- [ ] `text` output is confirmed byte-identical to the tool's behaviour
+- [x] `text` output is confirmed byte-identical to the tool's behaviour
       before this milestone.
-- [ ] The `smbios_cli_*` CTest entries from Task 02 pass. The two
+- [x] The `smbios_cli_*` CTest entries from Task 02 pass. The two
       unknown-format tests must pass in CI on every OS.
-- [ ] Every `smbios_example_*` CTest entry from Task 03 passes in CI on all
+- [x] Every `smbios_example_*` CTest entry from Task 03 passes in CI on all
       three OSes, in both the `build` and `sanitizers` jobs.
-- [ ] `DocSamplesTests` passes in `smbios_unit_test` on all three OSes, and
+- [x] `DocSamplesTests` passes in `smbios_unit_test` on all three OSes, and
       `python3 scripts/check_doc_samples.py --check` passes in CI.
-- [ ] Every Task 03 success criterion is checked, including the
+- [x] Every Task 03 success criterion is checked, including the
       documentation and Doxygen rows.
-- [ ] `/link-check docs/` (`python scripts/check_doc_links.py docs/`)
+- [x] `/link-check docs/` (`python scripts/check_doc_links.py docs/`)
       reports zero problems across the full roadmap.
 - [ ] Milestone 0009's `status.md` is updated to ✅ for all three stories.
 - [ ] `docs/roadmap/README.md`'s milestone table and Program overview

@@ -8,7 +8,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 |-------|----------------------------------------------------|----------------|-------|
 | 01.0  | Structured field model                             | ✅ Complete (2026-11-10) | 518 unit |
 | 02.0  | Renderer registry and built-in formats             | ✅ Complete (2026-11-10) | 602 unit |
-| 03.0  | YAML renderer and custom-format extensibility      | 🔶 In progress (3/4 tasks) | 629 unit, 21 ctest |
+| 03.0  | YAML renderer and custom-format extensibility      | 🔶 In progress (4/4 tasks; story review pending) | 629 unit, 21 ctest |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -419,3 +419,36 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
     one-line `ls -l /sys/firmware/dmi/tables` probe to the ubuntu CI job.
   - Fixed along the way: the root `README.md` and `CLAUDE.md` linked
     `smbios_c/include/smbios/smbios.hpp`; the header is `smbios.h`.
+- **2026-11-10 - Story 03.0 Task 04 (milestone exit gate) complete.**
+  - **Privacy test strengthened** (`95ffc71`). The test now checks the raw
+    fixture bytes for SMBIOS types 1/2/3/17, requires an `Example` marker in
+    every DMI string, and rejects any field name containing serial, uuid,
+    asset, part number or sku. Each of the three checks was confirmed to
+    fail on a deliberately broken fixture.
+  - **Real hardware, all five formats, through the actual CLI** (`927ca5f`
+    adds a CI step; run 42821726781). A malformed document fails the job.
+    - Linux `ubuntu-latest` (sudo) and Windows `windows-latest`: 14
+      structures in xml/json/yaml, 142 csv rows.
+    - macOS dev machine (IOKit): 26 structures; the YAML parse equals the
+      JSON, and the CSV row count equals the JSON field count.
+    - The macOS CI runner exposes no table, so there the step only warns
+      on the empty, well-formed documents.
+  - **`text` output is unchanged.** It is byte-identical to `master`'s CLI
+    on the dev Mac, and no-flag output equals `--format text` on every CI
+    runner.
+  - **Linux sysfs mode verified.** `DMI` and `smbios_entry_point` are
+    `-r-------- root root` on the runner. `docs/cli-usage.md` now states
+    this as fact instead of hedging.
+  - **Doc correction.** `docs/cli-usage.md` claimed a table-read failure
+    exits non-zero. In fact, when no source succeeds, `SMBios` has an empty
+    table and the CLI exits 0 with an empty result; this behaviour predates
+    0009. The doc now says so.
+  - **Follow-ups:**
+    - Consider a stderr diagnostic and a non-zero exit when no source
+      succeeds. This is a behaviour change; it needs its own decision.
+    - Make zero-entry YAML a real empty sequence: have `render_document()`
+      or a new `empty_document()` hook emit `[]`. CI runners showed that
+      empty tables are common.
+    - `--read-file` is still a `TODO` in `smbios/src/main.cpp`. The threat
+      model's attacker-controlled dump path is therefore latent: it is not
+      reachable today.
