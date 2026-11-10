@@ -47,6 +47,14 @@ all discovered by `ctest` (root `CMakeLists.txt` calls `enable_testing()`):
 | Perf          | `tests/perf/`        | `smbios_perf_test`      | Yes (real hardware) | No - fails cleanly without privileges, not a regression |
 | Integration   | `tests/integration/` | `smbios_integration_test` | Yes (real hardware) | No - same as Perf |
 
+CTest-level smoke tests (`smbios_cli_*`, `smbios_example_*`) are classified
+**Integration**: they exercise the built `smbios` binary or an example program
+rather than a Boost.Test case. `smbios_example_*` and the hardware-free
+`smbios_cli_unknown_format*` tests are the must-pass exception - they degrade by
+design and are in CI's must-pass `ctest -R` regex - whereas `smbios_cli_format_csv`
+reads real hardware and is grouped with `smbios_integration_test`/`smbios_perf_test`
+in CI's warning-only step.
+
 A new structure/entry type/parsing rule gets a **unit** test first (a
 hand-built `DMIHeader`/raw buffer, no real `SMBios`/hardware) - see
 `tests/unit/unit_tests.cpp`'s `build_port_connection_buffer()` helper for the
