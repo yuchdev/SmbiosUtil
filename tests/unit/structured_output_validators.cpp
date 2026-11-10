@@ -8,7 +8,7 @@
 #include <vector>
 
 // See structured_output_validators.hpp for the contract of each validator.
-// Implementation notes: both validators decode UTF-8 with the same strict
+// Implementation notes: every validator decodes UTF-8 with the same strict
 // decoder below (decode_utf8_at), never with libsmbios's own
 // for_each_code_point(), so a decoder bug in the library cannot hide itself
 // by being reused here.
@@ -425,6 +425,171 @@ private:
     size_t pos_ = 0;
 };
 
+
+// ------------------------------------------------------------------ YAML ---
+
+/// @brief Appends scalar value `cp` to `out` as UTF-8 (builds decoded keys
+/// for the duplicate-key check).
+void append_code_point(std::string& out, uint32_t cp)
+{
+    if (cp < 0x80) {
+        out.push_back(static_cast<char>(cp));
+    } else if (cp < 0x800) {
+        out.push_back(static_cast<char>(0xC0 | (cp >> 6)));
+        out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
+    } else if (cp < 0x10000) {
+        out.push_back(static_cast<char>(0xE0 | (cp >> 12)));
+        out.push_back(static_cast<char>(0x80 | ((cp >> 6) & 0x3F)));
+        out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
+    } else {
+        out.push_back(static_cast<char>(0xF0 | (cp >> 18)));
+        out.push_back(static_cast<char>(0x80 | ((cp >> 12) & 0x3F)));
+        out.push_back(static_cast<char>(0x80 | ((cp >> 6) & 0x3F)));
+        out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
+    }
+}
+
+/// @brief True iff `cp` may appear raw inside a double-quoted scalar of the
+/// formatter's subset: YAML 1.2 `c-printable` (§5.1) minus TAB, the YAML
+/// 1.1 line breaks U+0085/U+2028/U+2029 and the BOM U+FEFF.
+bool is_raw_yaml_scalar_char(uint32_t cp)
+{
+    if (cp >= 0x20 && cp <= 0x7E) return true;
+    if (cp == 0x85 || cp == 0x2028 || cp == 0x2029 || cp == 0xFEFF) return false;
+    if (cp >= 0xA0 && cp <= 0xD7FF) return true;
+    if (cp >= 0xE000 && cp <= 0xFFFD) return true;
+    return cp >= 0x10000 && cp <= 0x10FFFF;
+}
+
+/// @brief Recogniser for the flat YAML subset over an already
+/// UTF-8-validated document (see is_well_formed_flat_yaml()).
+class FlatYamlValidator {
+public:
+    explicit FlatYamlValidator(std::string_view doc) : doc_(doc) {}
+
+    /// @return true iff the whole document matches the subset grammar.
+    bool run()
+    {
+        if (!literal("---\n")) return false;
+        if (literal("\n")) return at_end(); // zero entries: empty root node
+        if (at_end()) return false;
+        while (!at_end()) {
+            if (!item()) return false;
+        }
+        return true;
+    }
+
+private:
+    bool at_end() const { return pos_ >= doc_.size(); }
+
+    bool literal(std::string_view text)
+    {
+        if (doc_.substr(pos_, text.size()) != text) return false;
+        pos_ += text.size();
+        return true;
+    }
+
+    /// @brief One `- type: .. / fields: ..` sequence item, LF included.
+    bool item()
+    {
+        std::string type;
+        if (!literal("- type: ") || !double_quoted(type) || !literal("\n  fields:")) return false;
+        if (literal(" {}\n")) return true;
+        if (!literal("\n")) return false;
+        std::set<std::string> keys;
+        bool any = false;
+        while (literal("    ")) {
+            std::string key;
+            if (!double_quoted(key) || !keys.insert(key).second || !literal(": ")) return false;
+            if (!field_value() || !literal("\n")) return false;
+            any = true;
+        }
+        return any;
+    }
+
+    /// @brief A field value: dq, plain unsigned decimal, `true` or `false`.
+    bool field_value()
+    {
+        if (!at_end() && doc_[pos_] == '"') {
+            std::string ignored;
+            return double_quoted(ignored);
+        }
+        if (literal("true") || literal("false")) return true;
+        const size_t start = pos_;
+        while (!at_end() && doc_[pos_] >= '0' && doc_[pos_] <= '9') ++pos_;
+        const std::string_view digits = doc_.substr(start, pos_ - start);
+        if (digits.empty() || digits.size() > 20) return false;
+        if (digits.size() > 1 && digits[0] == '0') return false;
+        return digits.size() < 20 || digits <= "18446744073709551615";
+    }
+
+    /// @brief Reads exactly `count` hex digits (either case) into `value`.
+    bool hex(size_t count, uint32_t& value)
+    {
+        value = 0;
+        for (size_t k = 0; k < count; ++k) {
+            if (at_end()) return false;
+            const char c = doc_[pos_++];
+            uint32_t digit = 0;
+            if (c >= '0' && c <= '9') digit = static_cast<uint32_t>(c - '0');
+            else if (c >= 'a' && c <= 'f') digit = static_cast<uint32_t>(c - 'a' + 10);
+            else if (c >= 'A' && c <= 'F') digit = static_cast<uint32_t>(c - 'A' + 10);
+            else return false;
+            value = (value << 4) | digit;
+        }
+        return true;
+    }
+
+    /// @brief A one-line double-quoted scalar; `decoded` receives its value.
+    bool double_quoted(std::string& decoded)
+    {
+        if (!literal("\"")) return false;
+        while (!at_end()) {
+            uint32_t cp = 0;
+            const size_t length = decode_utf8_at(doc_, pos_, cp);
+            if (length == 0) return false;
+            pos_ += length;
+            if (cp == '"') return true;
+            if (cp != '\\') {
+                if (!is_raw_yaml_scalar_char(cp)) return false;
+                append_code_point(decoded, cp);
+                continue;
+            }
+            if (at_end()) return false;
+            uint32_t value = 0;
+            switch (doc_[pos_++]) {
+            case '0': value = 0x00; break;
+            case 'a': value = 0x07; break;
+            case 'b': value = 0x08; break;
+            case 't': value = 0x09; break;
+            case 'n': value = 0x0A; break;
+            case 'v': value = 0x0B; break;
+            case 'f': value = 0x0C; break;
+            case 'r': value = 0x0D; break;
+            case 'e': value = 0x1B; break;
+            case ' ': value = 0x20; break;
+            case '"': value = 0x22; break;
+            case '/': value = 0x2F; break;
+            case '\\': value = 0x5C; break;
+            case 'N': value = 0x85; break;
+            case '_': value = 0xA0; break;
+            case 'L': value = 0x2028; break;
+            case 'P': value = 0x2029; break;
+            case 'x': if (!hex(2, value)) return false; break;
+            case 'u': if (!hex(4, value)) return false; break;
+            case 'U': if (!hex(8, value)) return false; break;
+            default: return false;
+            }
+            if ((value >= 0xD800 && value <= 0xDFFF) || value > 0x10FFFF) return false;
+            append_code_point(decoded, value);
+        }
+        return false; // unterminated
+    }
+
+    std::string_view doc_;
+    size_t pos_ = 0;
+};
+
 } // namespace
 
 bool is_valid_utf8(std::string_view text)
@@ -455,6 +620,12 @@ bool is_well_formed_xml(std::string_view document)
         pos += length;
     }
     return XmlValidator(document).run();
+}
+
+bool is_well_formed_flat_yaml(std::string_view document)
+{
+    if (!is_valid_utf8(document)) return false;
+    return FlatYamlValidator(document).run();
 }
 
 } // namespace test

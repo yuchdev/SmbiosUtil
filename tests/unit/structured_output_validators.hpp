@@ -5,7 +5,7 @@
 // Test-local structural validators for milestone 0009 Story 02.0's
 // machine-readable formatters (Task 03, security-auditor INFO-6).
 //
-// No XML or JSON parser is available to smbios_unit_test (vcpkg.json carries
+// No XML, JSON or YAML parser is available to smbios_unit_test (vcpkg.json carries
 // only iostreams, program-options, test and date-time), so a real round-trip
 // parse is not an option inside the unit binary; these validators stand in
 // for one. They are written independently of libsmbios's own escaping code
@@ -60,6 +60,35 @@ bool is_well_formed_json(std::string_view document);
 /// @param document the complete document to check.
 /// @return true iff `document` is one well-formed document of that subset.
 bool is_well_formed_xml(std::string_view document);
+
+/// @brief Strict check of the flat YAML 1.2 subset the `yaml` formatter
+/// (milestone 0009 Story 03.0 Task 01) emits; deliberately not a general
+/// YAML recogniser, so anything outside that subset is rejected.
+///
+/// Accepted grammar (every line terminated by exactly one LF):
+/// @code
+/// document := "---" LF ( LF | item+ )
+/// item     := "- type: " dq LF "  fields:" ( " {}" LF | LF field+ )
+/// field    := "    " dq ": " ( dq | uint | "true" | "false" ) LF
+/// uint     := "0" | [1-9][0-9]*            (at most 2^64-1)
+/// dq       := '"' ( raw-char | escape )* '"'
+/// @endcode
+/// An escape is any YAML 1.2 §5.7 escape (`\0 \a \b \t \v \n \f \r \e`,
+/// backslash-space, `\" \/ \\ \N \_ \L \P \xXX \uXXXX \UXXXXXXXX`, hex in
+/// either case) whose value is a Unicode scalar value. A raw-char is any
+/// code point other than `"` and `\` that is in YAML 1.2 `c-printable`
+/// (§5.1) and is not TAB, U+0085, U+2028, U+2029 (YAML 1.1 line breaks) or
+/// U+FEFF (BOM, §5.2) - the formatter escapes all of those.
+///
+/// Rejects: invalid UTF-8; a BOM; CR or CRLF line endings; any raw
+/// non-printable code point; unquoted string scalars (`NO`, `~`, `null`,
+/// `0x0A`, `1.10`); anchors, aliases, tags and directives (none fit the
+/// grammar); numbers with a leading zero, a sign or above 2^64-1; a
+/// missing final LF; and duplicate keys within one `fields` mapping,
+/// compared after decoding escapes.
+/// @param document the complete document to check.
+/// @return true iff `document` is one document of that subset.
+bool is_well_formed_flat_yaml(std::string_view document);
 
 } // namespace test
 } // namespace smbios

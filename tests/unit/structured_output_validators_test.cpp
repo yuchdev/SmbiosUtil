@@ -5,6 +5,7 @@
 #include <boost/test/unit_test.hpp>
 
 using smbios::test::is_valid_utf8;
+using smbios::test::is_well_formed_flat_yaml;
 using smbios::test::is_well_formed_json;
 using smbios::test::is_well_formed_xml;
 
@@ -19,9 +20,11 @@ using smbios::test::is_well_formed_xml;
 // formatter tests pass silently. (These cases absorb the checker sanity
 // tests Task 02 kept in xml_formatter_test.cpp / json_formatter_test.cpp.)
 // Boundaries: empty input, a lone scalar, the deepest/longest escapes,
-// each invalid-UTF-8 class, each XML 1.0-forbidden code point class.
+// each invalid-UTF-8 class, each XML 1.0-forbidden code point class, and
+// (Story 03.0 Task 01) each non-printable YAML code point class plus
+// UINT64_MAX / 2^64 for the flat YAML subset.
 // On failure first check: structured_output_validators.cpp - the failing
-// production's recogniser (JsonValidator / XmlValidator) or
+// production's recogniser (JsonValidator / XmlValidator / FlatYamlValidator) or
 // decode_utf8_at() for any UTF-8 case.
 
 BOOST_AUTO_TEST_SUITE(StructuredOutputValidatorsUnitTests)
@@ -228,6 +231,113 @@ BOOST_AUTO_TEST_CASE(XmlValidatorRejectsForbiddenCodePointsTestCase)
     BOOST_CHECK(!is_well_formed_xml("<a>\xC0\xAF</a>"));       // overlong
     BOOST_CHECK(!is_well_formed_xml("<a>\xED\xA0\x80</a>"));   // CESU surrogate
     BOOST_CHECK(!is_well_formed_xml("<a>Caf\xE9</a>"));        // Latin-1
+}
+
+// ----------------------------------------------------------------- YAML ---
+
+/// Normal case: zero entries, one- and two-entry documents, every value
+/// kind (dq, 0, UINT64_MAX, true, false), `fields: {}`, every YAML 1.2
+/// escape and raw printable non-ASCII (bidi, U+FFFD, emoji, NBSP) plus YAML
+/// indicator characters inside quotes are accepted.
+BOOST_AUTO_TEST_CASE(FlatYamlValidatorAcceptsWellFormedTestCase)
+{
+    BOOST_CHECK(is_well_formed_flat_yaml("---\n\n"));
+    BOOST_CHECK(is_well_formed_flat_yaml("---\n- type: \"T\"\n  fields: {}\n"));
+    BOOST_CHECK(is_well_formed_flat_yaml(
+        "---\n"
+        "- type: \"A\"\n"
+        "  fields:\n"
+        "    \"s\": \"NO\"\n"
+        "    \"z\": 0\n"
+        "    \"max\": 18446744073709551615\n"
+        "    \"t\": true\n"
+        "    \"f\": false\n"
+        "- type: \"B\"\n"
+        "  fields: {}\n"));
+    BOOST_CHECK(is_well_formed_flat_yaml(
+        "---\n- type: \"\\0\\a\\b\\t\\v\\n\\f\\r\\e\\ \\\"\\/\\\\\\N\\_\\L\\P\\x7f\\u00E9\\U0001F600\"\n  fields: {}\n"));
+    BOOST_CHECK(is_well_formed_flat_yaml(
+        "---\n- type: \"\xE2\x80\xAE \xEF\xBF\xBD \xF0\x9F\x98\x80 \xC2\xA0 # : - & * ! % ~\"\n  fields: {}\n"));
+    // Same key in two different mappings is not a duplicate.
+    BOOST_CHECK(is_well_formed_flat_yaml("---\n- type: \"T\"\n  fields:\n    \"a\": 1\n- type: \"T\"\n  fields:\n    \"a\": 2\n"));
+}
+
+/// Invalid-input case: every structural or typing break an emitter bug
+/// could cause is rejected - unquoted strings (implicit-typing traps),
+/// anchors/aliases/tags, bad numbers, bad or truncated escapes, unterminated
+/// quotes, wrong indentation, CRLF, missing marker or final LF, tabs,
+/// trailing garbage, duplicate keys.
+BOOST_AUTO_TEST_CASE(FlatYamlValidatorRejectsMalformedTestCase)
+{
+    const std::string head = "---\n- type: \"T\"\n  fields:\n    \"k\": ";
+    const char* const bad_values[] = {
+        "NO", "yes", "~", "null", "0x0A", "1.10", "-1", "+1", "01", "1e3",
+        "18446744073709551616",         // 2^64
+        "99999999999999999999",         // 20 digits, above 2^64-1
+        "True", "&a \"x\"", "*a", "!!str x", "\"x", "\"x\\\"", "\"\\q\"", "\"\\x4\"",
+        "\"\\u12G4\"", "\"\\ud800\"", "\"\\U00110000\"", "", "\"a\" #c", "\"a\"  ",
+    };
+    for (const char* v : bad_values) {
+        BOOST_TEST_CONTEXT("value [" << v << "]") {
+            BOOST_CHECK(!is_well_formed_flat_yaml(head + v + "\n"));
+        }
+    }
+    const char* const bad_documents[] = {
+        "",                                                   // empty
+        "---\n",                                              // no root line
+        "---",                                                // no LF
+        "- type: \"T\"\n  fields: {}\n",                      // no document marker
+        "---\n- type: \"T\"\n  fields: {}",                   // no final LF
+        "---\n- type: \"T\"\r\n  fields: {}\r\n",             // CRLF
+        "---\n- type: T\n  fields: {}\n",                     // plain type
+        "---\n- type: \"T\"\n  fields:\n",                    // empty block mapping
+        "---\n- type: \"T\"\n fields: {}\n",                  // wrong indentation
+        "---\n- type: \"T\"\n  fields:\n   \"k\": 1\n",       // wrong field indentation
+        "---\n- type: \"T\"\n  fields:\n    k: 1\n",          // plain key
+        "---\n- type: \"T\"\n  fields:\n    \"k\":1\n",       // no space after colon
+        "---\n- type: \"T\"\n  fields:\n\t\"k\": 1\n",        // tab indentation
+        "---\n- type: \"T\"\n  fields: {}\n\n",               // trailing blank line
+        "---\n- type: \"T\"\n  fields: {}\n...\n",            // trailing content
+        "%YAML 1.2\n---\n\n",                                 // directive
+        "---\n- type: !t \"T\"\n  fields: {}\n",              // tag
+        "---\n- type: \"T\"\n  fields:\n    \"k\": 1\n    \"k\": 2\n",     // duplicate key
+        "---\n- type: \"T\"\n  fields:\n    \"A\": 1\n    \"\\x41\": 2\n", // duplicate after decoding
+        "---\n- type: \"a\nb\"\n  fields: {}\n",              // raw LF inside a scalar
+    };
+    for (const char* doc : bad_documents) {
+        BOOST_TEST_CONTEXT("document [" << doc << "]") {
+            BOOST_CHECK(!is_well_formed_flat_yaml(doc));
+        }
+    }
+}
+
+/// Security case (INFO-6, SR-2): every raw non-printable code point inside a
+/// scalar is rejected - each C0 byte (including TAB), DEL, each C1 code
+/// point (U+0085 included), U+2028, U+2029, U+FEFF, U+FFFE, U+FFFF - as are
+/// invalid UTF-8 and a leading BOM.
+BOOST_AUTO_TEST_CASE(FlatYamlValidatorRejectsNonPrintableTestCase)
+{
+    const auto doc = [](const std::string& body) { return "---\n- type: \"" + body + "\"\n  fields: {}\n"; };
+    BOOST_REQUIRE(is_well_formed_flat_yaml(doc("ok")));
+    for (int b = 0x00; b <= 0x1F; ++b) {
+        BOOST_TEST_CONTEXT("C0 byte " << b) {
+            BOOST_CHECK(!is_well_formed_flat_yaml(doc(std::string(1, static_cast<char>(b)))));
+        }
+    }
+    BOOST_CHECK(!is_well_formed_flat_yaml(doc("\x7F")));
+    for (int c = 0x80; c <= 0x9F; ++c) {
+        BOOST_TEST_CONTEXT("C1 code point " << c) {
+            const std::string utf8{static_cast<char>(0xC2), static_cast<char>(c)};
+            BOOST_CHECK(!is_well_formed_flat_yaml(doc(utf8)));
+        }
+    }
+    for (const char* raw : {"\xE2\x80\xA8", "\xE2\x80\xA9", "\xEF\xBB\xBF", "\xEF\xBF\xBE", "\xEF\xBF\xBF",
+                            "\xC0\xAF", "\xED\xA0\x80", "Caf\xE9"}) {
+        BOOST_TEST_CONTEXT("raw " << std::string(raw).size() << " bytes") {
+            BOOST_CHECK(!is_well_formed_flat_yaml(doc(raw)));
+        }
+    }
+    BOOST_CHECK(!is_well_formed_flat_yaml("\xEF\xBB\xBF---\n\n")); // leading BOM
 }
 
 BOOST_AUTO_TEST_SUITE_END()
