@@ -6,7 +6,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 | Story | Name                                           | Status         | Tests |
 |-------|----------------------------------------------------|----------------|-------|
-| 01.0  | Structured field model                             | 🔶 In progress (2/6 tasks) | 443 unit |
+| 01.0  | Structured field model                             | 🔶 In progress (3/6 tasks) | 466 unit |
 | 02.0  | Renderer registry and built-in formats             | ⬜ Not started | -     |
 | 03.0  | YAML renderer and custom-format extensibility      | ⬜ Not started | -     |
 
@@ -124,3 +124,17 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   CTest `add_test` entries in `tests/integration/CMakeLists.txt`,
   classified as Integration. Add a note to `docs/dev/cpp_coding_standard.md`'s
   Testing section that CTest-level CLI smoke tests belong to that category.
+- **2026-11-10 - Story 01.0 Task 03 (batch 2) disposition notes.**
+  - `"Processor-Specific Data"` drops the text label's dynamic
+    `(N bytes)` suffix, so the key stays stable. The byte count can be
+    derived from the raw-bytes value.
+  - Cache SRAM bits that occur in both groups are named
+    `"<bit> (Supported)"` and `"<bit> (Installed)"`, instead of numeric
+    suffixes.
+  - **Follow-up bug, out of scope here because R3 requires byte-identical
+    text:** `MemoryDeviceEntry::get_data_width_string()`
+    (`libsmbios/src/memory_device_entry.cpp:429`) checks the data width for
+    special values but then prints `get_total_width()`. This is a
+    copy-paste defect. The structured fields deliberately mirror it, so
+    text and fields stay in agreement. The fix should be a separate
+    change that corrects both outputs together and adds a unit test.
