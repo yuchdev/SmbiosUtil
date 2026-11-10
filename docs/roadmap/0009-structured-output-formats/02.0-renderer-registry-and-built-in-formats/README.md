@@ -28,7 +28,7 @@ This story implements:
 | #  | Document                                                        | Status         | Blocks |
 |----|------------------------------------------------------------------------|----------------|--------|
 | 01 | [Output formatter registry](01-output-formatter-registry.md)           | ✅ Complete (`f3447b2`) | 02     |
-| 02 | [Text, XML and JSON renderers](02-text-xml-and-json-renderers.md)       | ⬜ Not started | 03     |
+| 02 | [Text, XML and JSON renderers](02-text-xml-and-json-renderers.md)       | ✅ Complete (`edc344b`) | 03     |
 | 03 | [Tests](03-tests.md)                                                   | ⬜ Not started | -      |
 
 ## Key constraints

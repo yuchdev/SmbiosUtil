@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                                           | Status         | Tests |
 |-------|----------------------------------------------------|----------------|-------|
 | 01.0  | Structured field model                             | ✅ Complete (2026-11-10) | 518 unit |
-| 02.0  | Renderer registry and built-in formats             | 🔶 In progress (1/3 tasks) | 527 unit |
+| 02.0  | Renderer registry and built-in formats             | 🔶 In progress (2/3 tasks) | 569 unit |
 | 03.0  | YAML renderer and custom-format extensibility      | ⬜ Not started | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
@@ -327,3 +327,9 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 - **Follow-up defects**, existing getter quirks that are mirrored rather
   than fixed. They are listed in the Task 03/04/05 notes above. The
   Debug-build `assert(false)` getters (LOW-4) also stop Debug fuzzing early.
+- **2026-11-10 - Story 02.0 Task 02 passed verify-task.** Open advisory:
+  the XML and JSON writers do not check for duplicate keys at runtime.
+  They rely on C1's unique-name invariant, which the 45-type coverage test
+  enforces. The threat model says serializers "should still assert".
+  Story 02.0 Task 03's `FieldNamesAreFirmwareIndependent` coverage should
+  either add a debug-mode assertion or accept the risk explicitly.
