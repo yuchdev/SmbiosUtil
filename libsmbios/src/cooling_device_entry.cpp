@@ -198,3 +198,26 @@ bool CoolingDeviceEntry::has_description() const
 {
     return get_entry_size() >= kDescriptionMinLength;
 }
+
+std::vector<NamedField> CoolingDeviceEntry::get_fields() const
+{
+    // Same "0x" + lowercase unpadded hex rendering the text output uses.
+    std::stringstream handle;
+    handle << "0x" << std::hex << get_temperature_probe_handle();
+
+    std::vector<NamedField> fields;
+    fields.push_back({"Temperature Probe Handle", handle.str()});
+    fields.push_back({"Device Type", get_device_type_string()});
+    fields.push_back({"Status", get_status_string()});
+    fields.push_back({"Cooling Unit Group", std::to_string(static_cast<unsigned>(get_cooling_unit_group()))
+                                                + (is_redundant() ? " (redundant)" : " (not redundant)")});
+    if (has_nominal_speed()) {
+        fields.push_back({"Nominal Speed", is_nominal_speed_known()
+                                              ? std::to_string(get_nominal_speed()) + " rpm"
+                                              : std::string("Unknown")});
+    }
+    if (has_description()) {
+        fields.push_back({"Description", get_description_string()});
+    }
+    return fields;
+}

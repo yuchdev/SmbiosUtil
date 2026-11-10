@@ -159,3 +159,21 @@ ManagementControllerHostInterfaceEntry::ProtocolRecord ManagementControllerHostI
 
     return result;
 }
+
+std::vector<NamedField> ManagementControllerHostInterfaceEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Interface Type", get_interface_type_string()});
+    fields.push_back({"Interface Type Specific Data Length",
+                      static_cast<uint64_t>(get_interface_specific_data_length())});
+
+    const uint8_t record_count = get_protocol_record_count();
+    fields.push_back({"Protocol Record Count", static_cast<uint64_t>(record_count)});
+    for (size_t index = 0; index < record_count; ++index) {
+        const ProtocolRecord record = get_protocol_record_at(index);
+        const std::string suffix = " " + std::to_string(index + 1);
+        fields.push_back({"Protocol Type" + suffix, static_cast<uint64_t>(record.protocol_type)});
+        fields.push_back({"Data Length" + suffix, static_cast<uint64_t>(record.data.size())});
+    }
+    return fields;
+}

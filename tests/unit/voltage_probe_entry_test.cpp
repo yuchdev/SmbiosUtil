@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -294,6 +295,104 @@ BOOST_AUTO_TEST_CASE(CreateReturnsVoltageProbeEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<VoltageProbeEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009 Story 01.0 Task 05)
+//
+// Type: unit - deterministic, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field:
+// decorated "<value><unit>" / "Unknown" strings, Nominal Value only when
+// the structure is long enough to carry it.
+// Boundaries: 0x8000 sentinel, base (0x14) vs extended (0x16) length, empty
+// formatted area. No bitmask in this type, so there is no ExpandsBitmask case.
+// On failure first check: VoltageProbeEntry::get_fields() against
+// VoltageProbeEntry::render_to_description() in libsmbios/src/voltage_probe_entry.cpp.
+
+/// Normal case: extended (0x16) structure; every printed line becomes one
+/// field, in text order, with the same decorated string the text prints.
+BOOST_AUTO_TEST_CASE(VoltageProbeEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    const uint8_t location_and_status = static_cast<uint8_t>((VoltageProbeEntry::StatusOk << 5) | VoltageProbeEntry::LocationProcessor);
+    std::vector<uint8_t> formatted_area = build_base_formatted_area(location_and_status, 500, VoltageProbeEntry::ValueUnknown, 10, 50, 100, 0xDEADBEEF);
+    formatted_area.push_back(static_cast<uint8_t>(330 & 0xFF));
+    formatted_area.push_back(static_cast<uint8_t>((330 >> 8) & 0xFF));
+
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::VoltageProbe, formatted_area, {"Main Voltage Probe"});
+    std::vector<uint8_t> buffer = builder.build();
+    VoltageProbeEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Description", str("Main Voltage Probe")},
+        {"Location", str("Processor")},
+        {"Status", str("OK")},
+        {"Maximum Value", str("500 mV")},
+        {"Minimum Value", str("Unknown")},
+        {"Resolution", str("10 (tenths of mV)")},
+        {"Tolerance", str("50 mV")},
+        {"Accuracy", str("100 (1/100th %)")},
+        {"Nominal Value", str("330 mV")},
+    });
+}
+
+/// Boundary cases: a base-length (0x14) structure has no Nominal Value
+/// field (the text prints no line); an extended structure whose Nominal
+/// Value is the 0x8000 sentinel keeps the field as "Unknown"; an empty
+/// formatted area keeps every always-printed field at its default.
+BOOST_AUTO_TEST_CASE(VoltageProbeEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    const uint8_t location_and_status = static_cast<uint8_t>((VoltageProbeEntry::StatusCritical << 5) | VoltageProbeEntry::LocationMotherboard);
+    {
+        std::vector<uint8_t> formatted_area = build_base_formatted_area(location_and_status, 1, 2, 3, 4, 5, 0);
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::VoltageProbe, formatted_area, {"Main Voltage Probe"});
+        std::vector<uint8_t> buffer = builder.build();
+        VoltageProbeEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Description", str("Main Voltage Probe")},
+            {"Location", str("Motherboard")},
+            {"Status", str("Critical")},
+            {"Maximum Value", str("1 mV")},
+            {"Minimum Value", str("2 mV")},
+            {"Resolution", str("3 (tenths of mV)")},
+            {"Tolerance", str("4 mV")},
+            {"Accuracy", str("5 (1/100th %)")},
+        });
+    }
+    {
+        std::vector<uint8_t> formatted_area = build_base_formatted_area(location_and_status, 1, 2, 3, 4, 5, 0);
+        formatted_area.push_back(static_cast<uint8_t>(VoltageProbeEntry::ValueUnknown & 0xFF));
+        formatted_area.push_back(static_cast<uint8_t>((VoltageProbeEntry::ValueUnknown >> 8) & 0xFF));
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::VoltageProbe, formatted_area, {"Main Voltage Probe"});
+        std::vector<uint8_t> buffer = builder.build();
+        VoltageProbeEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+        const std::vector<NamedField> fields = entry.get_fields();
+        BOOST_REQUIRE_EQUAL(fields.size(), static_cast<size_t>(9));
+        check_fields_equal({fields.back()}, {{"Nominal Value", str("Unknown")}});
+        check_unique_field_names(fields);
+    }
+    {
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::VoltageProbe, std::vector<uint8_t>{});
+        std::vector<uint8_t> buffer = builder.build();
+        VoltageProbeEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Description", str("")},
+            {"Location", str("Reserved")},
+            {"Status", str("Reserved")},
+            {"Maximum Value", str("Unknown")},
+            {"Minimum Value", str("Unknown")},
+            {"Resolution", str("Unknown")},
+            {"Tolerance", str("Unknown")},
+            {"Accuracy", str("Unknown")},
+        });
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

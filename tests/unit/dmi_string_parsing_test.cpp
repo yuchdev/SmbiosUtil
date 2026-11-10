@@ -38,6 +38,7 @@ public:
 
     std::string get_type() const override { return "Test"; }
     std::string render_to_description() const override { return ""; }
+    std::vector<NamedField> get_fields() const override { return {}; }
 
     using AbstractSMBiosEntry::dmi_string;
 };

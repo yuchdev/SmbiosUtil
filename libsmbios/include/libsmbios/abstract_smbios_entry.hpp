@@ -34,10 +34,9 @@ public:
     /// @brief Entry size without string section
     size_t get_entry_size() const override;
 
-    /// @brief Structured, renderer-neutral view of the same data
-    /// render_to_description() prints. TEMPORARY non-pure default (returns {})
-    /// until milestone 0009 Story 01.0 Task 05 makes this pure virtual.
-    virtual std::vector<NamedField> get_fields() const { return {}; } // TEMPORARY - removed in Task 05
+    /// @brief Structured, renderer-neutral view of the same data render_to_description() prints.
+    /// Every concrete entry must implement it (pure virtual, milestone 0009 R1).
+    virtual std::vector<NamedField> get_fields() const = 0;
 
 protected:
 

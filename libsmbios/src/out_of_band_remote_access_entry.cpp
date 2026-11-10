@@ -78,3 +78,12 @@ bool OutOfBandRemoteAccessEntry::is_outbound_connection_enabled() const
 {
     return (get_connections() & kOutboundConnectionEnabledMask) != 0;
 }
+
+std::vector<NamedField> OutOfBandRemoteAccessEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Manufacturer Name", get_manufacturer_name_string()});
+    fields.push_back({"Inbound Connection Enabled", is_inbound_connection_enabled()});
+    fields.push_back({"Outbound Connection Enabled", is_outbound_connection_enabled()});
+    return fields;
+}

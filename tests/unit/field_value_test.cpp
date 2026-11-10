@@ -18,7 +18,8 @@ using namespace smbios;
 // Scenario: contract C1's FieldValue/NamedField hold each variant
 // alternative as expected; AbstractSMBiosEntry::bitset_to_fields() turns a
 // bitmask into one {label, true} field per set, labelled bit in ascending
-// bit order; get_fields()'s TEMPORARY default returns an empty vector.
+// bit order. (get_fields() is pure virtual since Story 01.0 Task 05, so
+// FieldTestEntry carries its own trivial override.)
 // Boundaries: no bits set, unlabelled set bits, highest bit of the type.
 // On failure first check: libsmbios/include/libsmbios/field_value.hpp and
 // bitset_to_fields() in libsmbios/include/libsmbios/abstract_smbios_entry.hpp
@@ -37,6 +38,7 @@ public:
 
     std::string get_type() const override { return "FieldTest"; }
     std::string render_to_description() const override { return ""; }
+    std::vector<NamedField> get_fields() const override { return {}; }
 
     using AbstractSMBiosEntry::bitset_to_fields;
 };
@@ -111,13 +113,6 @@ BOOST_AUTO_TEST_CASE(BitsetToFieldsNoBitsAppendsNothingTestCase)
     BOOST_REQUIRE_EQUAL(out.size(), 3u);
     BOOST_CHECK_EQUAL(out[1].name, "Low");
     BOOST_CHECK_EQUAL(out[2].name, "High");
-}
-
-/// TEMPORARY default (removed in Task 05): get_fields() returns an empty vector.
-BOOST_AUTO_TEST_CASE(GetFieldsTemporaryDefaultIsEmptyTestCase)
-{
-    FieldTestEntry entry;
-    BOOST_CHECK(entry.get_fields().empty());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

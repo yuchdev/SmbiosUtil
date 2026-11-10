@@ -186,3 +186,19 @@ uint8_t IpmiDeviceInformationEntry::bcd_to_decimal(uint8_t bcd)
     // validate that either nibble is itself a valid BCD digit.
     return static_cast<uint8_t>(((bcd >> 4) * 10) + (bcd & 0x0F));
 }
+
+std::vector<NamedField> IpmiDeviceInformationEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Interface Type", get_interface_type_string()});
+    fields.push_back({"Specification Revision", static_cast<uint64_t>(get_specification_revision())});
+    fields.push_back({"I2C Target Address", static_cast<uint64_t>(get_i2c_target_address())});
+    fields.push_back({"NV Storage Device Address",
+                      std::to_string(static_cast<unsigned>(get_nv_storage_device_address()))
+                          + (has_nv_storage_device() ? "" : " (none)")});
+    fields.push_back({"Base Address", std::to_string(get_base_address())
+                                          + (is_base_address_io_space() ? " (I/O space)" : " (memory-mapped)")});
+    fields.push_back({"Interrupt Number", std::to_string(static_cast<unsigned>(get_interrupt_number()))
+                                              + (has_interrupt() ? "" : " (unspecified/unsupported)")});
+    return fields;
+}

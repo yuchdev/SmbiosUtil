@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <map>
 #include <string>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // Electrical Current Probe entry
@@ -94,6 +95,14 @@ public:
 
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order. Every
+    /// WORD reading stays the printed string - "<value><unit>" or the
+    /// "Unknown" sentinel (0x8000) - and Nominal Value appears exactly when
+    /// the text prints it (has_nominal_value()). OEM-defined is not printed,
+    /// so it is not a field.
+    std::vector<NamedField> get_fields() const override;
 
     //////////////////////////////////////////////////////////////////////////
     // Byte/word/dword values

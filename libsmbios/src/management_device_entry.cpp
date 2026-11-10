@@ -125,3 +125,13 @@ std::string ManagementDeviceEntry::get_address_type_string() const
     }
     return "Reserved";
 }
+
+std::vector<NamedField> ManagementDeviceEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Description", get_description_string()});
+    fields.push_back({"Device Type", get_device_type_string()});
+    fields.push_back({"Address", static_cast<uint64_t>(get_address())});
+    fields.push_back({"Address Type", get_address_type_string()});
+    return fields;
+}

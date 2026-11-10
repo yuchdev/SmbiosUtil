@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -217,6 +218,98 @@ BOOST_AUTO_TEST_CASE(CreateReturnsManagementControllerHostInterfaceEntryTestCase
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<ManagementControllerHostInterfaceEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009 Story 01.0 Task 05)
+//
+// Type: unit - deterministic, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description(); each protocol
+// record's indented line becomes a 1-based "Protocol Type <i>" /
+// "Data Length <i>" pair.
+// Boundaries: zero records, a truncated record list (the getter's default
+// record is mirrored), header-only structure. No bitmask.
+// On failure first check: ManagementControllerHostInterfaceEntry::get_fields() against
+// ManagementControllerHostInterfaceEntry::render_to_description() in libsmbios/src/management_controller_host_interface_entry.cpp.
+
+/// Normal case: three records of differing lengths, 1-based suffixes.
+BOOST_AUTO_TEST_CASE(ManagementControllerHostInterfaceEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area = make_formatted_area(
+        0x40 /* Network Host Interface */, {0x01, 0x02},
+        {
+            {0x02, {0xAA}},
+            {0x03, {0xBB, 0xCC, 0xDD}},
+            {0x04, {}}
+        });
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::ManagementControllerHostInterface, formatted_area);
+    std::vector<uint8_t> buffer = builder.build();
+    ManagementControllerHostInterfaceEntry entry(make_header(buffer), SMBiosVersion{3, 2}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Interface Type", str("Network Host Interface")},
+        {"Interface Type Specific Data Length", num(2)},
+        {"Protocol Record Count", num(3)},
+        {"Protocol Type 1", num(0x02)},
+        {"Data Length 1", num(1)},
+        {"Protocol Type 2", num(0x03)},
+        {"Data Length 2", num(3)},
+        {"Protocol Type 3", num(0x04)},
+        {"Data Length 3", num(0)},
+    });
+}
+
+/// Boundary cases: zero records yields no per-record fields; a count that
+/// overstates the buffer mirrors the getter's default (0, 0) record for
+/// the missing one, exactly as the text prints it; a header-only
+/// structure defaults every field.
+BOOST_AUTO_TEST_CASE(ManagementControllerHostInterfaceEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        std::vector<uint8_t> formatted_area = make_formatted_area(0x02, {0xDE, 0xAD, 0xBE, 0xEF}, {});
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::ManagementControllerHostInterface, formatted_area);
+        std::vector<uint8_t> buffer = builder.build();
+        ManagementControllerHostInterfaceEntry entry(make_header(buffer), SMBiosVersion{3, 2}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Interface Type", str("MCTP Host Interface")},
+            {"Interface Type Specific Data Length", num(4)},
+            {"Protocol Record Count", num(0)},
+        });
+    }
+    {
+        std::vector<uint8_t> formatted_area = make_formatted_area(0x02, {}, {{0x02, {0x11, 0x22}}});
+        formatted_area[2] = 2; // claim a second record that is not in the buffer
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::ManagementControllerHostInterface, formatted_area);
+        std::vector<uint8_t> buffer = builder.build();
+        ManagementControllerHostInterfaceEntry entry(make_header(buffer), SMBiosVersion{3, 2}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Interface Type", str("MCTP Host Interface")},
+            {"Interface Type Specific Data Length", num(0)},
+            {"Protocol Record Count", num(2)},
+            {"Protocol Type 1", num(0x02)},
+            {"Data Length 1", num(2)},
+            {"Protocol Type 2", num(0)},
+            {"Data Length 2", num(0)},
+        });
+    }
+    {
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::ManagementControllerHostInterface, std::vector<uint8_t>{});
+        std::vector<uint8_t> buffer = builder.build();
+        ManagementControllerHostInterfaceEntry entry(make_header(buffer), SMBiosVersion{3, 2}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Interface Type", str("Reserved")},
+            {"Interface Type Specific Data Length", num(0)},
+            {"Protocol Record Count", num(0)},
+        });
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

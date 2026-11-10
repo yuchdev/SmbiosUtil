@@ -55,6 +55,7 @@ public:
 
     virtual std::string get_type() const override { return "Fake Test Entry"; }
     virtual std::string render_to_description() const override { return get_type(); }
+    std::vector<NamedField> get_fields() const override { return {}; }
 };
 
 } // namespace

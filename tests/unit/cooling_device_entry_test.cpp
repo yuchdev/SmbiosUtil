@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -258,6 +259,82 @@ BOOST_AUTO_TEST_CASE(CreateReturnsCoolingDeviceEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<CoolingDeviceEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009 Story 01.0 Task 05)
+//
+// Type: unit - deterministic, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description(): hex handle
+// string, decorated Cooling Unit Group / Nominal Speed strings, and the
+// two trailing fields only when the text prints them.
+// Boundaries: the 0x0C / 0x0D / 0x0E / 0x0F length tiers and the 0x8000
+// Nominal Speed sentinel. No bitmask in this type, so no ExpandsBitmask case.
+// On failure first check: CoolingDeviceEntry::get_fields() against
+// CoolingDeviceEntry::render_to_description() in libsmbios/src/cooling_device_entry.cpp.
+
+/// Normal case: full (0x0F) structure; every printed line is one field, in
+/// text order.
+BOOST_AUTO_TEST_CASE(CoolingDeviceEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    const uint8_t device_type_and_status = static_cast<uint8_t>((CoolingDeviceEntry::StatusOk << 5) | CoolingDeviceEntry::DeviceTypeFan);
+    std::vector<uint8_t> formatted_area = build_base_formatted_area(0x002A, device_type_and_status, 2, 0xABCD1234);
+    formatted_area.push_back(static_cast<uint8_t>(3500 & 0xFF));
+    formatted_area.push_back(static_cast<uint8_t>((3500 >> 8) & 0xFF));
+    formatted_area.push_back(1); // 0x0E Description string index
+
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::CoolingDevice, formatted_area, {"Front Chassis Fan"});
+    std::vector<uint8_t> buffer = builder.build();
+    CoolingDeviceEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Temperature Probe Handle", str("0x2a")},
+        {"Device Type", str("Fan")},
+        {"Status", str("OK")},
+        {"Cooling Unit Group", str("2 (redundant)")},
+        {"Nominal Speed", str("3500 rpm")},
+        {"Description", str("Front Chassis Fan")},
+    });
+}
+
+/// Boundary cases: base (0x0C) and half-WORD (0x0D) lengths carry neither
+/// trailing field; 0x0E carries Nominal Speed (here the 0x8000 sentinel,
+/// printed "Unknown") but no Description.
+BOOST_AUTO_TEST_CASE(CoolingDeviceEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    const std::vector<NamedField> base_fields{
+        {"Temperature Probe Handle", str("0x10")},
+        {"Device Type", str("Fan")},
+        {"Status", str("OK")},
+        {"Cooling Unit Group", str("0 (not redundant)")},
+    };
+    for (size_t extra = 0; extra <= 1; ++extra) {
+        std::vector<uint8_t> formatted_area = build_base_formatted_area(0x0010, 0x63, 0, 0);
+        if (extra) formatted_area.push_back(0x34); // length 0x0D: Nominal Speed only half-present
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::CoolingDevice, formatted_area);
+        std::vector<uint8_t> buffer = builder.build();
+        BOOST_REQUIRE_EQUAL(buffer[1], static_cast<uint8_t>(0x0C + extra));
+        CoolingDeviceEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), base_fields);
+    }
+    {
+        std::vector<uint8_t> formatted_area = build_base_formatted_area(0x0010, 0x63, 0, 0);
+        formatted_area.push_back(static_cast<uint8_t>(CoolingDeviceEntry::NominalSpeedUnknown & 0xFF));
+        formatted_area.push_back(static_cast<uint8_t>((CoolingDeviceEntry::NominalSpeedUnknown >> 8) & 0xFF));
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::CoolingDevice, formatted_area);
+        std::vector<uint8_t> buffer = builder.build();
+        BOOST_REQUIRE_EQUAL(buffer[1], static_cast<uint8_t>(0x0E));
+        CoolingDeviceEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+        std::vector<NamedField> expected = base_fields;
+        expected.push_back({"Nominal Speed", str("Unknown")});
+        check_fields_equal(entry.get_fields(), expected);
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

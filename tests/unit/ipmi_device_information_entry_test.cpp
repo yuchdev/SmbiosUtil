@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -246,6 +247,81 @@ BOOST_AUTO_TEST_CASE(CreateReturnsIpmiDeviceInformationEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<IpmiDeviceInformationEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009 Story 01.0 Task 05)
+//
+// Type: unit - deterministic, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description(); plain decimals
+// are uint64_t, the three decorated lines stay their printed strings.
+// Boundaries: NV storage / interrupt sentinels, I/O vs memory-mapped base
+// address, header-only structure. The Base Address Modifier bits are not
+// printed, so they are not fields and there is no ExpandsBitmask case.
+// On failure first check: IpmiDeviceInformationEntry::get_fields() against
+// IpmiDeviceInformationEntry::render_to_description() in libsmbios/src/ipmi_device_information_entry.cpp.
+
+/// Normal case: every field present, NV storage and interrupt real, base
+/// address in I/O space.
+BOOST_AUTO_TEST_CASE(IpmiDeviceInformationEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area = make_formatted_area(
+        IpmiDeviceInformationEntry::InterfaceTypeKcs, 0x20, 0x20, 0x10,
+        /*base_address*/ 0xCA3, 0x98, 0x0A);
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::IpmiDeviceInformation, formatted_area);
+    std::vector<uint8_t> buffer = builder.build();
+    IpmiDeviceInformationEntry entry(make_header(buffer), SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Interface Type", str("KCS: Keyboard Controller Style")},
+        {"Specification Revision", num(20)},
+        {"I2C Target Address", num(0x20)},
+        {"NV Storage Device Address", str("16")},
+        {"Base Address", str("3235 (I/O space)")},
+        {"Interrupt Number", str("10")},
+    });
+}
+
+/// Boundary cases: the 0xFF / 0x00 sentinels and a memory-mapped base
+/// address keep the text's decorations; a header-only structure keeps all
+/// six always-printed fields with their defaults.
+BOOST_AUTO_TEST_CASE(IpmiDeviceInformationEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        std::vector<uint8_t> formatted_area = make_formatted_area(
+            IpmiDeviceInformationEntry::InterfaceTypeBt, 0x15, 0x30, 0xFF,
+            /*base_address*/ 0xE0000000ULL, 0x00, 0x00);
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::IpmiDeviceInformation, formatted_area);
+        std::vector<uint8_t> buffer = builder.build();
+        IpmiDeviceInformationEntry entry(make_header(buffer), SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Interface Type", str("BT: Block Transfer")},
+            {"Specification Revision", num(15)},
+            {"I2C Target Address", num(0x30)},
+            {"NV Storage Device Address", str("255 (none)")},
+            {"Base Address", str("3758096384 (memory-mapped)")},
+            {"Interrupt Number", str("0 (unspecified/unsupported)")},
+        });
+    }
+    {
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::IpmiDeviceInformation, std::vector<uint8_t>{});
+        std::vector<uint8_t> buffer = builder.build();
+        IpmiDeviceInformationEntry entry(make_header(buffer), SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Interface Type", str("Reserved")},
+            {"Specification Revision", num(0)},
+            {"I2C Target Address", num(0)},
+            {"NV Storage Device Address", str("255 (none)")},
+            {"Base Address", str("0 (memory-mapped)")},
+            {"Interrupt Number", str("0 (unspecified/unsupported)")},
+        });
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()
