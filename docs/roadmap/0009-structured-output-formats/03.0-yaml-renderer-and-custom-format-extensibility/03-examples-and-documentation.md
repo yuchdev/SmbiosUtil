@@ -1,7 +1,7 @@
 # 03 - Examples and documentation
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-10)
 **Depends on:** Task 01 (YAML renderer) and Task 02 (CSV example, `--format` CLI wiring)
 **Requirement:** R7 ([plan.md](../plan.md))
 **Added:** 2026-11-10, user-requested scope (see [status.md](../status.md) Notes & decisions)

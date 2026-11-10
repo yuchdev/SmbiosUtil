@@ -22,7 +22,7 @@ This story has four parts:
 |----|--------------------------------------------------------------------------------|----------------|--------|
 | 01 | [YAML renderer](01-yaml-renderer.md)                                           | ✅ Complete (`ff606d3`) | 02     |
 | 02 | [Custom-format extensibility example and CLI wiring](02-custom-format-extensibility-example-and-cli-wiring.md) | ✅ Complete (`0d7d781`, `ef62ca0`, `184b692`) | 03     |
-| 03 | [Examples and documentation](03-examples-and-documentation.md)                 | ⬜ Not started | 04     |
+| 03 | [Examples and documentation](03-examples-and-documentation.md)                 | ✅ Complete (`3174884`..`c730694`) | 04     |
 | 04 | [Tests](04-tests.md)                                                          | ⬜ Not started | -      |
 
 Task 03 depends on Tasks 01 and 02, because its samples need `yaml` and

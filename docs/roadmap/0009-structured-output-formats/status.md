@@ -8,7 +8,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 |-------|----------------------------------------------------|----------------|-------|
 | 01.0  | Structured field model                             | ✅ Complete (2026-11-10) | 518 unit |
 | 02.0  | Renderer registry and built-in formats             | ✅ Complete (2026-11-10) | 602 unit |
-| 03.0  | YAML renderer and custom-format extensibility      | 🔶 In progress (2/4 tasks) | 627 unit |
+| 03.0  | YAML renderer and custom-format extensibility      | 🔶 In progress (3/4 tasks) | 629 unit, 21 ctest |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -402,3 +402,20 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   guard makes values starting with `-` show a visible `'`. CI's must-pass
   regex now includes `smbios_cli_unknown_format*`; `smbios_cli_format_csv`
   (reads real hardware) is warning-only.
+- **2026-11-10 - Story 03.0 Task 03 (examples and documentation, R7)
+  complete.** Code: `3174884`, `8d2ba4f`, `38bfee9`, `ccfd252`. Docs:
+  `671b0f9`, `8ca1acc`, `a8496d8`, `dcea9c1`, `c730694`. verify-task first
+  returned FAIL (the `docs/test/test-subsystem.md` and
+  `docs/dev/cpp_coding_standard.md` rows were missing); both were added in
+  `c730694`. Logged deviations:
+  - `examples/read_fields/main.cpp` is 76 non-comment lines, against
+    "about 60".
+  - `format_table` also includes `abstract_smbios_entry.hpp`, because
+    `std::unique_ptr` needs the complete type.
+  - `FixtureCoversEveryFieldValueAlternative` was written by cpp-expert;
+    testing-expert reviews it in Task 04.
+  - The Linux sysfs table mode (0400, root-only) is still not verified on
+    real Linux. The docs hedge ("typically") and say so. Follow-up: add a
+    one-line `ls -l /sys/firmware/dmi/tables` probe to the ubuntu CI job.
+  - Fixed along the way: the root `README.md` and `CLAUDE.md` linked
+    `smbios_c/include/smbios/smbios.hpp`; the header is `smbios.h`.
