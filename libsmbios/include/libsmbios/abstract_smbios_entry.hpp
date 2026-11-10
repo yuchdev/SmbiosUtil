@@ -7,6 +7,7 @@
 #include <string>
 #include <memory>
 #include <libsmbios/smbios_entry_interface.hpp>
+#include <libsmbios/field_value.hpp>
 
 namespace smbios {
 
@@ -33,6 +34,11 @@ public:
     /// @brief Entry size without string section
     size_t get_entry_size() const override;
 
+    /// @brief Structured, renderer-neutral view of the same data
+    /// render_to_description() prints. TEMPORARY non-pure default (returns {})
+    /// until milestone 0009 Story 01.0 Task 05 makes this pure virtual.
+    virtual std::vector<NamedField> get_fields() const { return {}; } // TEMPORARY - removed in Task 05
+
 protected:
 
     /// Implementation of SMBIOS string extractor
@@ -56,6 +62,26 @@ protected:
             }
         }
         return properties_stream.str();
+    }
+
+    /// @brief One NamedField{label, true} per set bit that has a label in properties_map.
+    /// Walks bits in the same ascending order as bitset_to_properties(), so
+    /// field order matches the text output. Set bits without a label are skipped.
+    /// @param properties bitmask value to decode
+    /// @param properties_map single-bit mask -> label
+    /// @param out fields are appended here (existing contents are kept)
+    template <typename T>
+    void bitset_to_fields(T properties, const std::map<T, std::string>& properties_map,
+                          std::vector<NamedField>& out) const
+    {
+        static_assert(std::is_integral<T>(), "Bitwise type should be integer");
+
+        for (T current_property = 0x1; current_property; current_property <<= 1) {
+            auto it = properties_map.find(current_property);
+            if ((properties & current_property) && (it != properties_map.end())) {
+                out.push_back(NamedField{it->second, true});
+            }
+        }
     }
 
     /// @brief Raw pointer to the entry's own formatted-area bytes (header.data)
