@@ -29,13 +29,15 @@ characteristics, and the locator, size and type of each memory device. Run it as
 ## check_structured_output.py
 
 [`scripts/check_structured_output.py`](scripts/check_structured_output.py) runs a command and checks
-that it prints one well-formed JSON or XML document:
+that it prints one well-formed document in the requested format: JSON and XML are fully parsed, CSV
+is parsed with the standard `csv` module (header row plus three-column rows), YAML gets a shape check
+only (the standard library has no YAML parser), and `text` only has to be non-empty:
 
 ```bash
 python3 -I examples/scripts/check_structured_output.py --format json -- smbios --format json
 ```
 
-It prints only `ok: <format>, <N> structures` and never echoes any parsed value, so CI logs stay free
+It prints only `ok: <format>, <N> structures` (`<N> rows` for CSV) and never echoes any parsed value, so CI logs stay free
 of the runner's serial numbers. Python is optional and never needed to build.
 
 ## The csv example

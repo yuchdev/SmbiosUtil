@@ -145,6 +145,68 @@ jobs:
         # they pass with or without privileges.
         run: ctest --test-dir build/${{ matrix.preset }} -C Debug --output-on-failure --timeout 60 -R "smbios_unit_test|smbios_mock_test|smbios_c_|smbios_cli_unknown_format|smbios_example_"
 
+      # Milestone 0009, Story 03.0, Task 04 (exit gate): every --format
+      # through the real `smbios` CLI, against this runner's real SMBIOS
+      # table, validated by examples/scripts/check_structured_output.py
+      # (json/xml/csv fully parsed by the stdlib; yaml shape-checked only -
+      # no stdlib YAML parser; text must be non-empty). The script prints
+      # only "ok: <fmt>, <N> structures|rows" - never a value - so the
+      # runner's serials/UUIDs stay out of the log; the CLI's stdout is
+      # never echoed here either.
+      #
+      # Hard gate, deliberately NOT continue-on-error: an unreadable table
+      # is not an error path in this CLI. Every source failing leaves
+      # SMBios with an empty table (no exception), and every structured
+      # format then emits a well-formed *empty* document (`[]`, an <smbios>
+      # root with no children, header-only CSV, `---`), which the script
+      # accepts as "0 structures"/"0 rows". So "can't read the table" never
+      # fails the job spuriously - it raises a ::warning:: instead
+      # (observed 2026-11-10: smbios_integration_test sees an empty table
+      # on macos-latest's VM) - while a malformed document, a
+      # non-zero exit, or empty structured stdout (an unexpected exception,
+      # caught in main.cpp) fails it on every OS.
+      #
+      # Linux: run under sudo - /sys/firmware/dmi/tables/DMI is believed to
+      # be mode 0400 root (the `ls -l` below records the real mode for
+      # docs/cli-usage.md's Privileges section). macOS (IOKit) and Windows
+      # (GetSystemFirmwareTable) need no privilege.
+      - name: Validate every --format on real hardware (smbios CLI)
+        if: steps.build.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            echo "Informational - sysfs DMI table modes on this runner:"
+            ls -l /sys/firmware/dmi/tables || true
+            SUDO=sudo
+          else
+            SUDO=
+          fi
+          PY=$([ "$RUNNER_OS" = "Windows" ] && echo python || echo python3)
+          BIN=$(find build/${{ matrix.preset }} -type f -path '*/smbios/bin/*' \( -name smbios -o -name smbios.exe \) | head -n1)
+          if [ -z "$BIN" ]; then
+            echo "::error::smbios CLI binary not found under build/${{ matrix.preset }}"
+            exit 1
+          fi
+          for fmt in text xml json yaml csv; do
+            result=$($PY -I examples/scripts/check_structured_output.py --format "$fmt" -- $SUDO "$BIN" --format "$fmt")
+            echo "$result"
+            case "$result" in
+              *", 0 structures"|*", 0 rows")
+                echo "::warning::smbios --format $fmt: well-formed but empty document - this runner exposed no readable SMBIOS table, so $fmt was validated for shape only, not against real hardware data." ;;
+            esac
+          done
+          # No-flag invocation must equal --format text byte-for-byte (the
+          # default is text). Compared via cmp only; contents never printed.
+          OUT=$(mktemp -d)
+          $SUDO "$BIN" > "$OUT/noflag.out"
+          $SUDO "$BIN" --format text > "$OUT/text.out"
+          cmp -s "$OUT/noflag.out" "$OUT/text.out" \
+            || { echo "::error::smbios with no --format differs from --format text"; exit 1; }
+          rm -f "$OUT/noflag.out" "$OUT/text.out"
+          rmdir "$OUT"
+          echo "ok: no-flag output == --format text"
+
       # Milestone 0005, Story 04.0, Task 02: unlike Linux/macOS's legacy
       # scan, Windows's native source (GetSystemFirmwareTable(), via
       # WindowsNativeSource) needs no elevated privilege - so a passing
