@@ -70,6 +70,16 @@ This story implements:
     `.cpp`, and the unit tests reference the formatter class directly. That
     pulls its object, and therefore its `REGISTER_OUTPUT_FORMATTER`, into
     the test binary. This is the same mechanism the entry tests rely on.
+- *Amended 2026-11-10 (downstream hook for
+  [Story 03.0 Task 03](../03.0-yaml-renderer-and-custom-format-extensibility/03-examples-and-documentation.md)):*
+  **Deterministic output.** Story 03.0 generates the user-guide samples by
+  rendering a synthetic fixture through these formatters, and compares the
+  result byte-for-byte with checked-in golden files on all three OSes.
+  - No formatter may emit timestamps, host or locale data, or platform
+    line endings. Always use `\n`.
+  - Field order is `get_fields()` order.
+  - Story 03.0 Task 03 also audits Doxygen completeness on this story's
+    headers, so write the comments now.
 - **No logging of field values.** Formatters and the registry never log
   or persist field values. Serial numbers, UUIDs and asset tags are
   potentially identifying, so they appear only in the rendered output the

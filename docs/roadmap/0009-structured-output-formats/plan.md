@@ -21,7 +21,7 @@ YAML from that one shared model - plus a documented extension point so a
 |-------|-----------------------------------------------------|----------|-----------------------------------------------------------------------------------|
 | 01.0  | Structured field model                             | core     | `FieldValue`/`NamedField`; `get_fields()` on all 45 registered entry types, migrated in four green batches |
 | 02.0  | Renderer registry and built-in formats             | core     | `IOutputFormatter`; self-registering registry; text/XML/JSON renderers (hand-rolled JSON) |
-| 03.0  | YAML renderer and custom-format extensibility      | feature  | Hand-rolled YAML renderer; a worked third-party CSV formatter; `--format` CLI wiring |
+| 03.0  | YAML renderer and custom-format extensibility      | feature  | Hand-rolled YAML renderer; a worked third-party CSV formatter; `--format` CLI wiring; runnable `examples/` run in CTest, fixture-generated doc samples, user and developer guides (R7, added 2026-11-10) |
 
 ## Rationale
 
@@ -93,6 +93,23 @@ source-compatible for it, and its C ABI is unchanged by this milestone.
    `--version`, `--memory-scan`, `--read-file`, `--dump-file`), validated
    against the registry at startup (an unknown format name is a clear
    command-line error with a non-zero exit, not a crash).
+7. **R7** - **Examples and documentation** (added 2026-11-10 at the user's
+   request; Story 03.0 Task 03).
+   - Self-contained example programs are built by default and run in CTest
+     on all three OSes, so they cannot rot. They cover:
+     - a formatter-by-name consumer;
+     - a direct `get_fields()`/`std::visit` consumer;
+     - the CSV formatter (R5) as the documented "write your own formatter"
+       walkthrough;
+     - a CTest-checked JSON-consumption snippet.
+   - A user guide (`docs/output-formats.md`) and a developer guide
+     (`docs/dev/custom-output-formatter.md`) are added.
+   - Every output sample in them is generated from a synthetic fixture that
+     contains no real identifiers, and a check fails the build if a sample
+     drifts from the code.
+   - Doxygen comments are complete on every new public header.
+   - The existing docs (`CLAUDE.md`, `README.md`, `docs/cli-usage.md`,
+     `docs/architecture/overview.md`) are updated.
 
 ## Shared contracts
 
@@ -189,8 +206,15 @@ entry classes - see Story 02.0.
 flowchart TD
     A["Story 01.0<br/>Structured field model"] --> B["Story 02.0<br/>Renderer registry & built-in formats"]
     B --> C["Story 03.0<br/>YAML renderer & custom-format extensibility"]
-    C --> M["Milestone exit"]
+    C --> M["Milestone exit<br/>(five formats; user guide, developer guide<br/>and runnable examples)"]
 ```
+
+**Milestone exit** means all of the following:
+
+- All five formats work through `smbios --format`.
+- `text` is byte-identical to the pre-milestone output.
+- The user guide, developer guide and runnable examples (R7) are published.
+- The examples and doc samples are green in CI on all three OSes.
 
 **Depends on milestones 0004 and 0010** (the self-registering entry factory,
 and all 45 entry types with their getters, must already exist for Story

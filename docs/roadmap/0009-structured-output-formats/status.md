@@ -175,6 +175,47 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
       management-device, component and IPMI structures.
     - When a host-interface record count overstates the buffer, the
       missing records are filled with defaults.
+- **2026-11-10 - The user added examples/documentation scope, which became
+  Story 03.0 Task 03; the tests task was renumbered to 04.** This adds
+  requirement R7 to [plan.md](plan.md). The spec is
+  [03-examples-and-documentation.md](03.0-yaml-renderer-and-custom-format-extensibility/03-examples-and-documentation.md),
+  and the exit gate is now
+  [04-tests.md](03.0-yaml-renderer-and-custom-format-extensibility/04-tests.md).
+  The old `03.0-.../03-tests.md` is a superseded stub awaiting `git rm`.
+  No code has been written and the status rows are unchanged. Architect
+  decisions, not user-ratified:
+  - **Location.** Standalone consumer examples go in a new top-level
+    `examples/`, built by default with `SMBIOS_BUILD_EXAMPLES=ON` and linked
+    whole-archive like an external consumer. The CSV formatter stays in
+    `smbios/examples/`, because it is compiled into the CLI (Task 02, R5).
+  - **Deterministic input.** `--read-file` is unimplemented and
+    security-gated (see `docs/security/README.md`), and `SMBios` has no
+    public buffer or source constructor.
+    - The examples therefore read the live machine and *degrade* to an
+      empty, well-formed document with exit 0.
+    - CTest asserts exit status and well-formedness only.
+    - Doc samples come from a fixture built in code with
+      `SyntheticTableBuilder` (types 0, 11 and 32; no identifying types).
+      Golden files live in `tests/data/output_formats/`. No binary dump is
+      checked in.
+  - **CI gap found.** The must-pass ctest regex in `ci.yml` does not match
+    `smbios_cli_*`, so Task 02's unknown-format tests would never run in
+    CI. Task 02 has been amended. Task 03 adds `smbios_example_` to the
+    regex.
+  - **Hook into Story 02.0.** The README now requires deterministic
+    formatter output (no timestamps, host data or CRLF) and Doxygen
+    written up front. Task 01's spec is untouched.
+  - **Open questions:**
+    1. Should a follow-up ADR add an injectable
+       `SMBios(std::vector<std::unique_ptr<ISmbiosSource>>)` constructor,
+       plus a versioned dump format for `--read-file`/`--dump-file`? Today
+       `--dump-file` drops the SMBIOS version. This would let the examples
+       take a fixture path, and it would unblock `tests/mock`.
+    2. Should a Doxyfile or doc-generation target be added? None exists, so
+       Task 03 enforces Doxygen completeness by review only.
+    3. `docs/cli-usage.md` says that Linux sysfs reads need no privilege,
+       but `/sys/firmware/dmi/tables/DMI` is mode 0400. Task 03 verifies
+       this and corrects the doc.
 
 ## Story details
 

@@ -117,6 +117,15 @@ Prove R5 with a real, separately built CSV formatter that lives outside
   - `smbios_cli_format_csv`: runs `--format csv`. It reads real hardware,
     so, like the rest of the integration category, it may fail cleanly
     without privileges.
+- *Amended 2026-11-10 (Task 03 hook):* `.github/workflows/ci.yml`'s
+  must-pass ctest regexes (`smbios_unit_test|smbios_mock_test|smbios_c_`,
+  in the `build` and `sanitizers` jobs) do not match `smbios_cli_*`.
+  Without a change, the two hardware-free unknown-format tests never run in
+  CI, which contradicts [Task 04](04-tests.md).
+  - Add `smbios_cli_unknown_format` to the must-pass regex. Its prefix also
+    matches `smbios_cli_unknown_format_lists_names`.
+  - Add `smbios_cli_format_csv` to the warning-only integration regex.
+  - Task 03 extends the same regexes with `smbios_example_`.
 
 ## Success criteria
 
