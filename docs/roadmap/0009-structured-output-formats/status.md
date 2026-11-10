@@ -6,7 +6,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 | Story | Name                                           | Status         | Tests |
 |-------|----------------------------------------------------|----------------|-------|
-| 01.0  | Structured field model                             | 🔶 In progress (3/6 tasks) | 466 unit |
+| 01.0  | Structured field model                             | 🔶 In progress (4/6 tasks) | 492 unit |
 | 02.0  | Renderer registry and built-in formats             | ⬜ Not started | -     |
 | 03.0  | YAML renderer and custom-format extensibility      | ⬜ Not started | -     |
 
@@ -138,3 +138,19 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
     copy-paste defect. The structured fields deliberately mirror it, so
     text and fields stay in agreement. The fix should be a separate
     change that corrects both outputs together and adds a unit test.
+- **2026-11-10 - Story 01.0 Task 04 (batch 3): verify-task PARTIAL, resolved
+  by amending the spec.** Event-log descriptors keep the text's 0-based
+  numbering, and `SystemSlots` peer groups are out of scope because no
+  getter exists (R1). Existing getter quirks are mirrored, not fixed. Each
+  is a candidate for a follow-up:
+  - `PortConnection` getters `assert(false)` on unmapped codes.
+  - `PortableBattery` `uses_sbds_*()` returns true on a too-short
+    structure.
+  - `SystemPowerControls` decodes BCD without validating it (0xFF → 165).
+  - `SystemEventLog` Access Method Address prints as decimal, not hex.
+  - `TpmDevice` firmware versions print raw, with no per-spec-version
+    decode.
+  - A local macOS ASan run aborts with a Boost.Test "container-overflow" at
+    test registration. It is clean with `detect_container_overflow=0`.
+    This is likely an uninstrumented-Boost false positive; confirm against
+    CI's sanitizer job at story close.

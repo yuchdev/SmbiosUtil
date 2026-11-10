@@ -48,12 +48,19 @@ during this task.
   applies unchanged.
 - Batch-specific: some entries contain variable-length repeated records:
   - `GroupAssociationsEntry` items;
-  - `SystemEventLogEntry` supported-event-log-type descriptors;
-  - `SystemSlotsEntry` peer groups.
+  - `SystemEventLogEntry` supported-event-log-type descriptors.
 
-  These need 1-based indexed names. Group a record's sub-values under one
-  index (e.g. `"Item 1 Type"`, `"Item 1 Handle"`), so that names stay
-  unique and readable.
+  These need indexed names: 1-based by default, or the text output's own
+  numbering where it already numbers them (the event-log descriptors print
+  as `"Descriptor 0"`, so they stay 0-based, as Task 02 does for Firmware
+  Language). Group a record's sub-values under one index (e.g.
+  `"Item 1 Type"`, `"Item 1 Handle"`), so that names stay unique and
+  readable.
+- *Amended 2026-11-10 (verify-task):* `SystemSlotsEntry` peer groups were
+  removed from scope. The class does not decode the SMBIOS 3.2+ peer-group
+  bytes (its header documents a cutoff at offset 0x10), so emitting them
+  would be a new raw-byte decode, which R1 forbids. Add them only if a later
+  task adds the getter.
 - Batch-specific: `SystemSlotsEntry` characteristics bytes are bitmasks.
   Expand them via `bitset_to_fields()`.
 
