@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <fstream>
 #include <iterator>
@@ -174,8 +175,68 @@ BOOST_AUTO_TEST_CASE(GoldenOutputsMatchFixtureRender)
 
 /// Edge/privacy case: the fixture exercises all four FieldValue
 /// alternatives, at least one bitmask bool, and no identifying field.
+///
+/// The privacy half (D3 hard rule) is enforced three independent ways, so a
+/// parser bug that hides a field cannot also hide a privacy regression:
+/// 1. raw-table walk, independent of SMBios/the entry factory: no structure
+///    of type 1/2/3/17 (System, Baseboard, Chassis, Memory Device);
+/// 2. raw-table walk: every DMI string is an obviously synthetic literal
+///    (contains "Example"/"EXAMPLE");
+/// 3. decoded fields: no field whose name contains (case-insensitively)
+///    "serial", "uuid", "asset", "part number" or "sku" - every identifying
+///    name any libsmbios entry emits ("Serial Number", "Serial", "UUID",
+///    "Asset Tag", "Part Number", "Model Part Number", "SKU Number", ...).
 BOOST_AUTO_TEST_CASE(FixtureCoversEveryFieldValueAlternative)
 {
+    // (1) + (2): walk the raw fixture bytes directly.
+    const std::vector<uint8_t> table = test::build_doc_sample_table();
+    size_t offset = 0;
+    size_t structures = 0;
+    bool saw_end_of_table = false;
+    while (offset + 4 <= table.size() && !saw_end_of_table) {
+        const uint8_t type = table[offset];
+        const uint8_t length = table[offset + 1];
+        BOOST_REQUIRE_GE(length, 4);
+        BOOST_REQUIRE_LE(offset + length, table.size());
+        BOOST_TEST_CONTEXT("structure " << structures << " (type " << static_cast<int>(type) << ")")
+        {
+            for (const uint8_t identifying_type : {uint8_t{1}, uint8_t{2}, uint8_t{3}, uint8_t{17}}) {
+                BOOST_CHECK_MESSAGE(type != identifying_type, "fixture carries identifying structure type "
+                                                                  << static_cast<int>(identifying_type));
+            }
+            if (type == SMBios::EndOfTable) {
+                // SyntheticTableBuilder emits the 4-byte End-of-Table marker
+                // with no string set; tolerate an optional double NUL too.
+                saw_end_of_table = true;
+                offset += length;
+                if (offset + 2 <= table.size() && table[offset] == 0 && table[offset + 1] == 0) {
+                    offset += 2;
+                }
+                continue;
+            }
+            size_t cursor = offset + length;
+            const size_t strings_begin = cursor;
+            while (cursor < table.size() && table[cursor] != 0) {
+                const auto string_end = std::find(table.begin() + static_cast<std::ptrdiff_t>(cursor), table.end(),
+                                                  uint8_t{0});
+                BOOST_REQUIRE(string_end != table.end());
+                const std::string value(table.begin() + static_cast<std::ptrdiff_t>(cursor), string_end);
+                BOOST_CHECK_MESSAGE(value.find("Example") != std::string::npos
+                                        || value.find("EXAMPLE") != std::string::npos,
+                                    "fixture string is not an obviously synthetic Example literal");
+                cursor = static_cast<size_t>(string_end - table.begin()) + 1;
+            }
+            // Skip the string-set terminator: one NUL after the last string,
+            // or the double NUL of an empty string set.
+            cursor += (cursor == strings_begin) ? 2 : 1;
+            offset = cursor;
+        }
+        ++structures;
+    }
+    BOOST_CHECK(saw_end_of_table);
+    BOOST_CHECK_EQUAL(offset, table.size());
+
+    // (3) + coverage: the decoded fields.
     const std::unique_ptr<DocSampleEntries> decoded = decode_fixture();
 
     std::set<size_t> alternatives;
@@ -187,8 +248,12 @@ BOOST_AUTO_TEST_CASE(FixtureCoversEveryFieldValueAlternative)
             if (entry->get_type() == "BIOS Information" && std::holds_alternative<bool>(field.value)) {
                 bitmask_bool = true;
             }
-            for (const char* forbidden : {"Serial Number", "UUID", "Asset Tag"}) {
-                BOOST_CHECK_MESSAGE(field.name != forbidden, "fixture carries identifying field " << forbidden);
+            std::string lowered(field.name);
+            std::transform(lowered.begin(), lowered.end(), lowered.begin(),
+                           [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+            for (const char* forbidden : {"serial", "uuid", "asset", "part number", "sku"}) {
+                BOOST_CHECK_MESSAGE(lowered.find(forbidden) == std::string::npos,
+                                    "fixture carries identifying field matching '" << forbidden << "'");
             }
         }
     }
