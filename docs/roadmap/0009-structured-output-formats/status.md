@@ -333,3 +333,11 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   enforces. The threat model says serializers "should still assert".
   Story 02.0 Task 03's `FieldNamesAreFirmwareIndependent` coverage should
   either add a debug-mode assertion or accept the risk explicitly.
+- **2026-11-10 - Duplicate-key advisory resolved: risk accepted.** No
+  runtime assert is added to the writers. Field names are library
+  constants, never firmware data. Two tests enforce uniqueness:
+  - `is_well_formed_json` rejects duplicate keys after decoding escapes.
+  - `FieldNamesAreFirmwareIndependent` checks that names stay identical and
+    unique across all 45 types when every string is hostile.
+
+  Revisit if a formatter ever derives names from data.
