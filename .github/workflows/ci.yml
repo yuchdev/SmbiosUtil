@@ -130,7 +130,7 @@ jobs:
         # not a firmware or GetSystemFirmwareTable() problem. --timeout 60
         # stays as the bound for any future hang: it fails fast as a
         # reported timeout instead of silently consuming the whole job.
-        run: ctest --test-dir build/${{ matrix.preset }} -C Debug --output-on-failure --timeout 60 -R "smbios_unit_test|smbios_mock_test|smbios_c_"
+        run: ctest --test-dir build/${{ matrix.preset }} -C Debug --output-on-failure --timeout 60 -R "smbios_unit_test|smbios_mock_test|smbios_c_|smbios_cli_unknown_format"
 
       # Milestone 0005, Story 04.0, Task 02: unlike Linux/macOS's legacy
       # scan, Windows's native source (GetSystemFirmwareTable(), via
@@ -146,7 +146,7 @@ jobs:
         # threshold (just BOOST_TEST_MESSAGE-logs enumeration time), so it
         # carries the same "real SMBios construction" risk/reward as
         # smbios_integration_test with no flakiness risk of its own.
-        run: ctest --test-dir build/${{ matrix.preset }} -C Debug --output-on-failure --timeout 60 -R "smbios_integration_test|smbios_perf_test" || echo "::warning::smbios_integration_test/smbios_perf_test failed on Windows - WindowsNativeSource needs no privilege, so this likely means the CI runner's (possibly virtualized) firmware doesn't expose a usable SMBIOS table, not a privilege issue. See docs/roadmap/0005-uefi-and-native-source-abstraction/status.md's Story 04.0 entry."
+        run: ctest --test-dir build/${{ matrix.preset }} -C Debug --output-on-failure --timeout 60 -R "smbios_integration_test|smbios_perf_test|smbios_cli_format_csv" || echo "::warning::smbios_integration_test/smbios_perf_test failed on Windows - WindowsNativeSource needs no privilege, so this likely means the CI runner's (possibly virtualized) firmware doesn't expose a usable SMBIOS table, not a privilege issue. See docs/roadmap/0005-uefi-and-native-source-abstraction/status.md's Story 04.0 entry."
         continue-on-error: true
 
   sanitizers:
@@ -228,7 +228,7 @@ jobs:
         # Milestone 0007, Story 03.0: smbios_c_* (tests/c_abi/) joins this
         # hard-gate bucket, not the best-effort one below - see the build
         # job's "Run unprivileged tests" step for why.
-        run: ctest --output-on-failure --timeout 60 -R 'smbios_unit_test|smbios_mock_test|smbios_c_'
+        run: ctest --output-on-failure --timeout 60 -R 'smbios_unit_test|smbios_mock_test|smbios_c_|smbios_cli_unknown_format'
 
       - name: Run privileged tests best-effort (smbios_integration_test, smbios_perf_test)
         if: steps.build.outcome == 'success'
@@ -236,5 +236,5 @@ jobs:
         shell: bash
         env:
           ASAN_OPTIONS: ${{ matrix.os == 'macos-latest' && 'detect_leaks=0:detect_container_overflow=0' || 'detect_container_overflow=0' }}
-        run: ctest --output-on-failure --timeout 60 -R 'smbios_integration_test|smbios_perf_test' || echo "::warning::sanitizer run of smbios_integration_test/smbios_perf_test failed or needs elevated privileges to read this runner's real SMBIOS table - same known limitation as the build job's functional-test step; making this reliable without root is milestone 0006's job."
+        run: ctest --output-on-failure --timeout 60 -R 'smbios_integration_test|smbios_perf_test|smbios_cli_format_csv' || echo "::warning::sanitizer run of smbios_integration_test/smbios_perf_test failed or needs elevated privileges to read this runner's real SMBIOS table - same known limitation as the build job's functional-test step; making this reliable without root is milestone 0006's job."
         continue-on-error: true
