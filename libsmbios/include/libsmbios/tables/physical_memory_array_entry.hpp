@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <map>
 #include <string>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // Physical Memory Array entry
@@ -101,6 +102,12 @@ public:
 
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order; every value
+    /// is the printed string (enum lookups, the unit-decorated capacity, the
+    /// hex/sentinel handle, and the "Unknown"-or-count device number).
+    std::vector<NamedField> get_fields() const override;
 
     //////////////////////////////////////////////////////////////////////////
     // Byte/word/qword values

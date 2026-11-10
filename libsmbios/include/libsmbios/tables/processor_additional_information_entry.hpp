@@ -100,6 +100,14 @@ public:
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
 
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order. Referenced
+    /// Handle stays the printed "0x..." string, Block Length is a uint64_t,
+    /// and the Processor-Specific Data is the raw bytes
+    /// get_processor_specific_data() already returns, named without the
+    /// text's variable "(N bytes)" decoration (the vector carries N).
+    std::vector<NamedField> get_fields() const override;
+
     //////////////////////////////////////////////////////////////////////////
     // Raw values
 

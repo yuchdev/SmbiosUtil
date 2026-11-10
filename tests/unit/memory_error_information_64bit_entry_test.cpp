@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -316,6 +317,61 @@ BOOST_AUTO_TEST_CASE(CreateReturnsMemoryErrorInformation64BitEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<MemoryErrorInformation64BitEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 03)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// every value is the text's printed string - enum names, and each reading
+// as the zero-padded "0x..." hex the text prints, or "Unknown" when its
+// is_*_known() check fails.
+// Boundaries: a structure truncated after Error Operation (every reading
+// "Unknown"). No bitmask in this type.
+// On failure first check: MemoryErrorInformation64BitEntry::get_fields() in
+// libsmbios/src/memory_error_information_64bit_entry.cpp.
+
+/// Normal case: every text label becomes a field, in text order.
+BOOST_AUTO_TEST_CASE(MemoryErrorInformation64BitEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area = make_formatted_area(
+        /*error_type*/0x06, /*error_granularity*/0x03, /*error_operation*/0x03,
+        /*vendor_syndrome*/0x11223344, /*memory_array_error_address*/0x0000000100001000ULL,
+        /*device_error_address*/0x0000000000000100ULL, /*error_resolution*/0x00000010);
+    BOOST_REQUIRE_EQUAL(formatted_area.size() + 4, static_cast<size_t>(0x1F));
+    std::vector<uint8_t> buffer;
+    std::unique_ptr<MemoryErrorInformation64BitEntry> entry = build_entry(formatted_area, buffer);
+
+    check_fields_equal(entry->get_fields(), {
+        {"Error Type", str("Single-bit error")},
+        {"Error Granularity", str("Device level")},
+        {"Error Operation", str("Read")},
+        {"Vendor Syndrome", str("0x11223344")},
+        {"Memory Array Error Address", str("0x0000000100001000")},
+        {"Device Error Address", str("0x0000000000000100")},
+        {"Error Resolution", str("0x00000010")},
+    });
+}
+
+/// Boundary case: only Error Type/Granularity/Operation are present. The
+/// text still prints every reading line, as "Unknown", so every field stays.
+BOOST_AUTO_TEST_CASE(MemoryErrorInformation64BitEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area = {0x06, 0x03, 0x03};
+    std::vector<uint8_t> buffer;
+    std::unique_ptr<MemoryErrorInformation64BitEntry> entry = build_entry(formatted_area, buffer);
+
+    check_fields_equal(entry->get_fields(), {
+        {"Error Type", str("Single-bit error")},
+        {"Error Granularity", str("Device level")},
+        {"Error Operation", str("Read")},
+        {"Vendor Syndrome", str("Unknown")},
+        {"Memory Array Error Address", str("Unknown")},
+        {"Device Error Address", str("Unknown")},
+        {"Error Resolution", str("Unknown")},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

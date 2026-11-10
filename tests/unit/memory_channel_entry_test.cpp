@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -261,6 +262,76 @@ BOOST_AUTO_TEST_CASE(CreateReturnsMemoryChannelEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<MemoryChannelEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 03)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// the text's unnumbered per-device "Load: N, Handle: H" lines become
+// 1-based "Load <i>"/"Handle <i>" uint64_t fields (both printed as plain
+// decimals). No bitmask in this type.
+// Boundaries: an explicit device count of 0 with a stray trailing triplet
+// (no device fields), a structure truncated before Maximum Channel Load.
+// On failure first check: MemoryChannelEntry::get_fields() in
+// libsmbios/src/memory_channel_entry.cpp.
+
+/// Normal case: fixed fields then one indexed Load/Handle pair per device.
+BOOST_AUTO_TEST_CASE(MemoryChannelEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area = make_formatted_area(
+        MemoryChannelEntry::ChannelTypeRambus, 10, {{2, 0x0040}, {3, 0x0041}});
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::MemoryChannel, formatted_area);
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    MemoryChannelEntry entry(header, SMBiosVersion{2, 3}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Channel Type", str("Rambus")},
+        {"Maximum Channel Load", num(10)},
+        {"Memory Device Count", num(2)},
+        {"Load 1", num(2)},
+        {"Handle 1", num(0x0040)},
+        {"Load 2", num(3)},
+        {"Handle 2", num(0x0041)},
+    });
+}
+
+/// Boundary cases: an explicit count of 0 prints no device lines even with a
+/// stray triplet in-bounds; a structure holding only Channel Type still
+/// prints every fixed line, with defaulted load and count.
+BOOST_AUTO_TEST_CASE(MemoryChannelEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        std::vector<uint8_t> formatted_area = make_formatted_area(
+            MemoryChannelEntry::ChannelTypeOther, 5, {{9, 0x00AA}}, /*explicit_count_override*/0);
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::MemoryChannel, formatted_area);
+        std::vector<uint8_t> buffer = builder.build();
+        MemoryChannelEntry entry(make_header(buffer), SMBiosVersion{2, 3}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Channel Type", str("Other")},
+            {"Maximum Channel Load", num(5)},
+            {"Memory Device Count", num(0)},
+        });
+    }
+    {
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::MemoryChannel,
+                              std::vector<uint8_t>{static_cast<uint8_t>(MemoryChannelEntry::ChannelTypeSyncLink)});
+        std::vector<uint8_t> buffer = builder.build();
+        MemoryChannelEntry entry(make_header(buffer), SMBiosVersion{2, 3}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Channel Type", str("SyncLink")},
+            {"Maximum Channel Load", num(0)},
+            {"Memory Device Count", num(0)},
+        });
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

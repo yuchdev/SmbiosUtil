@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -209,6 +210,65 @@ BOOST_AUTO_TEST_CASE(CreateReturnsProcessorAdditionalInformationEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<ProcessorAdditionalInformationEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 03)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// Referenced Handle stays the printed "0x..." string, Block Length is a
+// uint64_t, and Processor-Specific Data is the raw bytes the existing
+// getter returns (named without the text's variable "(N bytes)" suffix).
+// No bitmask in this type.
+// Boundaries: a block declared longer than the structure (getter returns
+// no bytes; the text still prints the line, so the field stays, empty).
+// On failure first check: ProcessorAdditionalInformationEntry::get_fields()
+// in libsmbios/src/processor_additional_information_entry.cpp.
+
+/// Normal case: every text label becomes a field, in text order.
+BOOST_AUTO_TEST_CASE(ProcessorAdditionalInformationEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    const std::vector<uint8_t> data = {0xAA, 0xBB};
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::ProcessorAdditionalInformation,
+                          make_formatted_area(0x01A5, ProcessorAdditionalInformationEntry::X64, data));
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    ProcessorAdditionalInformationEntry entry(header, SMBiosVersion{3, 1}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Referenced Handle", str("0x1a5")},
+        {"Block Length", num(2)},
+        {"Processor Type", str("x64 (x86-64, Intel64, AMD64, EM64T)")},
+        {"Processor-Specific Data", FieldValue{data}},
+    });
+}
+
+/// Boundary case: Block Length (4) exceeds the bytes actually present, so
+/// the getter returns no data; the text still prints the line ("0 bytes"),
+/// so the field is present and empty.
+BOOST_AUTO_TEST_CASE(ProcessorAdditionalInformationEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area{
+        0x01, 0x00, // 0x04 referenced handle
+        0x04,       // 0x06 Block Length (N == 4, but only 1 byte follows)
+        static_cast<uint8_t>(ProcessorAdditionalInformationEntry::Ia32), // 0x07
+        0xFF,       // 0x08
+    };
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::ProcessorAdditionalInformation, formatted_area);
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    ProcessorAdditionalInformationEntry entry(header, SMBiosVersion{3, 1}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Referenced Handle", str("0x1")},
+        {"Block Length", num(4)},
+        {"Processor Type", str("IA32 (x86)")},
+        {"Processor-Specific Data", FieldValue{std::vector<uint8_t>{}}},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

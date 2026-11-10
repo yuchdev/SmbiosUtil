@@ -122,3 +122,19 @@ uint16_t MemoryChannelEntry::get_device_handle_at(size_t index) const
     if (get_entry_size() < min_length) return 0;
     return read_u16(raw_data(), offset);
 }
+
+std::vector<NamedField> MemoryChannelEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Channel Type", get_channel_type_string()});
+    fields.push_back({"Maximum Channel Load", static_cast<uint64_t>(get_maximum_channel_load())});
+
+    const uint8_t count = get_device_count();
+    fields.push_back({"Memory Device Count", static_cast<uint64_t>(count)});
+    for (size_t index = 0; index < count; ++index) {
+        const std::string suffix = " " + std::to_string(index + 1);
+        fields.push_back({"Load" + suffix, static_cast<uint64_t>(get_device_load_at(index))});
+        fields.push_back({"Handle" + suffix, static_cast<uint64_t>(get_device_handle_at(index))});
+    }
+    return fields;
+}

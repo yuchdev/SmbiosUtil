@@ -164,3 +164,13 @@ std::string MemoryArrayMappedAddressEntry::get_partition_width_string() const
 {
     return std::to_string(static_cast<unsigned>(get_partition_width()));
 }
+
+std::vector<NamedField> MemoryArrayMappedAddressEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Starting Address", get_starting_address_string()});
+    fields.push_back({"Ending Address", get_ending_address_string()});
+    fields.push_back({"Physical Array Handle", get_memory_array_handle_string()});
+    fields.push_back({"Partition Width", static_cast<uint64_t>(get_partition_width())});
+    return fields;
+}

@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <map>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // Memory device entry
@@ -150,6 +151,13 @@ public:
 
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order; decorated
+    /// values (handles, widths in bits, sizes, speed, sentinel lookups) stay
+    /// the printed string, and each Device details bit becomes one
+    /// {label, true} field.
+    std::vector<NamedField> get_fields() const override;
 
     //////////////////////////////////////////////////////////////////////////
     // Bitwise values

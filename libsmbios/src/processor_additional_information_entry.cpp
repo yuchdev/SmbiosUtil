@@ -122,3 +122,17 @@ std::vector<uint8_t> ProcessorAdditionalInformationEntry::get_processor_specific
     }
     return data;
 }
+
+std::vector<NamedField> ProcessorAdditionalInformationEntry::get_fields() const
+{
+    // Same "0x" + lowercase unpadded hex rendering the text output uses.
+    std::stringstream referenced_handle;
+    referenced_handle << "0x" << std::hex << get_referenced_handle();
+
+    std::vector<NamedField> fields;
+    fields.push_back({"Referenced Handle", referenced_handle.str()});
+    fields.push_back({"Block Length", static_cast<uint64_t>(get_block_length())});
+    fields.push_back({"Processor Type", get_processor_type_string()});
+    fields.push_back({"Processor-Specific Data", get_processor_specific_data()});
+    return fields;
+}

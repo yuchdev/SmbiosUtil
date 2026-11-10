@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <map>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // Processor Information entry
@@ -100,6 +101,15 @@ public:
 
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order. Decorated
+    /// values (speeds in MHz, hex cache handles, "Unknown" sentinels, the
+    /// Processor ID hex string - get_processor_id() returns a uint64_t, not
+    /// raw bytes) stay the printed string. Characteristics is a single
+    /// {"Characteristics", "None"} field exactly when the text prints
+    /// "None", otherwise one {label, true} field per set bit.
+    std::vector<NamedField> get_fields() const override;
 
     //////////////////////////////////////////////////////////////////////////
     // Byte/word values
@@ -297,6 +307,10 @@ public:
     std::string get_thread_enabled_string() const;
 
 private:
+
+    /// True when the text renders Characteristics as "None" (bits 2-7 all
+    /// clear, see get_characteristics_string()); shared with get_fields()
+    bool characteristics_are_none() const;
 
     /// Cache-handle string helper shared by L1/L2/L3
     std::string cache_handle_string(uint16_t handle) const;

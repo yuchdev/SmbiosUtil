@@ -835,14 +835,18 @@ std::string ProcessorInformationEntry::get_thread_count_string() const
 std::string ProcessorInformationEntry::get_characteristics_string() const
 {
     assert(!characteristics_map_.empty());
-    const uint16_t characteristics = get_characteristics();
+    if (characteristics_are_none()) {
+        return "\tNone\n";
+    }
+    return AbstractSMBiosEntry::bitset_to_properties<uint16_t>(get_characteristics(), characteristics_map_);
+}
+
+bool ProcessorInformationEntry::characteristics_are_none() const
+{
     // Mirrors dmi_processor_characteristics()'s own `(code & 0x00FC) == 0`
     // "None" check exactly (bits 2-7 only; the reference does not extend
     // this mask to cover bits 8-9 even though it does print them).
-    if ((characteristics & 0x00FC) == 0) {
-        return "\tNone\n";
-    }
-    return AbstractSMBiosEntry::bitset_to_properties<uint16_t>(characteristics, characteristics_map_);
+    return (get_characteristics() & 0x00FC) == 0;
 }
 
 std::string ProcessorInformationEntry::get_thread_enabled_string() const
@@ -852,4 +856,42 @@ std::string ProcessorInformationEntry::get_thread_enabled_string() const
         return "Unknown";
     }
     return std::to_string(enabled);
+}
+
+std::vector<NamedField> ProcessorInformationEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Socket Designation", get_socket_designation_string()});
+    fields.push_back({"Type", get_processor_type_string()});
+    fields.push_back({"Family", get_processor_family_string()});
+    fields.push_back({"Manufacturer", get_manufacturer_string()});
+    fields.push_back({"ID", get_processor_id_string()});
+    fields.push_back({"Version", get_version_string()});
+    fields.push_back({"Voltage", get_voltage_string()});
+    fields.push_back({"External Clock", get_external_clock_string()});
+    fields.push_back({"Max Speed", get_max_speed_string()});
+    fields.push_back({"Current Speed", get_current_speed_string()});
+    fields.push_back({"Status", get_status_string()});
+    fields.push_back({"Upgrade", get_processor_upgrade_string()});
+    fields.push_back({"L1 Cache Handle", get_l1_cache_handle_string()});
+    fields.push_back({"L2 Cache Handle", get_l2_cache_handle_string()});
+    fields.push_back({"L3 Cache Handle", get_l3_cache_handle_string()});
+    fields.push_back({"Serial Number", get_serial_number_string()});
+    fields.push_back({"Asset Tag", get_asset_tag_string()});
+    fields.push_back({"Part Number", get_part_number_string()});
+    fields.push_back({"Core Count", get_core_count_string()});
+    fields.push_back({"Core Enabled", get_core_enabled_string()});
+    fields.push_back({"Thread Count", get_thread_count_string()});
+
+    // Mirrors get_characteristics_string(): the "None" sentinel exactly when
+    // the text prints it, otherwise one true field per set bit.
+    if (characteristics_are_none()) {
+        fields.push_back({"Characteristics", std::string("None")});
+    }
+    else {
+        bitset_to_fields<uint16_t>(get_characteristics(), characteristics_map_, fields);
+    }
+
+    fields.push_back({"Thread Enabled", get_thread_enabled_string()});
+    return fields;
 }

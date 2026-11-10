@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <map>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // Cache Information entry
@@ -134,6 +135,16 @@ public:
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
 
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order. Enabled
+    /// and Socketed are bool; Cache Level is a uint64_t; sizes and speed
+    /// stay the printed (unit-decorated) string. Each SRAM type bitmask is a
+    /// single {"<label>", "None"} field exactly when the text prints "None",
+    /// otherwise one {"<bit label> (Supported)"/"<bit label> (Installed)",
+    /// true} field per set bit - both bitmasks share one label table, so the
+    /// group qualifier keeps field names unique.
+    std::vector<NamedField> get_fields() const override;
+
     //////////////////////////////////////////////////////////////////////////
     // Byte/word values
 
@@ -253,6 +264,10 @@ private:
 
     /// Format a decoded KB count as a human string (kB/MB)
     static std::string cache_size_string(uint64_t size_kb);
+
+    /// True when an SRAM type bitmask renders as "None" (bits 0-6 all
+    /// clear); shared by the two SRAM type string getters and get_fields()
+    static bool sram_types_are_none(uint16_t types);
 
     /// Map flags/codes data to string values
     void init_string_values();

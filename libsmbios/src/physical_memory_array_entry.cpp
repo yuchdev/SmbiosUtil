@@ -221,3 +221,15 @@ std::string PhysicalMemoryArrayEntry::get_number_of_memory_devices_string() cons
     }
     return std::to_string(count);
 }
+
+std::vector<NamedField> PhysicalMemoryArrayEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Location", get_location_string()});
+    fields.push_back({"Use", get_use_string()});
+    fields.push_back({"Error Correction Type", get_memory_error_correction_string()});
+    fields.push_back({"Maximum Capacity", get_maximum_capacity_string()});
+    fields.push_back({"Error Information Handle", get_memory_error_information_handle_string()});
+    fields.push_back({"Number Of Devices", get_number_of_memory_devices_string()});
+    return fields;
+}
