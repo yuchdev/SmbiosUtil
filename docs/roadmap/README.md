@@ -56,9 +56,11 @@ absolute-from-repo-root Markdown link:
 This roadmap takes `libbios` from a two-structure, Windows/pre-UEFI-Linux
 prototype to a portable, UEFI-capable C++20 library with a modern,
 dependency-managed build, a C ABI alongside its C++ one, tracked upstream
-references, and machine-parsable output. The nine milestones below are
+references, and machine-parsable output. The thirteen milestones below are
 intentionally sequential - each is the foundation the next one is built
-on:
+on. Milestones 0011-0013 extend that scope beyond the core C++ library
+itself - a GUI built on top of it, package-manager distribution of it, and
+bindings for other languages against its C ABI:
 
 1. **0001** gives every later milestone a working, reproducible,
    vcpkg-based build before any source code changes land.
@@ -103,6 +105,23 @@ on:
     structure types (0004's eleven cover only 11 of the 49 the spec
     defines) that remain unimplemented, independent of 0009's output-model
     work.
+11. **0011** builds `smbios_gui`, a cross-platform desktop browser for
+    parsed SMBIOS data (Dear ImGui, per
+    [ADR 0003](/docs/adr/0003-gui-toolkit-for-smbios-visualization.md)),
+    linking `libsmbios` directly and walking 0009's structured-field seam
+    (`get_fields()`) into a tree-and-field-table view instead of adding a
+    second text renderer.
+12. **0012** gives `libsmbios` its first `install()`/export rules and
+    publishes `smbios_c` as a self-hosted vcpkg overlay/registry port plus
+    GitHub Releases prebuilt artifacts, per
+    [ADR 0004](/docs/adr/0004-package-manager-distribution.md) - central
+    `microsoft/vcpkg`/Conan Center submission is explicitly deferred until
+    a named external consumer asks.
+13. **0013** wraps 0007's `smbios_c` C ABI in idiomatic Rust (`smbios-sys`
+    + `smbios`) and Python (`smbios`) packages, so this library becomes
+    `cargo add`/`pip install`-able, not just linkable from C/C++; it adds
+    no new `smbios_c` functions, strictly consuming the curated C surface
+    0007 already shipped.
 
 ## Milestones
 
@@ -118,5 +137,8 @@ on:
 | 0008 | Upstream reference fetch script and change-monitoring agent          | [plan.md](./0008-upstream-reference-submodules-and-monitoring-agent/plan.md) | [status.md](./0008-upstream-reference-submodules-and-monitoring-agent/status.md) |
 | 0009 | Structured output formats (text, XML, JSON, YAML, custom)            | [plan.md](./0009-structured-output-formats/plan.md)                | [status.md](./0009-structured-output-formats/status.md)                  |
 | 0010 | SMBIOS structure coverage expansion (`tables/` reorg + 34 new types) | [plan.md](./0010-smbios-structure-coverage-expansion/plan.md)      | [status.md](./0010-smbios-structure-coverage-expansion/status.md)        |
+| 0011 | GUI visualization tool (`smbios_gui`, Dear ImGui)                    | [plan.md](./0011-gui-visualization-tool/plan.md)                   | [status.md](./0011-gui-visualization-tool/status.md)                     |
+| 0012 | Package manager distribution (`libsmbios` install rules, self-hosted vcpkg port for `smbios_c`, GitHub Releases) | [plan.md](./0012-package-manager-distribution/plan.md) | [status.md](./0012-package-manager-distribution/status.md) |
+| 0013 | Language bindings (Rust `smbios-sys`/`smbios`, Python `smbios`) over `smbios_c` | [plan.md](./0013-language-bindings/plan.md)          | [status.md](./0013-language-bindings/status.md)                          |
 
 **Legend (status.md files):** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
