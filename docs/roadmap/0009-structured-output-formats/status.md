@@ -8,7 +8,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 |-------|----------------------------------------------------|----------------|-------|
 | 01.0  | Structured field model                             | ✅ Complete (2026-11-10) | 518 unit |
 | 02.0  | Renderer registry and built-in formats             | ✅ Complete (2026-11-10) | 602 unit |
-| 03.0  | YAML renderer and custom-format extensibility      | 🔶 In progress (1/4 tasks) | 617 unit |
+| 03.0  | YAML renderer and custom-format extensibility      | 🔶 In progress (2/4 tasks) | 627 unit |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -394,3 +394,11 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
   6.0.3 round-trip was run once, dev-only (trap strings, uint64 max, C1
   and U+2028 escapes, the 17-entry hostile corpus all passed); record the
   command in the milestone PR description.
+- **2026-11-10 - Story 03.0 Task 02 (CSV example, `--format`) passed
+  verify-task** (`0d7d781`, `ef62ca0`, `184b692`). Choices the spec left
+  open, documented in `smbios/examples/csv_formatter.cpp`'s header:
+  LF row endings (not RFC 4180 CRLF, matching the other formats); an
+  entry with no fields still emits one `Type,,` row; the formula-injection
+  guard makes values starting with `-` show a visible `'`. CI's must-pass
+  regex now includes `smbios_cli_unknown_format*`; `smbios_cli_format_csv`
+  (reads real hardware) is warning-only.

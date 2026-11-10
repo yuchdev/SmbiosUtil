@@ -21,7 +21,7 @@ This story has four parts:
 | #  | Document                                                                  | Status         | Blocks |
 |----|--------------------------------------------------------------------------------|----------------|--------|
 | 01 | [YAML renderer](01-yaml-renderer.md)                                           | ✅ Complete (`ff606d3`) | 02     |
-| 02 | [Custom-format extensibility example and CLI wiring](02-custom-format-extensibility-example-and-cli-wiring.md) | ⬜ Not started | 03     |
+| 02 | [Custom-format extensibility example and CLI wiring](02-custom-format-extensibility-example-and-cli-wiring.md) | ✅ Complete (`0d7d781`, `ef62ca0`, `184b692`) | 03     |
 | 03 | [Examples and documentation](03-examples-and-documentation.md)                 | ⬜ Not started | 04     |
 | 04 | [Tests](04-tests.md)                                                          | ⬜ Not started | -      |
 

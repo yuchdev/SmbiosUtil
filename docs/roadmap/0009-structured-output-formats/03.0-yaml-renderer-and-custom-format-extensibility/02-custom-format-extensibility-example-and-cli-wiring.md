@@ -1,7 +1,7 @@
 # 02 - Custom-format extensibility example and CLI wiring
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-10)
 **Depends on:** Task 01
 
 ## Objective
