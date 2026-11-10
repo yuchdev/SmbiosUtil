@@ -207,7 +207,7 @@ std::string BaseboardInformationEntry::get_feature_flags_string() const
     // (see get_feature_flags()). Mirrors SystemSlotsEntry::
     // get_characteristics_string()'s own "Unknown" vs "None" distinction,
     // here "Not Present" vs "None".
-    if (get_entry_size() < 0x0E || get_contained_object_handle_count() == 0) {
+    if (!feature_flags_present()) {
         return "\tNot Present\n";
     }
 
@@ -232,4 +232,35 @@ std::string BaseboardInformationEntry::get_board_type_string() const
         return (*it).second;
     }
     return "OutOfSpec";
+}
+
+bool BaseboardInformationEntry::feature_flags_present() const
+{
+    return get_entry_size() >= 0x0E && get_contained_object_handle_count() != 0;
+}
+
+std::vector<NamedField> BaseboardInformationEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Manufacturer", get_manufacturer_string()});
+    fields.push_back({"Product Name", get_product_string()});
+    fields.push_back({"Version", get_version_string()});
+    fields.push_back({"Serial Number", get_serial_number_string()});
+    fields.push_back({"Asset Tag", get_asset_tag_string()});
+    // Mirrors get_feature_flags_string(): a sentinel string exactly when the
+    // text prints one, otherwise one true field per set flag bit.
+    if (!feature_flags_present()) {
+        fields.push_back({"Features", std::string("Not Present")});
+    }
+    else if (get_feature_flags() == 0) {
+        fields.push_back({"Features", std::string("None")});
+    }
+    else {
+        bitset_to_fields<uint8_t>(get_feature_flags(), feature_flags_map_, fields);
+    }
+    fields.push_back({"Location In Chassis", get_location_in_chassis_string()});
+    fields.push_back({"Chassis Handle", static_cast<uint64_t>(get_chassis_handle())});
+    fields.push_back({"Type", get_board_type_string()});
+    fields.push_back({"Contained Object Handles", static_cast<uint64_t>(get_contained_object_handle_count())});
+    return fields;
 }

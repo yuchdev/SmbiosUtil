@@ -52,3 +52,14 @@ std::string SystemConfigurationOptionsEntry::get_option_at(size_t index) const
 {
     return AbstractSMBiosEntry::dmi_string(index);
 }
+
+std::vector<NamedField> SystemConfigurationOptionsEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    const uint8_t count = get_option_count();
+    fields.push_back({"Option Count", static_cast<uint64_t>(count)});
+    for (uint8_t index = 1; index <= count; ++index) {
+        fields.push_back({"Option " + std::to_string(static_cast<unsigned>(index)), get_option_at(index)});
+    }
+    return fields;
+}

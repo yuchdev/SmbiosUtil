@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // Inactive entry
@@ -51,6 +52,11 @@ public:
     /// plainly, per 7.48's own guidance, that upper-level software should
     /// bypass/skip this structure rather than interpret it.
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Deliberately empty: the text output carries no data fields
+    /// beyond the header type and a fixed explanatory sentence.
+    std::vector<NamedField> get_fields() const override;
 };
 
 } // namespace smbios

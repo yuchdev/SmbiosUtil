@@ -52,3 +52,14 @@ std::string OemStringsEntry::get_string_at(size_t index) const
 {
     return AbstractSMBiosEntry::dmi_string(index);
 }
+
+std::vector<NamedField> OemStringsEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    const uint8_t count = get_string_count();
+    fields.push_back({"String Count", static_cast<uint64_t>(count)});
+    for (uint8_t index = 1; index <= count; ++index) {
+        fields.push_back({"String " + std::to_string(static_cast<unsigned>(index)), get_string_at(index)});
+    }
+    return fields;
+}

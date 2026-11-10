@@ -86,3 +86,18 @@ uint16_t StringPropertyEntry::get_parent_handle() const
     if (get_entry_size() < min_length) return 0;
     return read_u16(raw_data(), kParentHandleOffset);
 }
+
+std::vector<NamedField> StringPropertyEntry::get_fields() const
+{
+    std::stringstream property_id;
+    property_id << "0x" << std::hex << get_property_id() << std::dec
+                << " (" << get_property_id_string() << ")";
+    std::stringstream parent_handle;
+    parent_handle << "0x" << std::hex << get_parent_handle();
+
+    std::vector<NamedField> fields;
+    fields.push_back({"Property ID", property_id.str()});
+    fields.push_back({"Value", get_value_string()});
+    fields.push_back({"Parent Handle", parent_handle.str()});
+    return fields;
+}

@@ -92,6 +92,13 @@ public:
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
 
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order;
+    /// each set Feature Flags bit becomes one {label, true} field, or a single
+    /// "Features" string field holding "Not Present"/"None" exactly when the
+    /// text prints that sentinel.
+    std::vector<NamedField> get_fields() const override;
+
     //////////////////////////////////////////////////////////////////////////
     // Byte/word values
 
@@ -181,6 +188,12 @@ public:
     std::string get_board_type_string() const;
 
 private:
+
+    /// True when the Feature Flags are meaningful per Table 14 footnote 1
+    /// (length >= 0x0E and a non-zero contained-object-handle count); shared
+    /// by get_feature_flags_string() and get_fields() so both apply the same
+    /// "Not Present" rule.
+    bool feature_flags_present() const;
 
     /// Map flags/codes data to string values
     void init_string_values();

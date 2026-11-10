@@ -295,3 +295,48 @@ std::string BiosInformationEntry::stream_to_version(uint16_t major, uint16_t min
     return version_stream.str();
 }
 
+
+namespace {
+
+/// Give every bit-label field whose name repeats within `bits` a 1-based
+/// index suffix ("Reserved 1", "Reserved 2"), in order of appearance, so
+/// field names stay unique (contract C1). Labels that occur once are left
+/// untouched. Only BIOS Characteristics bits 0 and 1 share a label today.
+void suffix_duplicate_names(std::vector<smbios::NamedField>& bits)
+{
+    std::map<std::string, size_t> totals;
+    for (const auto& field : bits) {
+        ++totals[field.name];
+    }
+    std::map<std::string, size_t> seen;
+    for (auto& field : bits) {
+        if (totals[field.name] > 1) {
+            const size_t ordinal = ++seen[field.name];
+            field.name += " " + std::to_string(ordinal);
+        }
+    }
+}
+
+} // namespace
+
+std::vector<NamedField> BiosInformationEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Vendor", get_vendor_string()});
+    fields.push_back({"Version", get_version_string()});
+    fields.push_back({"Address", get_starting_address_string()});
+    fields.push_back({"Runtime size", get_runtime_size_string()});
+    fields.push_back({"Release Date", get_release_date_string()});
+    fields.push_back({"ROM Size", get_rom_size_string()});
+
+    std::vector<NamedField> bits;
+    bitset_to_fields<uint64_t>(get_properties(), properties_map_, bits);
+    bitset_to_fields<uint8_t>(get_properties_extension1(), properties_extensions1_map_, bits);
+    bitset_to_fields<uint8_t>(get_properties_extension2(), properties_extensions2_map_, bits);
+    suffix_duplicate_names(bits);
+    fields.insert(fields.end(), bits.begin(), bits.end());
+
+    fields.push_back({"BIOS Revision", get_bios_version_string()});
+    fields.push_back({"Firmware Revision", get_firmware_version_string()});
+    return fields;
+}

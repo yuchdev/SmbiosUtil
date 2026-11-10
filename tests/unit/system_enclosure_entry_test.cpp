@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -361,6 +362,89 @@ BOOST_AUTO_TEST_CASE(CreateReturnsSystemEnclosureEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<SystemEnclosureEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 02)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field
+// (same labels, order and printed strings); "Lock" is a bool and
+// "Contained Elements" a uint64_t.
+// Boundaries: length 0x09 (state/OEM/height/cords/SKU fields default but
+// are still printed, so still present with their sentinels).
+// On failure first check: SystemEnclosureEntry::get_fields() in
+// libsmbios/src/system_enclosure_entry.cpp.
+
+namespace {
+
+/// @brief build_buffer()'s layout truncated to `length`, plus five real DMI
+/// strings so every string index resolves.
+std::vector<uint8_t> build_fields_buffer(uint8_t length)
+{
+    std::vector<uint8_t> source = build_buffer(0x16);
+    std::vector<uint8_t> formatted_area(source.begin() + 4, source.begin() + length);
+
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemEnclosure, formatted_area,
+                          std::vector<std::string>{"Acme", "Rev B", "CH-1", "AT-2", "SKU-3"});
+    return builder.build();
+}
+
+} // namespace
+
+/// Normal case: full-length structure, every field decoded, in text order.
+BOOST_AUTO_TEST_CASE(SystemEnclosureEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = build_fields_buffer(0x16);
+    DMIHeader header = make_header(buffer);
+    SystemEnclosureEntry entry(header, SMBiosVersion{2, 7}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Manufacturer", str("Acme")},
+        {"Type", str("Tower")},
+        {"Lock", true},
+        {"Version", str("Rev B")},
+        {"Serial Number", str("CH-1")},
+        {"Asset Tag", str("AT-2")},
+        {"Boot-up State", str("Safe")},
+        {"Power Supply State", str("Warning")},
+        {"Thermal State", str("Critical")},
+        {"Security Status", str("External Interface Locked Out")},
+        {"OEM Information", str("0xdeadbeef")},
+        {"Height", str("2 U")},
+        {"Number Of Power Cords", str("1")},
+        {"Contained Elements", num(0)},
+        {"SKU Number", str("SKU-3")},
+    });
+}
+
+/// Boundary case: length 0x09 - the text still prints every line (with
+/// defaulted values/sentinels), so every field stays present.
+BOOST_AUTO_TEST_CASE(SystemEnclosureEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = build_fields_buffer(0x09);
+    DMIHeader header = make_header(buffer);
+    SystemEnclosureEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Manufacturer", str("Acme")},
+        {"Type", str("Tower")},
+        {"Lock", true},
+        {"Version", str("Rev B")},
+        {"Serial Number", str("CH-1")},
+        {"Asset Tag", str("AT-2")},
+        {"Boot-up State", str("OutOfSpec")},
+        {"Power Supply State", str("OutOfSpec")},
+        {"Thermal State", str("OutOfSpec")},
+        {"Security Status", str("OutOfSpec")},
+        {"OEM Information", str("0")},
+        {"Height", str("Unspecified")},
+        {"Number Of Power Cords", str("Unspecified")},
+        {"Contained Elements", num(0)},
+        {"SKU Number", str("Not Specified")},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

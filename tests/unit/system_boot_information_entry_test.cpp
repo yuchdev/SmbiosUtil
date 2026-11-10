@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -205,6 +206,58 @@ BOOST_AUTO_TEST_CASE(CreateReturnsSystemBootInformationEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<SystemBootInformationEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 02)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description(): "Status" always,
+// "Status Data" (the raw payload bytes from get_status_data()) only when
+// the text prints it, i.e. when the payload is non-empty.
+// Boundaries: length 0x0B (empty payload -> no "Status Data"), header-only
+// structure (status defaults).
+// On failure first check: SystemBootInformationEntry::get_fields() in
+// libsmbios/src/system_boot_information_entry.cpp.
+
+/// Normal case: a 2-byte payload becomes one raw-bytes field.
+BOOST_AUTO_TEST_CASE(SystemBootInformationEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = build_buffer(SystemBootInformationEntry::UserRequestedBoot, 2);
+    DMIHeader header = make_header(buffer);
+    SystemBootInformationEntry entry(header, SMBiosVersion{2, 3}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Status", str("User-requested boot")},
+        {"Status Data", std::vector<uint8_t>{0xC0, 0xC1}},
+    });
+}
+
+/// Boundary cases: no payload -> "Status Data" omitted (the text omits it
+/// too); header-only -> status defaults to "No errors detected".
+BOOST_AUTO_TEST_CASE(SystemBootInformationEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        std::vector<uint8_t> buffer = build_buffer(SystemBootInformationEntry::NoBootableMedia, 0);
+        DMIHeader header = make_header(buffer);
+        SystemBootInformationEntry entry(header, SMBiosVersion{2, 3}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Status", str("No bootable media")},
+        });
+    }
+    {
+        smbios::test::SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::SystemBootInformation, std::vector<uint8_t>{});
+        std::vector<uint8_t> buffer = builder.build();
+        DMIHeader header = make_header(buffer);
+        SystemBootInformationEntry entry(header, SMBiosVersion{2, 3}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Status", str("No errors detected")},
+        });
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

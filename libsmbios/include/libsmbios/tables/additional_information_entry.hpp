@@ -71,6 +71,12 @@ public:
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
 
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Entry count, then per walked record (N 1-based)
+    /// "Entry Length N", "Referenced Handle N", "Referenced Offset N",
+    /// "String N" and "Value N" (raw bytes), mirroring render_to_description().
+    std::vector<NamedField> get_fields() const override;
+
     //////////////////////////////////////////////////////////////////////////
     // Entry count / per-entry accessors
 

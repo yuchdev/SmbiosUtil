@@ -5,6 +5,7 @@
 #include <libsmbios/tables/bios_information_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -222,5 +223,129 @@ BOOST_AUTO_TEST_CASE(BiosInformationEntryAboveTierDecodesExtendedRomSizeTestCase
     // extended ROM size: raw bytes {0x32, 0x00} LE -> 0x0032 == 50 (MB)
     BOOST_CHECK_EQUAL(entry.get_extended_rom_size(), static_cast<uint16_t>(50));
 }
+
+// get_fields() (milestone 0009, Story 01.0, Task 02)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field
+// (same labels, same order, same printed strings for decorated values),
+// with each set Characteristics / Extension byte bit expanded into its own
+// {label, true} field and duplicate bit labels made unique.
+// Boundaries: header-only structure (every getter defaults), both
+// "Reserved" bits set at once, an unlabelled set bit (63).
+// On failure first check: BiosInformationEntry::get_fields() and its
+// suffix_duplicate_names() helper in libsmbios/src/bios_information_entry.cpp.
+
+namespace {
+
+/// @brief Length 0x1A structure with three real DMI strings and the given
+/// characteristics bytes.
+std::vector<uint8_t> build_fields_buffer(uint64_t properties, uint8_t ext1, uint8_t ext2)
+{
+    std::vector<uint8_t> formatted_area{
+        0x01,                                           // 0x04 vendor_index
+        0x02,                                           // 0x05 version_index
+        0x00, 0xF0,                                     // 0x06 starting_segment (0xF000)
+        0x03,                                           // 0x08 release_date_index
+        0x01,                                           // 0x09 rom_size -> 128 kB
+    };
+    for (int i = 0; i < 8; ++i) {                       // 0x0A..0x11 properties (LE)
+        formatted_area.push_back(static_cast<uint8_t>(properties >> (8 * i)));
+    }
+    formatted_area.push_back(ext1);                     // 0x12
+    formatted_area.push_back(ext2);                     // 0x13
+    formatted_area.push_back(0x05);                     // 0x14 bios_major_release
+    formatted_area.push_back(0x11);                     // 0x15 bios_minor_release
+    formatted_area.push_back(0xFF);                     // 0x16 firmware_major_release
+    formatted_area.push_back(0xFF);                     // 0x17 firmware_minor_release
+    formatted_area.push_back(0x00);                     // 0x18 extended_rom_size
+    formatted_area.push_back(0x00);
+    BOOST_REQUIRE_EQUAL(formatted_area.size(), static_cast<size_t>(0x1A - 4));
+
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::BIOSInformation, formatted_area,
+                          std::vector<std::string>{"Acme BIOS", "1.2.3", "01/02/2024"});
+    return builder.build();
+}
+
+} // namespace
+
+/// Normal case: every text label becomes a field, in text order, with the
+/// text's own decorated strings; set bits become true fields.
+BOOST_AUTO_TEST_CASE(BiosInformationEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    const uint64_t properties = BiosInformationEntry::PCISupported | BiosInformationEntry::BIOSUpgradeable;
+    std::vector<uint8_t> buffer = build_fields_buffer(properties,
+                                                      BiosInformationEntry::ACPISupported,
+                                                      BiosInformationEntry::UEFISpecificationSupported);
+    DMIHeader header = make_header(buffer);
+    BiosInformationEntry entry(header, SMBiosVersion{3, 1}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Vendor", str("Acme BIOS")},
+        {"Version", str("1.2.3")},
+        {"Address", str("0xf000")},
+        {"Runtime size", str("64 kB")},
+        {"Release Date", str("01/02/2024")},
+        {"ROM Size", str("128 kB")},
+        {"PCI is supported", true},
+        {"BIOS is upgradeable", true},
+        {"ACPI is supported", true},
+        {"UEFI Specification is supported", true},
+        {"BIOS Revision", str("5.17")},
+        {"Firmware Revision", str("255.255")},
+    });
+}
+
+/// Edge case: one true field per set, labelled bit across all three
+/// bitmasks; the two "Reserved" bits get 1-based suffixes; an unlabelled
+/// set bit is skipped; nothing is a joined string.
+BOOST_AUTO_TEST_CASE(BiosInformationEntryGetFieldsExpandsBitmaskTestCase)
+{
+    using namespace smbios::test;
+    const uint64_t properties = BiosInformationEntry::Reserved1 | BiosInformationEntry::Reserved2
+                              | BiosInformationEntry::ISASupported | (uint64_t{1} << 63);
+    const uint8_t ext1 = BiosInformationEntry::USBLegacySupported | BiosInformationEntry::SmartBatterySupported;
+    std::vector<uint8_t> buffer = build_fields_buffer(properties, ext1, 0x00);
+    DMIHeader header = make_header(buffer);
+    BiosInformationEntry entry(header, SMBiosVersion{3, 1}, buffer.data() + buffer.size());
+
+    const std::vector<NamedField> fields = entry.get_fields();
+    const std::vector<NamedField> bits(fields.begin() + 6, fields.end() - 2);
+    check_fields_equal(bits, {
+        {"Reserved 1", true},
+        {"Reserved 2", true},
+        {"ISA is supported", true},
+        {"USB Legacy is supported", true},
+        {"Smart battery is supported", true},
+    });
+    BOOST_CHECK_EQUAL(fields.size(), static_cast<size_t>(8 + 5));
+    check_unique_field_names(fields);
+    check_no_joined_string_fields(fields);
+}
+
+/// Boundary case: a header-only structure (tier 1). The text prints every
+/// line unconditionally (with defaulted values), so every non-bitmask field
+/// is still present, and no bit field appears.
+BOOST_AUTO_TEST_CASE(BiosInformationEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = build_tier1_buffer();
+    DMIHeader header = make_header(buffer);
+    BiosInformationEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Vendor", str("Not Specified")},
+        {"Version", str("Not Specified")},
+        {"Address", str("0")},
+        {"Runtime size", str("0 kB")},
+        {"Release Date", str("Not Specified")},
+        {"ROM Size", str("0 kB")},
+        {"BIOS Revision", str("0.0")},
+        {"Firmware Revision", str("0.0")},
+    });
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()

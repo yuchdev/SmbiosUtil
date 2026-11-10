@@ -96,3 +96,17 @@ std::string FirmwareLanguageInformationEntry::get_language_at(size_t index) cons
     const size_t string_index = index + 1;
     return AbstractSMBiosEntry::dmi_string(string_index);
 }
+
+std::vector<NamedField> FirmwareLanguageInformationEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    const uint8_t count = get_installable_language_count();
+    fields.push_back({"Installable Languages", static_cast<uint64_t>(count)});
+    fields.push_back({"Abbreviated Format", is_abbreviated_format()});
+    fields.push_back({"Current Language", get_current_language_string()});
+    // The text already numbers languages (0-based "Language N"); reuse its label.
+    for (uint8_t index = 0; index < count; ++index) {
+        fields.push_back({"Language " + std::to_string(static_cast<unsigned>(index)), get_language_at(index)});
+    }
+    return fields;
+}

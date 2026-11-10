@@ -40,3 +40,9 @@ std::string InactiveEntry::render_to_description() const
 
     return description.str();
 }
+
+std::vector<NamedField> InactiveEntry::get_fields() const
+{
+    // Deliberately empty: the text output has no data fields (see header).
+    return {};
+}

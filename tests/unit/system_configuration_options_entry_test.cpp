@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -144,6 +145,71 @@ BOOST_AUTO_TEST_CASE(CreateReturnsSystemConfigurationOptionsEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<SystemConfigurationOptionsEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 02)
+//
+// Type: unit - deterministic, synthetic buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description(): "Option Count"
+// then one "Option N" field per string, N 1-based, exactly the text's labels.
+// Boundaries: header-only structure (count field absent -> count 0, no
+// option fields); count larger than the string section ("Bad index").
+// On failure first check: SystemConfigurationOptionsEntry::get_fields() in
+// libsmbios/src/system_configuration_options_entry.cpp.
+
+/// Normal case: count 3, three strings, uniquely named "Option 1".."Option 3".
+BOOST_AUTO_TEST_CASE(SystemConfigurationOptionsEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemConfigurationOptions, std::vector<uint8_t>{0x03},
+                          std::vector<std::string>{"Alpha", "Bravo", "Charlie"});
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    SystemConfigurationOptionsEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Option Count", num(3)},
+        {"Option 1", str("Alpha")},
+        {"Option 2", str("Bravo")},
+        {"Option 3", str("Charlie")},
+    });
+}
+
+/// Boundary case: header-only structure (length 0x04 < 0x05) - the count
+/// getter defaults to 0, so only the count field is present.
+BOOST_AUTO_TEST_CASE(SystemConfigurationOptionsEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemConfigurationOptions, std::vector<uint8_t>{},
+                          std::vector<std::string>{"Ignored"});
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    SystemConfigurationOptionsEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Option Count", num(0)},
+    });
+}
+
+/// Invalid-input case: count claims more strings than exist - the extra
+/// field carries dmi_string()'s "Bad index" sentinel, exactly as the text does.
+BOOST_AUTO_TEST_CASE(SystemConfigurationOptionsEntryGetFieldsCountBeyondStringsReportsBadIndexTestCase)
+{
+    using namespace smbios::test;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemConfigurationOptions, std::vector<uint8_t>{0x02},
+                          std::vector<std::string>{"Only"});
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    SystemConfigurationOptionsEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Option Count", num(2)},
+        {"Option 1", str("Only")},
+        {"Option 2", str("Bad index")},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()
