@@ -6,65 +6,119 @@
 
 ## Objective
 
-Implement the three R3 built-in formatters, and make - and record - the
-JSON library decision this task has been deferring.
+Implement the three R3 built-in formatters and the shared escaping helpers
+they (and Story 03.0's YAML writer) use. JSON is hand-rolled, which was
+ratified on 2026-11-10 and is not revisited here.
 
 ## Files
 
-- **Create** `smbios/include/smbios/text_formatter.hpp` / `.cpp`:
+- **Create** `libsmbios/include/libsmbios/formatters/formatter_escaping.hpp`
+  and `libsmbios/src/formatter_escaping.cpp`. These are free functions in
+  `namespace smbios`, each with a Doxygen comment:
+  ```cpp
+  std::string xml_escape(const std::string& s);           // & < > " ' ; invalid XML 1.0 chars and invalid UTF-8 -> U+FFFD
+  std::string json_escape(const std::string& s);          // " \ and U+0000-U+001F as \uXXXX (\n \t etc. short forms); invalid UTF-8 -> �
+  std::string yaml_double_quoted_escape(const std::string& s); // " \ and C0 controls as YAML escapes; invalid UTF-8 -> �
+  std::string hex_encode(const std::vector<uint8_t>& bytes);   // lowercase, no separators
+  ```
+  DMI strings are not guaranteed to be valid UTF-8 (some vendors use
+  Latin-1 or emit stray bytes). Every escaper therefore replaces invalid
+  sequences with U+FFFD deterministically, so the output stays a
+  well-formed document.
+- **Create** `libsmbios/include/libsmbios/formatters/text_formatter.hpp`
+  and `libsmbios/src/text_formatter.cpp`:
   ```cpp
   class TextFormatter : public IOutputFormatter {
   public:
-      std::string render(const AbstractSMBiosEntry& entry) const override {
-          return entry.render_to_description(); // R4's stated exception - exact backward compatibility
-      }
-      std::string format_name() const override { return "text"; }
+      std::string render(const AbstractSMBiosEntry& entry) const override; // returns entry.render_to_description() - R4's stated exception
+      std::string format_name() const override;                             // "text"
   };
-  REGISTER_OUTPUT_FORMATTER(TextFormatter);
+  // in text_formatter.cpp only:
+  REGISTER_OUTPUT_FORMATTER(TextFormatter)
   ```
-- **Create** `smbios/include/smbios/xml_formatter.hpp` / `.cpp`: walks
-  `entry.get_fields()`, emitting one `<field name="...">value</field>`
-  per `NamedField` inside a `<structure type="...">` element - using
-  `std::variant::visit` to render each `FieldValue` alternative (string
-  as-is with XML-escaping, `uint64_t` as a decimal string, `bool` as
-  `"true"`/`"false"`, `std::vector<uint8_t>` as a hex string) with no
-  third-party XML library (hand-rolled, since the output shape is simple
-  and flat enough that pulling in a full XML library for escaping +
-  five element tags is not justified - escaping itself is a five-line
-  function: `&`, `<`, `>`, `"` substitution).
-- **Create** `smbios/include/smbios/json_formatter.hpp` / `.cpp`: same
-  walk, emitting a JSON object - library choice **decided at the start of
-  this task** (Boost.JSON, if the pinned vcpkg Boost baseline is ≥ 1.75;
-  otherwise record why a different choice was made in `status.md`).
+  Both members are defined out of line in the `.cpp`. Referencing the
+  class from a test then links the object file, and with it the
+  registration (see the Story README's linking note).
+- **Create** `libsmbios/include/libsmbios/formatters/xml_formatter.hpp`
+  and `libsmbios/src/xml_formatter.cpp`:
+  - The formatter walks `entry.get_fields()` and emits one
+    `<field name="...">value</field>` per `NamedField` inside a
+    `<structure type="...">` element (`type` = `entry.get_type()`).
+  - Each `FieldValue` alternative is rendered with `std::visit`:
+    - a string is passed through `xml_escape()`;
+    - a `uint64_t` becomes a decimal string;
+    - a `bool` becomes `true` or `false`;
+    - a `std::vector<uint8_t>` becomes `hex_encode()`.
+  - There is no third-party XML library.
+- **Create** `libsmbios/include/libsmbios/formatters/json_formatter.hpp`
+  and `libsmbios/src/json_formatter.cpp`. The formatter walks the same
+  fields and emits one JSON object per entry:
+  `{"type": "<get_type()>", "fields": {"<name>": <value>, ...}}`.
+  - Strings go through `json_escape()`.
+  - A `uint64_t` is a bare JSON number. Note that values above 2^53 lose
+    precision in IEEE-double parsers. This is accepted and documented in
+    the header comment.
+  - A `bool` is a bare `true`/`false`.
+  - Bytes become a `hex_encode()` string.
+  - Field-name uniqueness (C1) guarantees no duplicate object keys.
+- Wrap every document per the framing decision from Task 01 (recorded in
+  `status.md`).
 
 ## Functions and Classes
 
 - `TextFormatter`, `XmlFormatter`, `JsonFormatter` - new.
+- `xml_escape`, `json_escape`, `yaml_double_quoted_escape`, `hex_encode` -
+  new. These are shared, and Story 03.0 reuses `yaml_double_quoted_escape`.
 
 ## Constraints
 
-- `TextFormatter::render()` must produce byte-identical output to the
-  current, pre-milestone `main.cpp`'s direct
-  `render_to_description()` call (R3) - verified by diff, not assumed.
-- `XmlFormatter`/`JsonFormatter` both consume `get_fields()` only (R4) -
-  if either needs information `get_fields()` doesn't currently expose,
-  that is a Story 01.0 gap to fix (adding a field), never a reason for
-  this task to reach around `get_fields()` into the raw entry getters.
+- **`text` is byte-identical.** `TextFormatter::render()` must produce
+  output byte-identical to the current `smbios/src/main.cpp`'s direct
+  `entry->render_to_description()` call (R3). Verify this by diff, not by
+  assumption. `main.cpp`'s surrounding text (the `DMI version`/`Table
+  size` preamble, `Header ID = N` lines, and the trailing `'\n'` after each
+  entry) stays in `main.cpp` for the `text` path. Story 03.0 must not move
+  or change it.
+- **Structured formats read `get_fields()` only.** `XmlFormatter` and
+  `JsonFormatter` consume `get_fields()` and `get_type()` only (R4). If
+  either needs information `get_fields()` doesn't expose, that is a Story
+  01.0 gap to fix by adding a field. It is never a reason to reach around
+  `get_fields()` into the concrete entry getters. Neither `.cpp` may
+  include any `libsmbios/tables/*.hpp` header.
+- **No new dependencies.** No new vcpkg dependency, and no change to
+  `vcpkg.json`.
 
 ## Tests
 
-- `tests/unit/text_formatter_test.cpp`: byte-identical diff against
-  `render_to_description()` on real hardware.
-- `tests/unit/xml_formatter_test.cpp`, `json_formatter_test.cpp`: against
-  a synthetic entry (milestone 0006's `SyntheticTableBuilder`), confirm
-  well-formed output (parse it back with a real XML/JSON parser and
-  check round-trip field values) for every `FieldValue` alternative,
-  including the XML-escaping edge cases (`&`, `<`, `>`, `"` in a vendor
-  string).
+- `tests/unit/formatter_escaping_test.cpp`. Table-driven cases for each
+  escaper:
+  - `&`, `<`, `>`, `"`, `'`, `\`;
+  - control characters;
+  - an empty string;
+  - valid multi-byte UTF-8, which must pass through;
+  - invalid UTF-8, which must become U+FFFD.
+
+  It also covers `hex_encode` for empty input and multi-byte input.
+- `tests/unit/text_formatter_test.cpp`. Build synthetic entries (via
+  `tests/unit/synthetic_table_builder.hpp`) for a representative type from
+  each Story 01.0 batch. Assert that `TextFormatter().render(e) ==
+  e.render_to_description()` byte for byte, and that
+  `get_output_formatter("text")` resolves.
+- `tests/unit/xml_formatter_test.cpp` and `tests/unit/json_formatter_test.cpp`,
+  against synthetic entries:
+  - Confirm well-formed output for every `FieldValue` alternative,
+    including escaping edge cases (`&`, `<`, `>`, `"` and an invalid UTF-8
+    byte in a vendor string).
+  - Do this with a small test-local parser or structural checks, so that
+    the unit binary gains no new dependency. A full round-trip through a
+    real XML/JSON parser runs in Story 02.0 Task 03 (via a dev-only
+    Python `xml.etree`/`json` check), never inside `libsmbios`.
 
 ## Success criteria
 
-- [ ] `text` format is byte-identical to pre-milestone output.
-- [ ] `xml`/`json` output parses successfully with a standard parser and
-      round-trips every field correctly, including escaped characters.
-- [ ] The JSON library decision is made and recorded in `status.md`.
+- [ ] `text` format is byte-identical to the pre-milestone output.
+- [ ] `xml` and `json` output is well-formed and round-trips every field
+      correctly, including escaped characters and invalid UTF-8
+      replacement.
+- [ ] No formatter source includes a concrete entry header. `vcpkg.json`
+      is unchanged.

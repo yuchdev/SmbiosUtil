@@ -2,13 +2,17 @@
 
 **Parent milestone:** [plan.md](../plan.md)
 **Status:** ⬜ Not started
-**Depends on:** Story 01.0 (`get_fields()` on every entry type)
+**Depends on:** Story 01.0 (`get_fields()` pure virtual on all 45 entry types)
 
 ## Scope
 
-Implement `IOutputFormatter` and its self-registering registry (contract
-**C2**, mirroring milestone 0004 Story 01.0's entry-factory pattern), and
-the three built-in formats `text`/`xml`/`json`.
+This story implements:
+
+- `IOutputFormatter` and its self-registering registry (contract **C2**,
+  mirroring milestone 0004 Story 01.0's entry-factory pattern);
+- the three built-in formats `text`, `xml` and `json`;
+- the shared escaping helpers that the XML, JSON and (Story 03.0) YAML
+  writers reuse.
 
 ## Tasks
 
@@ -20,23 +24,62 @@ the three built-in formats `text`/`xml`/`json`.
 
 ## Key constraints
 
-- The registry's shape **deliberately mirrors**
-  `smbios_entry_factory.hpp`/`.cpp` (post milestone 0004) - same
-  self-registration macro idiom, same "look up by string key, return
-  `nullptr`/throw on miss" contract - so a reader who understands one
-  already understands the other.
-- `text` is the **only** formatter permitted to bypass `get_fields()` and
-  call `render_to_description()` directly (R4's stated exception) - for
-  exact backward compatibility with every existing `smbios_util`
-  invocation.
-- The JSON library choice (Boost.JSON vs. nlohmann vs. Boost.PropertyTree
-  - see `status.md`) is made and recorded at the start of Task 02, before
-  writing the JSON renderer, not discovered partway through.
+- **Mirrors the entry factory.** The registry's shape deliberately mirrors
+  `libsmbios/include/libsmbios/smbios_entry_factory.hpp` and
+  `libsmbios/src/smbios_entry_factory.cpp`:
+  - the same self-registration macro idiom;
+  - the same `std::logic_error` on a duplicate key;
+  - the same "look up by string key, return `nullptr` on miss" contract.
+
+  A reader who understands one already understands the other.
+- **`text` is the only bypass.** `text` is the **only** formatter permitted
+  to bypass `get_fields()` and call `render_to_description()` directly (R4's
+  stated exception). This keeps exact backward compatibility with every
+  existing `smbios` CLI invocation.
+- **JSON is hand-rolled** (ratified 2026-11-10, see `status.md`). There is
+  no Boost.JSON, nlohmann/json or Boost.PropertyTree, and `vcpkg.json` is
+  not touched. The pinned Boost (1.92) would have allowed Boost.JSON; it
+  was declined to keep the formatter layer dependency-free and
+  symmetrical with the hand-rolled XML and YAML writers.
+- **Escaping is shared.** XML, JSON and YAML escaping, invalid-UTF-8
+  handling and the raw-byte hex encoding live in one internal helper
+  (Task 02). Each writer does not carry its own copy.
+- **Registration and linking.** Built-in formatters live in `libsmbios`.
+  They register at static-init time only when their object file is linked:
+  - `smbios`, `smbios_c` and `tests/c_abi` already force-load `libsmbios`
+    whole-archive, so registration happens automatically there.
+  - `smbios_unit_test` does not force-load (`tests/unit/CMakeLists.txt`).
+    Each formatter therefore defines at least one member out of line in its
+    `.cpp`, and the unit tests reference the formatter class directly. That
+    pulls its object, and therefore its `REGISTER_OUTPUT_FORMATTER`, into
+    the test binary. This is the same mechanism the entry tests rely on.
+- **No logging of field values.** Formatters and the registry never log
+  or persist field values. Serial numbers, UUIDs and asset tags are
+  potentially identifying, so they appear only in the rendered output the
+  caller explicitly asked for. Error messages name the format or field,
+  never its value.
+- **Multi-entry document framing - RATIFIED 2026-11-10 as option (a)**
+  (see `status.md` Notes & decisions). `IOutputFormatter` gains non-pure
+  `begin_document()`/`entry_separator()`/`end_document()` hooks (each
+  defaults to `""`). JSON wraps entries in an array, XML in a root
+  element, and CSV writes its header from `begin_document()`. The CLI
+  prints its preamble only for `text`.
 
 ## Files or directories created or modified by this story
 
-- `smbios/include/smbios/output_formatter.hpp` / `.cpp` (new).
-- `smbios/include/smbios/text_formatter.hpp` / `.cpp`,
-  `xml_formatter.hpp`/`.cpp`, `json_formatter.hpp`/`.cpp` (new).
-- `vcpkg.json` (milestone 0001) - a new JSON library dependency, only if
-  Task 02's decision isn't Boost.JSON (already present transitively).
+- `libsmbios/include/libsmbios/output_formatter.hpp` and
+  `libsmbios/src/output_formatter.cpp` (new; C2).
+- `libsmbios/include/libsmbios/formatters/` (new directory):
+  - `text_formatter.hpp`, `xml_formatter.hpp`, `json_formatter.hpp`;
+  - `formatter_escaping.hpp`.
+
+  The matching sources are flat in `libsmbios/src/`: `text_formatter.cpp`,
+  `xml_formatter.cpp`, `json_formatter.cpp` and `formatter_escaping.cpp`.
+  This mirrors the existing `tables/` headers / flat `src/*_entry.cpp`
+  split, because `libsmbios/src/CMakeLists.txt`'s `file(GLOB SOURCES *.cpp ...)`
+  is non-recursive.
+- `libsmbios/src/CMakeLists.txt` gains one glob line for
+  `include/libsmbios/formatters/*.hpp` (IDE/header listing only, matching
+  the existing `tables/*.hpp` line). Re-run `cmake` after adding files.
+- `tests/unit/` gains new test files (picked up by its `file(GLOB)`).
+- `vcpkg.json` is **not** modified.

@@ -6,20 +6,34 @@
 ## Objective
 
 Implement contract **C2**: `IOutputFormatter`, the self-registering
-registry, and the `REGISTER_OUTPUT_FORMATTER` macro - the exact same
+registry, and the `REGISTER_OUTPUT_FORMATTER` macro. This is the same
 shape milestone 0004 Story 01.0 built for entry types, applied to output
 formats.
 
+**Multi-entry document framing was RATIFIED on 2026-11-10 as option (a)**
+(see `status.md` Notes & decisions). In addition to the C2 members below,
+`IOutputFormatter` declares three non-pure virtual hooks:
+`virtual std::string begin_document() const { return {}; }`,
+`virtual std::string entry_separator() const { return {}; }` and
+`virtual std::string end_document() const { return {}; }`.
+The output is `begin_document()`, then each `render(entry)` with
+`entry_separator()` between consecutive entries, then `end_document()`.
+Task 02 and Story 03.0 build against this interface.
+
 ## Files
 
-- **Create** `smbios/include/smbios/output_formatter.hpp`:
+- **Create** `libsmbios/include/libsmbios/output_formatter.hpp` (Doxygen on
+  every public declaration, mirroring `smbios_entry_factory.hpp`'s comment
+  style):
   ```cpp
   #pragma once
   #include <memory>
   #include <string>
-  #include <smbios/abstract_smbios_entry.hpp>
+  #include <vector>
 
   namespace smbios {
+
+  class AbstractSMBiosEntry;
 
   class IOutputFormatter {
   public:
@@ -28,11 +42,18 @@ formats.
       virtual std::string format_name() const = 0;
   };
 
+  /// @throws std::logic_error if formatter->format_name() is already registered.
   void register_output_formatter(std::unique_ptr<IOutputFormatter> formatter);
+  /// @return the registered formatter, or nullptr if `name` is unregistered.
   const IOutputFormatter* get_output_formatter(const std::string& name);
+  /// @return every registered format name, sorted ascending.
+  std::vector<std::string> registered_output_formatter_names();
 
   } // namespace smbios
 
+  /// Place exactly one invocation at namespace scope in the formatter's own
+  /// .cpp (never its header - same duplicate-registration reasoning as
+  /// REGISTER_SMBIOS_ENTRY).
   #define REGISTER_OUTPUT_FORMATTER(class_name)                                    \
       namespace {                                                                   \
       const bool class_name##_formatter_registered = [] {                           \
@@ -41,37 +62,52 @@ formats.
       }();                                                                           \
       }
   ```
-- **Create** `smbios/src/output_formatter.cpp`: the registry
-  implementation, a function-local `static std::map<std::string,
-  std::unique_ptr<IOutputFormatter>>&` (Meyers-singleton, matching
-  milestone 0004's entry registry's own static-init-order-safety
-  reasoning).
+  The header forward-declares `AbstractSMBiosEntry`. A formatter's `.cpp`
+  includes `<libsmbios/abstract_smbios_entry.hpp>` itself.
+- **Create** `libsmbios/src/output_formatter.cpp` containing the registry
+  implementation. The registry is a function-local
+  `static std::map<std::string, std::unique_ptr<IOutputFormatter>>&`
+  (a Meyers singleton), matching `smbios_entry_factory.cpp`'s
+  static-init-order-safety reasoning.
 
 ## Functions and Classes
 
 - `smbios::IOutputFormatter`, `register_output_formatter`,
-  `get_output_formatter`, `REGISTER_OUTPUT_FORMATTER` - new.
+  `get_output_formatter`, `registered_output_formatter_names`,
+  `REGISTER_OUTPUT_FORMATTER` - new.
 
 ## Constraints
 
-- Duplicate registration of the same `format_name()` is a programming
-  error, fail-fast (assert/throw), exactly matching milestone 0004's
-  entry-registry precedent (`smbios_entry_factory`'s equivalent rule) -
-  do not silently overwrite.
-- `get_output_formatter()` returning `nullptr` (not throwing) on an
-  unregistered name is deliberate - `smbios_util`'s CLI (Story 03.0)
-  turns that into a clear command-line error message, which is a cleaner
-  user experience than an uncaught exception's stack unwind.
+- **Duplicate names throw.** Registering a `format_name()` that is already
+  registered is a programming error. It throws `std::logic_error`, exactly
+  matching `register_smbios_entry()`'s documented rule, and never silently
+  overwrites.
+- **Unknown names return `nullptr`.** `get_output_formatter()` returns
+  `nullptr` (it does not throw) for an unregistered name. This is
+  deliberate: the `smbios` CLI (Story 03.0) turns that into a clear
+  command-line error listing `registered_output_formatter_names()`, which
+  is a cleaner user experience than an uncaught exception's stack unwind.
+- **Names are case-sensitive and lowercase.** The built-in names are
+  `text`, `xml`, `json` and `yaml`.
 
 ## Tests
 
-- `tests/unit/output_formatter_registry_test.cpp` (new): register a fake
-  test formatter, confirm lookup by name succeeds; confirm an
-  unregistered name returns `nullptr`; confirm duplicate registration is
-  caught.
+- `tests/unit/output_formatter_registry_test.cpp` (new,
+  `BOOST_AUTO_TEST_SUITE(OutputFormatterRegistryUnitTests)`). It mirrors
+  `tests/unit/smbios_entry_factory_test.cpp`'s structure:
+  - Register a fake test formatter at namespace scope via
+    `REGISTER_OUTPUT_FORMATTER` and confirm that lookup by name succeeds.
+  - Confirm that an unregistered name returns `nullptr`.
+  - Confirm that `registered_output_formatter_names()` is sorted and
+    contains the fake.
+  - Confirm that a direct duplicate `register_output_formatter()` call
+    throws `std::logic_error`.
 
 ## Success criteria
 
-- [ ] The registry behaves identically in shape and failure modes to
-      milestone 0004's entry-type registry (verified by a side-by-side
-      read of both test files, not just by inspection).
+- [ ] `begin_document()`/`entry_separator()`/`end_document()` exist with
+      empty-string defaults, and a unit test proves the defaults.
+- [ ] The registry behaves identically in shape and failure modes to the
+      entry-type registry. Verify this with a side-by-side read of both
+      test files, not just by inspecting the code.
+- [ ] `smbios_unit_test` is green.
