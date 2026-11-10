@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                                           | Status         | Tests |
 |-------|----------------------------------------------------|----------------|-------|
 | 01.0  | Structured field model                             | ✅ Complete (2026-11-10) | 518 unit |
-| 02.0  | Renderer registry and built-in formats             | ⬜ Not started | -     |
+| 02.0  | Renderer registry and built-in formats             | 🔶 In progress (1/3 tasks) | 527 unit |
 | 03.0  | YAML renderer and custom-format extensibility      | ⬜ Not started | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
