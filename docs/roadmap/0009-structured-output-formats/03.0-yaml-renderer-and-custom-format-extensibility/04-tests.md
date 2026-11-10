@@ -40,6 +40,6 @@ owns the example, doc-sample and documentation files.
       documentation and Doxygen rows.
 - [x] `/link-check docs/` (`python scripts/check_doc_links.py docs/`)
       reports zero problems across the full roadmap.
-- [ ] Milestone 0009's `status.md` is updated to ✅ for all three stories.
-- [ ] `docs/roadmap/README.md`'s milestone table and Program overview
+- [x] Milestone 0009's `status.md` is updated to ✅ for all three stories.
+- [x] `docs/roadmap/README.md`'s milestone table and Program overview
       include milestone 0009.

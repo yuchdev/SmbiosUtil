@@ -1,7 +1,7 @@
 # Story 03.0 - YAML Renderer and Custom-Format Extensibility
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** 🔶 In progress
+**Status:** ✅ Complete (2026-11-10)
 **Depends on:** Story 02.0 (registry, built-in formats, shared escaping helpers)
 
 ## Scope

@@ -8,9 +8,19 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 |-------|----------------------------------------------------|----------------|-------|
 | 01.0  | Structured field model                             | ✅ Complete (2026-11-10) | 518 unit |
 | 02.0  | Renderer registry and built-in formats             | ✅ Complete (2026-11-10) | 602 unit |
-| 03.0  | YAML renderer and custom-format extensibility      | 🔶 In progress (4/4 tasks; story review pending) | 629 unit, 21 ctest |
+| 03.0  | YAML renderer and custom-format extensibility      | ✅ Complete (2026-11-10) | 634 unit, 21 ctest |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
+
+**Milestone gate (2026-11-10): ✅ PASSED.**
+- All three stories passed `/verify-task` on every task and a
+  `/pr-review` (feature-reviewer LGTM; security-auditor PASS on 02.0's
+  re-check, with 03.0's LOW items SR-6 and SR-7 fixed in `7cd06a6`).
+- Full `ctest` passed 21/21 on macOS, with 634 unit cases.
+- CI is green on all 5 jobs across Windows, Linux and macOS.
+- Real-hardware `--format` validation passed on Linux and Windows CI
+  runners and on a macOS machine.
+- The doc-sample check and `/link-check` are clean.
 
 ## Notes & decisions
 
@@ -452,3 +462,77 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
     - `--read-file` is still a `TODO` in `smbios/src/main.cpp`. The threat
       model's attacker-controlled dump path is therefore latent: it is not
       reachable today.
+
+### Story 03.0 - YAML renderer and custom-format extensibility (✅ 2026-11-10)
+
+**Delivered**
+- `yaml` formatter (`ff606d3`). Every key and string is double-quoted with
+  full YAML 1.2 escapes, including U+FEFF. It never emits anchors, tags or
+  aliases.
+- CSV example formatter, `smbios/examples/csv_formatter.cpp` (`0d7d781`).
+  - It is compiled into the CLI as an OBJECT library. R5 holds: the only
+    edit to existing build files is one `add_subdirectory` line, plus
+    test-side wiring that the spec allows.
+  - Cells starting with `= + - @` TAB or CR get a `'` prefix (CWE-1236).
+  - Terminal controls (C0 except TAB/CR/LF, DEL, C1) become U+FFFD (SR-7,
+    `7cd06a6`).
+- `--format`/`-f` on the `smbios` CLI (`ef62ca0`).
+  - The format is validated before `SMBios` is constructed. An unknown name
+    lists the registered formats and exits 1 (R6).
+  - `text` stays byte-identical to the pre-milestone output.
+  - Other formats go through `render_document()`.
+- Examples and documentation (R7):
+  - `examples/format_table` and `examples/read_fields`, plus the validator
+    `examples/scripts/check_structured_output.py`.
+  - A synthetic doc-sample fixture and golden files in
+    `tests/data/output_formats/`, checked by `scripts/check_doc_samples.py`.
+  - New guides: `docs/output-formats.md` and
+    `docs/dev/custom-output-formatter.md`.
+  - Updates to `cli-usage.md`, `architecture/overview.md`, `README.md`,
+    `CLAUDE.md`, `test-subsystem.md` and `cpp_coding_standard.md`.
+  - A Doxygen gap-fill pass.
+- CI:
+  - The must-pass regexes now include `smbios_cli_unknown_format*` and
+    `smbios_example_*`.
+  - A Linux doc-sample check step.
+  - A real-hardware `--format` validation step in the `build` job on all
+    three OSes (`927ca5f`).
+
+**Tests / gate**
+- `smbios_unit_test`: 634/634. Full `ctest` on macOS: 21/21.
+- CI run 42821726781: green on all 5 jobs.
+  - Linux and Windows runners: 14 structures in xml/json/yaml, 142 csv rows.
+  - The macOS runner exposes no table, so that step only warns.
+  - On the dev Mac, 26 structures, and `text` is byte-identical to `master`.
+- `/verify-task`:
+  - Tasks 01, 02 and 04: PASS.
+  - Task 03: FAIL at first, because two doc rows were missing; it passed
+    after `c730694`.
+- `/pr-review`: feature-reviewer LGTM. security-auditor CONCERNS: LOW SR-6
+  (live table in CTest failure output, CWE-532) and SR-7 (CSV terminal
+  controls, CWE-150), both fixed in `7cd06a6`. SR-9 hardening (XML
+  DOCTYPE/ENTITY rejected by the validator) was also applied. INFO SR-8 and
+  SR-10 are accepted.
+
+**Reconciliation note**
+- The original `03-tests.md` became `04-tests.md` when the user added R7
+  scope as Task 03. Every task spec is *consumed*; none is superseded.
+
+**Carried forward (post-0009 follow-ups)**
+- **CLI exit codes.** If no source succeeds, the CLI exits 0 with an empty
+  result. An exception, or a bad Boost.Program_options option, also exits
+  0. Structured-format consumers would benefit from a non-zero exit. This
+  is a behaviour change, so it needs its own decision.
+- **Zero-entry YAML** loads as null. Emit `[]` from `render_document()` or
+  a new `empty_document()` hook.
+- **`legacy_text` keys off `format_name() == "text"`.** Consider an
+  explicit hook.
+- **`--read-file` is still a TODO.** The attacker-controlled-dump surface
+  is latent.
+- **The whole-archive link block is duplicated** in three CMake files.
+  Extract a helper.
+- **CWE-150 in `text` output** (from Story 02.0) still needs a tracked
+  issue.
+- **Test gaps:**
+  - an end-to-end CLI `text` byte-identity test against a fixture;
+  - a `--format yaml --dump-file` legacy-output test.
