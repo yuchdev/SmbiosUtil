@@ -19,6 +19,11 @@ include_directories(${Boost_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../../libs
 add_executable(${TARGET} ${SOURCES})
 
 target_compile_options(${TARGET} PRIVATE ${SMBIOS_COMPILE_OPTIONS})
+
+# Root of the checked-in test data (tests/data/), read - and, with
+# SMBIOS_REGENERATE_DOC_SAMPLES=1, written - by doc_samples_test.cpp's
+# golden-file comparison (tests/data/output_formats/sample.*).
+target_compile_definitions(${TARGET} PRIVATE SMBIOS_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/tests/data")
 target_link_options(${TARGET} PRIVATE ${SMBIOS_LINK_OPTIONS})
 
 target_link_libraries(${TARGET}

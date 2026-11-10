@@ -1,0 +1,21 @@
+---
+- type: "BIOS Information"
+  fields:
+    "Vendor": "Example \"Firmware\" & Co."
+    "Version": "Example 1.0"
+    "Address": "0xf000"
+    "Runtime size": "64 kB"
+    "Release Date": "Example 01/01/2026"
+    "ROM Size": "128 kB"
+    "PCI is supported": true
+    "BIOS is upgradeable": true
+    "BIOS Revision": "1.0"
+    "Firmware Revision": "2.0"
+- type: "OEM Strings"
+  fields:
+    "String Count": 1
+    "String 1": "=EXAMPLE()"
+- type: "System Boot Information"
+  fields:
+    "Status": "No errors detected"
+    "Status Data": "0123abcd"

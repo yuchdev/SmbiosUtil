@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<smbios>
+  <structure type="BIOS Information">
+    <field name="Vendor">Example &quot;Firmware&quot; &amp; Co.</field>
+    <field name="Version">Example 1.0</field>
+    <field name="Address">0xf000</field>
+    <field name="Runtime size">64 kB</field>
+    <field name="Release Date">Example 01/01/2026</field>
+    <field name="ROM Size">128 kB</field>
+    <field name="PCI is supported">true</field>
+    <field name="BIOS is upgradeable">true</field>
+    <field name="BIOS Revision">1.0</field>
+    <field name="Firmware Revision">2.0</field>
+  </structure>
+  <structure type="OEM Strings">
+    <field name="String Count">1</field>
+    <field name="String 1">=EXAMPLE()</field>
+  </structure>
+  <structure type="System Boot Information">
+    <field name="Status">No errors detected</field>
+    <field name="Status Data">0123abcd</field>
+  </structure>
+</smbios>

@@ -1,0 +1,15 @@
+type,field_name,field_value
+BIOS Information,Vendor,"Example ""Firmware"" & Co."
+BIOS Information,Version,Example 1.0
+BIOS Information,Address,0xf000
+BIOS Information,Runtime size,64 kB
+BIOS Information,Release Date,Example 01/01/2026
+BIOS Information,ROM Size,128 kB
+BIOS Information,PCI is supported,true
+BIOS Information,BIOS is upgradeable,true
+BIOS Information,BIOS Revision,1.0
+BIOS Information,Firmware Revision,2.0
+OEM Strings,String Count,1
+OEM Strings,String 1,'=EXAMPLE()
+System Boot Information,Status,No errors detected
+System Boot Information,Status Data,0123abcd
