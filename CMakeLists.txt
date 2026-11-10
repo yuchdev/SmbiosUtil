@@ -16,6 +16,12 @@ option("GIT_TAG" GIT_TAG OFF)
 # silently skipped or silently miscompiled.
 option("SMBIOS_BUILD_FUZZERS" SMBIOS_BUILD_FUZZERS OFF)
 
+# Milestone 0009, Story 03.0, Task 03: the standalone library-consumer
+# examples under examples/ and their smbios_example_* CTest smoke tests.
+# Unlike SMBIOS_BUILD_FUZZERS this is ON by default, so CI always builds and
+# runs them and they cannot rot.
+option("SMBIOS_BUILD_EXAMPLES" SMBIOS_BUILD_EXAMPLES ON)
+
 if(SMBIOS_BUILD_FUZZERS AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     message(FATAL_ERROR
         "SMBIOS_BUILD_FUZZERS=ON requires Clang or AppleClang (libFuzzer is "
@@ -161,6 +167,9 @@ endif()
 
 add_subdirectory(libsmbios)
 add_subdirectory(smbios)
+if(SMBIOS_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
 add_subdirectory(smbios_c)
 add_subdirectory(tests)
 
