@@ -8,7 +8,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 |-------|----------------------------------------------------|----------------|-------|
 | 01.0  | Structured field model                             | ✅ Complete (2026-11-10) | 518 unit |
 | 02.0  | Renderer registry and built-in formats             | ✅ Complete (2026-11-10) | 602 unit |
-| 03.0  | YAML renderer and custom-format extensibility      | ⬜ Not started | -     |
+| 03.0  | YAML renderer and custom-format extensibility      | 🔶 In progress (1/4 tasks) | 617 unit |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -386,3 +386,11 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 - CWE-150 terminal escapes in `text`: post-0009 follow-up, see Notes &
   decisions. Recommend opening a tracked issue at milestone close.
 - SR-4 (XML normalises CR to LF) accepted as is.
+
+- **2026-11-10 - Story 03.0 Task 01 (YAML renderer) passed verify-task**
+  (`ff606d3`). A zero-entry document is `---\n\n`, which loads as null,
+  not `[]`: the framing hooks cannot know the entry count. The spec is
+  silent on it; the header documents "null means no entries". The PyYAML
+  6.0.3 round-trip was run once, dev-only (trap strings, uint64 max, C1
+  and U+2028 escapes, the 17-entry hostile corpus all passed); record the
+  command in the milestone PR description.
