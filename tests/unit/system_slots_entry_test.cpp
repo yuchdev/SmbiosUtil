@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <string>
 #include <memory>
 #include <vector>
 
@@ -8,6 +9,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -276,6 +278,183 @@ BOOST_AUTO_TEST_CASE(CreateReturnsSystemSlotsEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<SystemSlotsEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 04)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// enumerated values, Slot ID and Bus Address stay the printed strings, and
+// Characteristics is either the text's single "Unknown"/"None" sentinel
+// field or one {label, true} field per set bit of characteristics 1 then 2.
+// This class stops at the 2.6 segment/bus/device-function fields (see its
+// header's scope cutoff), so there are no peer-group fields to index.
+// Boundaries: the Unknown bit, all-zero characteristics, every labelled bit
+// of both bytes, the 0x0C/0x0D/0x11 length tiers, the all-FF bus address.
+// On failure first check: SystemSlotsEntry::get_fields() and
+// characteristics_sentinel() in libsmbios/src/system_slots_entry.cpp.
+
+namespace {
+
+/// @brief Re-emit build_buffer()'s formatted area as a well-formed structure
+/// carrying one designation DMI string.
+std::vector<uint8_t> with_strings(const std::vector<uint8_t>& buffer)
+{
+    const std::vector<uint8_t> formatted_area(buffer.begin() + 4, buffer.begin() + buffer[1]);
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemSlots, formatted_area, std::vector<std::string>{"PCIE1"});
+    return builder.build();
+}
+
+} // namespace
+
+/// Normal case: a full (0x11) structure - every text label becomes a field,
+/// in text order, with one true field per set characteristics bit.
+BOOST_AUTO_TEST_CASE(SystemSlotsEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = with_strings(build_buffer(0x11));
+    buffer[0x0A] = 0x02; // slot_id_high -> "7/2"
+    SystemSlotsEntry entry(make_header(buffer), SMBiosVersion{2, 6}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Designation", str("PCIE1")},
+        {"Type", str("PCI")},
+        {"Data Bus Width", str("32 bit")},
+        {"Current Usage", str("Available")},
+        {"Length", str("Long")},
+        {"ID", str("7/2")},
+        {"3.3 V is provided", true},
+        {"Cardbus is supported", true},
+        {"Hot-plug devices are supported", true},
+        {"Bus Address", str("0000:01:02.3")},
+    });
+}
+
+/// Edge cases: every labelled bit of both bytes expands to its own true
+/// field in text order, never a joined string; the Unknown bit and the
+/// all-zero value each become the single "Characteristics" sentinel field.
+BOOST_AUTO_TEST_CASE(SystemSlotsEntryGetFieldsExpandsBitmaskTestCase)
+{
+    using namespace smbios::test;
+    {
+        std::vector<uint8_t> buffer = with_strings(build_buffer(0x11, 0xFE, 0xFF));
+        SystemSlotsEntry entry(make_header(buffer), SMBiosVersion{2, 6}, buffer.data() + buffer.size());
+
+        const std::vector<NamedField> fields = entry.get_fields();
+        BOOST_REQUIRE_EQUAL(fields.size(), static_cast<size_t>(6 + 7 + 8 + 1));
+        const std::vector<NamedField> bits(fields.begin() + 6, fields.end() - 1);
+        check_fields_equal(bits, {
+            {"5.0 V is provided", true},
+            {"3.3 V is provided", true},
+            {"Opening is shared", true},
+            {"PC Card-16 is supported", true},
+            {"Cardbus is supported", true},
+            {"Zoom Video is supported", true},
+            {"Modem ring resume is supported", true},
+            {"PME signal is supported", true},
+            {"Hot-plug devices are supported", true},
+            {"SMBus signal is supported", true},
+            {"PCIe slot bifurcation is supported", true},
+            {"Async/surprise removal is supported", true},
+            {"Flexbus slot, CXL 1.0 capable", true},
+            {"Flexbus slot, CXL 2.0 capable", true},
+            {"Flexbus slot, CXL 3.0 capable", true},
+        });
+        check_unique_field_names(fields);
+        check_no_joined_string_fields(fields);
+    }
+    {
+        // Bit 0 ("Unknown") wins over every other set bit, as in the text.
+        std::vector<uint8_t> buffer = with_strings(build_buffer(0x11, 0x25, 0x02));
+        SystemSlotsEntry entry(make_header(buffer), SMBiosVersion{2, 6}, buffer.data() + buffer.size());
+
+        const std::vector<NamedField> fields = entry.get_fields();
+        BOOST_REQUIRE_EQUAL(fields.size(), static_cast<size_t>(8));
+        BOOST_CHECK_EQUAL(fields[6].name, std::string("Characteristics"));
+        BOOST_CHECK(fields[6].value == str("Unknown"));
+        check_unique_field_names(fields);
+        check_no_joined_string_fields(fields);
+    }
+    {
+        std::vector<uint8_t> buffer = with_strings(build_buffer(0x11, 0x00, 0x00));
+        SystemSlotsEntry entry(make_header(buffer), SMBiosVersion{2, 6}, buffer.data() + buffer.size());
+
+        const std::vector<NamedField> fields = entry.get_fields();
+        BOOST_REQUIRE_EQUAL(fields.size(), static_cast<size_t>(8));
+        BOOST_CHECK_EQUAL(fields[6].name, std::string("Characteristics"));
+        BOOST_CHECK(fields[6].value == str("None"));
+        check_unique_field_names(fields);
+        check_no_joined_string_fields(fields);
+    }
+}
+
+/// Boundary cases: the text prints every line unconditionally. At 0x0C
+/// characteristics2 reads as 0 (its bit drops out) and the Bus Address line
+/// is present but empty; at 0x0D characteristics2 participates; an all-FF
+/// address at 0x11 is also the empty string.
+BOOST_AUTO_TEST_CASE(SystemSlotsEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        std::vector<uint8_t> buffer = with_strings(build_buffer(0x0C));
+        SystemSlotsEntry entry(make_header(buffer), SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Designation", str("PCIE1")},
+            {"Type", str("PCI")},
+            {"Data Bus Width", str("32 bit")},
+            {"Current Usage", str("Available")},
+            {"Length", str("Long")},
+            {"ID", str("7")},
+            {"3.3 V is provided", true},
+            {"Cardbus is supported", true},
+            {"Bus Address", str("")},
+        });
+    }
+    {
+        std::vector<uint8_t> buffer = with_strings(build_buffer(0x0D));
+        SystemSlotsEntry entry(make_header(buffer), SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Designation", str("PCIE1")},
+            {"Type", str("PCI")},
+            {"Data Bus Width", str("32 bit")},
+            {"Current Usage", str("Available")},
+            {"Length", str("Long")},
+            {"ID", str("7")},
+            {"3.3 V is provided", true},
+            {"Cardbus is supported", true},
+            {"Hot-plug devices are supported", true},
+            {"Bus Address", str("")},
+        });
+    }
+    {
+        std::vector<uint8_t> buffer = with_strings(build_buffer(0x11, 0x24, 0x02, 0xFFFF, 0xFF, 0xFF));
+        SystemSlotsEntry entry(make_header(buffer), SMBiosVersion{2, 6}, buffer.data() + buffer.size());
+
+        const std::vector<NamedField> fields = entry.get_fields();
+        BOOST_REQUIRE(!fields.empty());
+        BOOST_CHECK_EQUAL(fields.back().name, std::string("Bus Address"));
+        BOOST_CHECK(fields.back().value == str(""));
+        check_unique_field_names(fields);
+    }
+    {
+        // Bare header: every getter defaults, every line still prints.
+        std::vector<uint8_t> buffer = build_buffer(0x04);
+        SystemSlotsEntry entry(make_header(buffer), SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Designation", str("Not Specified")},
+            {"Type", str("OutOfSpec")},
+            {"Data Bus Width", str("OutOfSpec")},
+            {"Current Usage", str("OutOfSpec")},
+            {"Length", str("OutOfSpec")},
+            {"ID", str("0")},
+            {"Characteristics", str("None")},
+            {"Bus Address", str("")},
+        });
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

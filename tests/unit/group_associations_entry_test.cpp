@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <string>
 #include <memory>
 #include <vector>
 
@@ -8,6 +9,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -253,6 +255,81 @@ BOOST_AUTO_TEST_CASE(CreateReturnsGroupAssociationsEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<GroupAssociationsEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 04)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// the text's unnumbered per-item "Item Type: T, Item Handle: H" lines become
+// 1-based "Item <i> Type" (string) / "Item <i> Handle" (uint64_t) fields,
+// grouped per item. No bitmask in this type.
+// Boundaries: three items (index suffixes), zero items, a type with no
+// known name ("Unknown (N)"), a Length that does not divide evenly.
+// On failure first check: GroupAssociationsEntry::get_fields() in
+// libsmbios/src/group_associations_entry.cpp.
+
+/// Normal case: fixed fields, then one indexed Type/Handle pair per item.
+BOOST_AUTO_TEST_CASE(GroupAssociationsEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area = make_formatted_area(
+        /*group_name_index*/1,
+        {
+            {SMBios::ProcessorInformation, 0x0008},
+            {SMBios::CacheInformation, 0x0009},
+            {0x2A, 0x000A}, // no known name
+        });
+
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::GroupAssociations, formatted_area, std::vector<std::string>{"Primary CPU Module"});
+    std::vector<uint8_t> buffer = builder.build();
+    GroupAssociationsEntry entry(make_header(buffer), SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Group Name", str("Primary CPU Module")},
+        {"Items", num(3)},
+        {"Item 1 Type", str("Processor Information")},
+        {"Item 1 Handle", num(0x0008)},
+        {"Item 2 Type", str("Cache Information")},
+        {"Item 2 Handle", num(0x0009)},
+        {"Item 3 Type", str("Unknown (42)")},
+        {"Item 3 Handle", num(0x000A)},
+    });
+}
+
+/// Boundary cases: zero items print only the fixed lines; a Length that
+/// does not divide evenly by 3 (one stray byte) yields only the whole items.
+BOOST_AUTO_TEST_CASE(GroupAssociationsEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::GroupAssociations, make_formatted_area(1, {}),
+                              std::vector<std::string>{"Empty Group"});
+        std::vector<uint8_t> buffer = builder.build();
+        GroupAssociationsEntry entry(make_header(buffer), SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Group Name", str("Empty Group")},
+            {"Items", num(0)},
+        });
+    }
+    {
+        std::vector<uint8_t> formatted_area = make_formatted_area(1, {{SMBios::SystemSlots, 0x0011}});
+        formatted_area.push_back(0xFF); // stray trailing byte, not a second item
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::GroupAssociations, formatted_area, std::vector<std::string>{"Slots"});
+        std::vector<uint8_t> buffer = builder.build();
+        GroupAssociationsEntry entry(make_header(buffer), SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Group Name", str("Slots")},
+            {"Items", num(1)},
+            {"Item 1 Type", str("System Slots")},
+            {"Item 1 Handle", num(0x0011)},
+        });
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

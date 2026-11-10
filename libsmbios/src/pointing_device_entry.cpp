@@ -133,3 +133,12 @@ std::string PointingDeviceEntry::get_interface_string() const
     }
     return "OutOfSpec";
 }
+
+std::vector<NamedField> PointingDeviceEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Device Type", get_device_type_string()});
+    fields.push_back({"Interface", get_interface_string()});
+    fields.push_back({"Number of Buttons", static_cast<uint64_t>(get_button_count())});
+    return fields;
+}

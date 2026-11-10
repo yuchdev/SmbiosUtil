@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <string>
 #include <memory>
 #include <vector>
 
@@ -8,6 +9,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -237,6 +239,102 @@ BOOST_AUTO_TEST_CASE(CreateReturnsSystemEventLogEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<SystemEventLogEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 04)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// plain decimals are uint64_t, the "Log Status: Valid = .., Full = .." line
+// becomes two bool fields, and the 2.1+ descriptor lines keep the text's own
+// 0-based "Descriptor <i>" label and "0x" + unpadded hex string. No bitmask
+// list in this type (Log Status is two named flags).
+// Boundaries: two descriptors (index labels), a 2.0 structure (no 2.1+
+// fields), a 2.1-shaped buffer reported as 2.0 (version gate), a 2.1
+// structure with zero descriptors.
+// On failure first check: SystemEventLogEntry::get_fields() in
+// libsmbios/src/system_event_log_entry.cpp.
+
+/// Normal case: fixed fields, then the 2.1+ fields and one field per
+/// descriptor.
+BOOST_AUTO_TEST_CASE(SystemEventLogEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area = make_v21_formatted_area(
+        /*log_header_format*/0x01, /*count*/2, /*descriptor_length*/2, {0x0001, 0x0205});
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemEventLog, formatted_area);
+    std::vector<uint8_t> buffer = builder.build();
+    SystemEventLogEntry entry(make_header(buffer), SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Log Area Length", num(0x1000)},
+        {"Log Header Start Offset", num(0x0000)},
+        {"Log Data Start Offset", num(0x0010)},
+        {"Access Method", str("Memory-mapped physical 32-bit address")},
+        {"Log Status Valid", true},
+        {"Log Status Full", false},
+        {"Log Change Token", num(0x12345678)},
+        {"Access Method Address", num(0xDEADBEEF)},
+        {"Log Header Format", num(1)},
+        {"Supported Log Type Descriptors", num(2)},
+        {"Descriptor 0", str("0x1")},
+        {"Descriptor 1", str("0x205")},
+    });
+}
+
+/// Boundary cases: a 2.0 structure and a long-enough buffer reported as 2.0
+/// both omit every 2.1+ field; a 2.1 structure with zero descriptors keeps
+/// the format/count fields but has no descriptor fields.
+BOOST_AUTO_TEST_CASE(SystemEventLogEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        std::vector<uint8_t> formatted_area = make_v20_formatted_area(
+            0x0400, 0x0000, 0x0010, SystemEventLogEntry::MemoryMappedPhysical32Bit,
+            /*log_status*/0x03, 0xAABBCCDD, 0xFEEDFACE);
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::SystemEventLog, formatted_area);
+        std::vector<uint8_t> buffer = builder.build();
+        SystemEventLogEntry entry(make_header(buffer), SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Log Area Length", num(0x0400)},
+            {"Log Header Start Offset", num(0x0000)},
+            {"Log Data Start Offset", num(0x0010)},
+            {"Access Method", str("Memory-mapped physical 32-bit address")},
+            {"Log Status Valid", true},
+            {"Log Status Full", true},
+            {"Log Change Token", num(0xAABBCCDD)},
+            {"Access Method Address", num(0xFEEDFACE)},
+        });
+    }
+    {
+        std::vector<uint8_t> formatted_area = make_v21_formatted_area(0x01, 1, 2, {0x0001});
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::SystemEventLog, formatted_area);
+        std::vector<uint8_t> buffer = builder.build();
+        SystemEventLogEntry entry(make_header(buffer), SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+        const std::vector<NamedField> fields = entry.get_fields();
+        BOOST_CHECK_EQUAL(fields.size(), static_cast<size_t>(8));
+        BOOST_CHECK_EQUAL(fields.back().name, std::string("Access Method Address"));
+        check_unique_field_names(fields);
+    }
+    {
+        std::vector<uint8_t> formatted_area = make_v21_formatted_area(0x01, 0, 2, {});
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::SystemEventLog, formatted_area);
+        std::vector<uint8_t> buffer = builder.build();
+        SystemEventLogEntry entry(make_header(buffer), SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+        const std::vector<NamedField> fields = entry.get_fields();
+        BOOST_REQUIRE_EQUAL(fields.size(), static_cast<size_t>(10));
+        BOOST_CHECK_EQUAL(fields[8].name, std::string("Log Header Format"));
+        BOOST_CHECK_EQUAL(fields[9].name, std::string("Supported Log Type Descriptors"));
+        BOOST_CHECK(fields[9].value == num(0));
+        check_unique_field_names(fields);
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

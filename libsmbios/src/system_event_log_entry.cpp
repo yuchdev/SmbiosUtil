@@ -218,3 +218,30 @@ std::string SystemEventLogEntry::get_access_method_string() const
     oem << "OEM-specific (0x" << std::hex << static_cast<unsigned>(access_method) << std::dec << ")";
     return oem.str();
 }
+
+std::vector<NamedField> SystemEventLogEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Log Area Length", static_cast<uint64_t>(get_log_area_length())});
+    fields.push_back({"Log Header Start Offset", static_cast<uint64_t>(get_log_header_start_offset())});
+    fields.push_back({"Log Data Start Offset", static_cast<uint64_t>(get_log_data_start_offset())});
+    fields.push_back({"Access Method", get_access_method_string()});
+    fields.push_back({"Log Status Valid", is_log_area_valid()});
+    fields.push_back({"Log Status Full", is_log_area_full()});
+    fields.push_back({"Log Change Token", static_cast<uint64_t>(get_log_change_token())});
+    fields.push_back({"Access Method Address", static_cast<uint64_t>(get_access_method_address())});
+
+    // Same guard as render_to_description().
+    if (!(version_ < kVersion21) && get_entry_size() >= 0x17) {
+        fields.push_back({"Log Header Format", static_cast<uint64_t>(get_log_header_format())});
+        const uint8_t count = get_supported_descriptor_count();
+        fields.push_back({"Supported Log Type Descriptors", static_cast<uint64_t>(count)});
+        for (uint8_t index = 0; index < count; ++index) {
+            // Same 0-based label and "0x" + unpadded lowercase hex as the text.
+            std::stringstream descriptor;
+            descriptor << "0x" << std::hex << get_log_type_descriptor_at(index);
+            fields.push_back({"Descriptor " + std::to_string(static_cast<unsigned>(index)), descriptor.str()});
+        }
+    }
+    return fields;
+}

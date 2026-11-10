@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <string>
 #include <memory>
 #include <vector>
 
@@ -8,6 +9,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -380,6 +382,111 @@ BOOST_AUTO_TEST_CASE(CreateReturnsPortableBatteryEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<PortableBatteryEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 04)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// every value stays the printed string - the "See SBDS ..." redirects, the
+// "N mWh"/"N mV"/"N%" units and the "Unknown" sentinels. No bitmask in this
+// type.
+// Boundaries: SBDS-redirected date/serial with unknown capacity/voltage/
+// error, a 2.1-shaped (0x10) structure (multiplier absent), a bare header.
+// On failure first check: PortableBatteryEntry::get_fields() in
+// libsmbios/src/portable_battery_entry.cpp.
+
+/// Normal case: every text label becomes a field, in text order; the
+/// capacity carries the multiplier.
+BOOST_AUTO_TEST_CASE(PortableBatteryEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area =
+        build_full_formatted_area(PortableBatteryEntry::LithiumIon, 5000, 11100, 10, 2, 0x03, 0x04);
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::PortableBattery, formatted_area,
+                          std::vector<std::string>{"In the back", "Acme", "2024-01-01", "SN123", "DR-36", "1.1"});
+    std::vector<uint8_t> buffer = builder.build();
+    PortableBatteryEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Location", str("In the back")},
+        {"Manufacturer", str("Acme")},
+        {"Manufacture Date", str("2024-01-01")},
+        {"Serial Number", str("SN123")},
+        {"Device Name", str("DR-36")},
+        {"Device Chemistry", str("Lithium-ion")},
+        {"Design Capacity", str("10000 mWh")},
+        {"Design Voltage", str("11100 mV")},
+        {"SBDS Version Number", str("1.1")},
+        {"Maximum Error in Battery Data", str("10%")},
+    });
+}
+
+/// Boundary cases: SBDS redirects and "Unknown" sentinels replace the
+/// values exactly as in the text; a 2.1-shaped structure keeps every field;
+/// a bare header keeps every field with the getters' defaults (the text
+/// prints every line unconditionally).
+BOOST_AUTO_TEST_CASE(PortableBatteryEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        std::vector<uint8_t> formatted_area =
+            build_full_formatted_area(PortableBatteryEntry::LeadAcid, 0, 0, 0xFF, 1, 0x00, 0x00);
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::PortableBattery, formatted_area,
+                              std::vector<std::string>{"In the back", "Acme", "unused", "unused", "DR-36", "1.1"});
+        std::vector<uint8_t> buffer = builder.build();
+        PortableBatteryEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Location", str("In the back")},
+            {"Manufacturer", str("Acme")},
+            {"Manufacture Date", str("See SBDS Manufacture Date")},
+            {"Serial Number", str("See SBDS Serial Number")},
+            {"Device Name", str("DR-36")},
+            {"Device Chemistry", str("Lead Acid")},
+            {"Design Capacity", str("Unknown")},
+            {"Design Voltage", str("Unknown")},
+            {"SBDS Version Number", str("1.1")},
+            {"Maximum Error in Battery Data", str("Unknown")},
+        });
+    }
+    {
+        std::vector<uint8_t> formatted_area =
+            build_full_formatted_area(PortableBatteryEntry::LeadAcid, 5000, 11100, 10, 4, 0x03, 0x04);
+        formatted_area.resize(0x10 - 4); // 2.1 shape: multiplier (0x15) absent
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::PortableBattery, formatted_area,
+                              std::vector<std::string>{"In the back", "Acme", "2024-01-01", "SN123", "DR-36", "1.1"});
+        std::vector<uint8_t> buffer = builder.build();
+        PortableBatteryEntry entry(make_header(buffer), SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+        const std::vector<NamedField> fields = entry.get_fields();
+        BOOST_REQUIRE_EQUAL(fields.size(), static_cast<size_t>(10));
+        BOOST_CHECK_EQUAL(fields[6].name, std::string("Design Capacity"));
+        BOOST_CHECK(fields[6].value == str("5000 mWh"));
+        check_unique_field_names(fields);
+    }
+    {
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::PortableBattery, std::vector<uint8_t>{});
+        std::vector<uint8_t> buffer = builder.build();
+        PortableBatteryEntry entry(make_header(buffer), SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Location", str("")},
+            {"Manufacturer", str("")},
+            {"Manufacture Date", str("See SBDS Manufacture Date")},
+            {"Serial Number", str("See SBDS Serial Number")},
+            {"Device Name", str("")},
+            {"Device Chemistry", str("OutOfSpec")},
+            {"Design Capacity", str("Unknown")},
+            {"Design Voltage", str("Unknown")},
+            {"SBDS Version Number", str("")},
+            {"Maximum Error in Battery Data", str("Unknown")},
+        });
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

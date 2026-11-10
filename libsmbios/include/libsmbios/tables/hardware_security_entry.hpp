@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <map>
 #include <string>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // Hardware Security entry
@@ -54,6 +55,12 @@ public:
 
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order. Each of the
+    /// four statuses is a four-state value, not a flag, so it stays the
+    /// printed string.
+    std::vector<NamedField> get_fields() const override;
 
     /// @brief 0x04 offset, raw byte. See the class doc comment for the
     /// confirmed Table 93 bit layout. Returns 0 if get_entry_size() < 0x05.

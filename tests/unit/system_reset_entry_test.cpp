@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <string>
 #include <memory>
 #include <vector>
 
@@ -8,6 +9,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -274,6 +276,85 @@ BOOST_AUTO_TEST_CASE(CreateReturnsSystemResetEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<SystemResetEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 04)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// Status (Enabled/Disabled) and Watchdog Timer (Present/Not Present) are
+// bool, boot options stay strings, and the counters/intervals stay the
+// printed string because each may print "Unknown". No bitmask list in this
+// type (Capabilities is two flags and two 2-bit enumerations).
+// Boundaries: all counters at the 0xFFFF "Unknown" sentinel, a bare header.
+// On failure first check: SystemResetEntry::get_fields() in
+// libsmbios/src/system_reset_entry.cpp.
+
+/// Normal case: every text label becomes a field, in text order.
+BOOST_AUTO_TEST_CASE(SystemResetEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    // Status enabled (bit 0), boot option = OS (bits 2:1 = 1), on limit =
+    // System utilities (bits 4:3 = 2), watchdog present (bit 5).
+    std::vector<uint8_t> formatted_area = build_formatted_area(0x33, 3, 5, 10, 20);
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemReset, formatted_area);
+    std::vector<uint8_t> buffer = builder.build();
+    SystemResetEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Status", true},
+        {"Watchdog Timer", true},
+        {"Boot Option", str("Operating system")},
+        {"Boot Option on Limit", str("System utilities")},
+        {"Reset Count", str("3")},
+        {"Reset Limit", str("5")},
+        {"Timer Interval", str("10 min")},
+        {"Timeout", str("20 min")},
+    });
+}
+
+/// Boundary cases: the 0xFFFF sentinel prints "Unknown" for every counter;
+/// a bare header keeps every field (the text prints every line
+/// unconditionally) with the getters' defaults.
+BOOST_AUTO_TEST_CASE(SystemResetEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        std::vector<uint8_t> formatted_area = build_formatted_area(0x00, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF);
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::SystemReset, formatted_area);
+        std::vector<uint8_t> buffer = builder.build();
+        SystemResetEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Status", false},
+            {"Watchdog Timer", false},
+            {"Boot Option", str("Reserved")},
+            {"Boot Option on Limit", str("Reserved")},
+            {"Reset Count", str("Unknown")},
+            {"Reset Limit", str("Unknown")},
+            {"Timer Interval", str("Unknown")},
+            {"Timeout", str("Unknown")},
+        });
+    }
+    {
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::SystemReset, std::vector<uint8_t>{});
+        std::vector<uint8_t> buffer = builder.build();
+        SystemResetEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Status", false},
+            {"Watchdog Timer", false},
+            {"Boot Option", str("Reserved")},
+            {"Boot Option on Limit", str("Reserved")},
+            {"Reset Count", str("Unknown")},
+            {"Reset Limit", str("Unknown")},
+            {"Timer Interval", str("Unknown")},
+            {"Timeout", str("Unknown")},
+        });
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

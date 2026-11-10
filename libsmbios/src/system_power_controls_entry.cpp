@@ -122,3 +122,18 @@ uint8_t SystemPowerControlsEntry::bcd_to_decimal(uint8_t bcd)
     // range.
     return static_cast<uint8_t>(((bcd >> 4) * 10) + (bcd & 0x0F));
 }
+
+std::vector<NamedField> SystemPowerControlsEntry::get_fields() const
+{
+    // Same composite, unpadded "M/D H:M:S" rendering the text output uses.
+    std::stringstream next_power_on;
+    next_power_on << static_cast<unsigned>(get_month()) << '/'
+                  << static_cast<unsigned>(get_day()) << ' '
+                  << static_cast<unsigned>(get_hour()) << ':'
+                  << static_cast<unsigned>(get_minute()) << ':'
+                  << static_cast<unsigned>(get_second());
+
+    std::vector<NamedField> fields;
+    fields.push_back({"Next Scheduled Power-on", next_power_on.str()});
+    return fields;
+}

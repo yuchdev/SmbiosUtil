@@ -125,3 +125,13 @@ std::string HardwareSecurityEntry::status_string(SecurityStatus status) const
     }
     return "Unknown";
 }
+
+std::vector<NamedField> HardwareSecurityEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Power-on Password Status", get_power_on_password_status_string()});
+    fields.push_back({"Keyboard Password Status", get_keyboard_password_status_string()});
+    fields.push_back({"Administrator Password Status", get_administrator_password_status_string()});
+    fields.push_back({"Front Panel Reset Status", get_front_panel_reset_status_string()});
+    return fields;
+}

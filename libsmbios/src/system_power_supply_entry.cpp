@@ -299,3 +299,43 @@ bool SystemPowerSupplyEntry::has_input_current_probe() const
 {
     return get_entry_size() >= kInputCurrentProbeHandleMinLength && get_input_current_probe_handle() != HandleAbsent;
 }
+
+std::vector<NamedField> SystemPowerSupplyEntry::get_fields() const
+{
+    // Same "0x" + lowercase unpadded hex rendering the text output uses.
+    auto to_hex = [](uint16_t value) {
+        std::stringstream hex_stream;
+        hex_stream << "0x" << std::hex << value;
+        return hex_stream.str();
+    };
+
+    std::vector<NamedField> fields;
+    fields.push_back({"Location", get_location_string()});
+    fields.push_back({"Device Name", get_device_name_string()});
+    fields.push_back({"Manufacturer", get_manufacturer_string()});
+    fields.push_back({"Serial Number", get_serial_number_string()});
+    fields.push_back({"Asset Tag", get_asset_tag_string()});
+    fields.push_back({"Model Part Number", get_model_part_number_string()});
+    fields.push_back({"Revision Level", get_revision_level_string()});
+    fields.push_back({"Power Unit Group", std::to_string(static_cast<unsigned>(get_power_unit_group()))
+                                              + (is_redundant() ? " (redundant)" : " (not redundant)")});
+    fields.push_back({"Max Power Capacity", is_max_power_capacity_known()
+                                                ? std::to_string(get_max_power_capacity()) + " W"
+                                                : std::string("Unknown")});
+    fields.push_back({"Power Supply Type", get_power_supply_type_string()});
+    fields.push_back({"Status", get_power_supply_status_string()});
+    fields.push_back({"Input Voltage Range Switching", get_voltage_switching_string()});
+    fields.push_back({"Unplugged", is_unplugged()});
+    fields.push_back({"Present", is_present()});
+    fields.push_back({"Hot-replaceable", is_hot_replaceable()});
+    if (has_input_voltage_probe()) {
+        fields.push_back({"Input Voltage Probe Handle", to_hex(get_input_voltage_probe_handle())});
+    }
+    if (has_cooling_device()) {
+        fields.push_back({"Cooling Device Handle", to_hex(get_cooling_device_handle())});
+    }
+    if (has_input_current_probe()) {
+        fields.push_back({"Input Current Probe Handle", to_hex(get_input_current_probe_handle())});
+    }
+    return fields;
+}

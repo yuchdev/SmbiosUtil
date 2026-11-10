@@ -134,3 +134,18 @@ std::string GroupAssociationsEntry::get_item_type_string_at(size_t index) const
     unknown << "Unknown (" << static_cast<unsigned>(item_type) << ")";
     return unknown.str();
 }
+
+std::vector<NamedField> GroupAssociationsEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Group Name", get_group_name_string()});
+
+    const size_t count = get_item_count();
+    fields.push_back({"Items", static_cast<uint64_t>(count)});
+    for (size_t index = 0; index < count; ++index) {
+        const std::string prefix = "Item " + std::to_string(index + 1);
+        fields.push_back({prefix + " Type", get_item_type_string_at(index)});
+        fields.push_back({prefix + " Handle", static_cast<uint64_t>(get_item_handle_at(index))});
+    }
+    return fields;
+}

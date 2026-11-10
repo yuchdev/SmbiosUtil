@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <string>
 #include <memory>
 #include <vector>
 
@@ -8,6 +9,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -163,6 +165,59 @@ BOOST_AUTO_TEST_CASE(CreateReturnsSystemPowerControlsEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<SystemPowerControlsEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 04)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description()'s single line;
+// "Next Scheduled Power-on" stays the printed, unpadded "M/D H:M:S" string
+// of the BCD-decoded getters. No bitmask in this type.
+// Boundaries: a single-digit hour, a structure truncated after the day, a
+// malformed BCD byte (decoded mechanically, unvalidated).
+// On failure first check: SystemPowerControlsEntry::get_fields() in
+// libsmbios/src/system_power_controls_entry.cpp.
+
+/// Normal case: the one text line becomes the one field.
+BOOST_AUTO_TEST_CASE(SystemPowerControlsEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemPowerControls, std::vector<uint8_t>{0x12, 0x25, 0x09, 0x45, 0x59});
+    std::vector<uint8_t> buffer = builder.build();
+    SystemPowerControlsEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Next Scheduled Power-on", str("12/25 9:45:59")},
+    });
+}
+
+/// Boundary cases: the text prints its line unconditionally, so a short
+/// structure keeps the field with zeroed absent parts; a malformed BCD byte
+/// shows its mechanical decode exactly as the text does.
+BOOST_AUTO_TEST_CASE(SystemPowerControlsEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::SystemPowerControls, std::vector<uint8_t>{0x07, 0x04});
+        std::vector<uint8_t> buffer = builder.build();
+        SystemPowerControlsEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Next Scheduled Power-on", str("7/4 0:0:0")},
+        });
+    }
+    {
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::SystemPowerControls, std::vector<uint8_t>{0xFF, 0x00, 0x00, 0x00, 0x00});
+        std::vector<uint8_t> buffer = builder.build();
+        SystemPowerControlsEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Next Scheduled Power-on", str("165/0 0:0:0")},
+        });
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

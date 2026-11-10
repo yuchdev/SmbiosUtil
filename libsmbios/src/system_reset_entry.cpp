@@ -176,3 +176,21 @@ bool SystemResetEntry::is_timeout_known() const
 {
     return get_timeout() != ValueUnknown;
 }
+
+std::vector<NamedField> SystemResetEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Status", is_status_enabled()});
+    fields.push_back({"Watchdog Timer", is_watchdog_present()});
+    fields.push_back({"Boot Option", get_boot_option_string()});
+    fields.push_back({"Boot Option on Limit", get_boot_option_on_limit_string()});
+    fields.push_back({"Reset Count", is_reset_count_known() ? std::to_string(get_reset_count())
+                                                            : std::string("Unknown")});
+    fields.push_back({"Reset Limit", is_reset_limit_known() ? std::to_string(get_reset_limit())
+                                                            : std::string("Unknown")});
+    fields.push_back({"Timer Interval", is_timer_interval_known() ? std::to_string(get_timer_interval()) + " min"
+                                                                  : std::string("Unknown")});
+    fields.push_back({"Timeout", is_timeout_known() ? std::to_string(get_timeout()) + " min"
+                                                    : std::string("Unknown")});
+    return fields;
+}
