@@ -36,6 +36,12 @@ public:
 
     /// @brief Structured, renderer-neutral view of the same data render_to_description() prints.
     /// Every concrete entry must implement it (pure virtual, milestone 0009 R1).
+    /// Names are unique within the returned list (repeated groups carry a
+    /// 1-based index suffix); order is stable and matches the text output.
+    /// @return the entry's decoded fields, built fresh on every call. Values
+    /// are copies, so the result does not borrow from the table, but the
+    /// entry itself must not outlive its `SMBios`. Not `noexcept`: may throw
+    /// `std::bad_alloc`.
     virtual std::vector<NamedField> get_fields() const = 0;
 
 protected:
@@ -66,9 +72,12 @@ protected:
     /// @brief One NamedField{label, true} per set bit that has a label in properties_map.
     /// Walks bits in the same ascending order as bitset_to_properties(), so
     /// field order matches the text output. Set bits without a label are skipped.
+    /// @tparam T integral bitmask type (enforced by `static_assert`); must
+    /// match the key type of `properties_map` exactly.
     /// @param properties bitmask value to decode
     /// @param properties_map single-bit mask -> label
-    /// @param out fields are appended here (existing contents are kept)
+    /// @param[in,out] out fields are appended here (existing contents are
+    /// kept); never cleared. Nothing is returned (`void`).
     template <typename T>
     void bitset_to_fields(T properties, const std::map<T, std::string>& properties_map,
                           std::vector<NamedField>& out) const

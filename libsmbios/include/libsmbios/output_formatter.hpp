@@ -42,6 +42,8 @@ class AbstractSMBiosEntry;
 ///   carry no type information.
 class IOutputFormatter {
 public:
+    /// @brief Virtual destructor; formatters are owned and destroyed by the
+    /// registry through a base `IOutputFormatter` pointer.
     virtual ~IOutputFormatter() = default;
 
     /// @brief Renders one entry in this formatter's format.
@@ -124,10 +126,17 @@ std::vector<std::string> registered_output_formatter_names();
 /// an unregistered structure type) are skipped and never produce a
 /// separator, so the separator only ever sits between two rendered entries.
 /// Zero (or only null) elements yield begin_document() + end_document().
+/// @tparam InputIt an input iterator whose `value_type` is contextually
+/// convertible to `bool` and whose dereferenced element dereferences again
+/// to a `const AbstractSMBiosEntry&`-compatible object (see above).
 /// @param formatter the formatter to render with.
 /// @param first the first entry handle.
 /// @param last one past the last entry handle.
 /// @return the complete document. Entries are only borrowed for the call.
+/// @note Lifetime: the entries must not outlive the `SMBios` whose buffer
+/// they view; all of them must still be alive for the whole call.
+/// @throws std::bad_alloc on allocation failure; otherwise as thrown by
+/// the formatter (conforming formatters do not throw).
 template <typename InputIt>
 std::string render_document(const IOutputFormatter& formatter, InputIt first, InputIt last)
 {
@@ -171,8 +180,17 @@ std::string render_document(const IOutputFormatter& formatter,
 /// the registration variable's name comes from SMBIOS_DETAIL_UNIQUE_NAME,
 /// not from pasting `class_name`.
 ///
+/// Linking: the invocation is a static initialiser inside the formatter's
+/// own object file, so that file must actually be linked in. Inside a
+/// static archive nothing else references it, so the final binary must
+/// force-load the whole archive (as the `smbios` CLI does for libsmbios) or
+/// otherwise reference a symbol from that translation unit; otherwise the
+/// format silently never registers.
+///
 /// Static-init only and not thread-safe; a duplicate name terminates the
 /// program during static initialisation (see register_output_formatter()).
+/// @param class_name the concrete formatter type; must be
+/// default-constructible and derive from smbios::IOutputFormatter.
 #define REGISTER_OUTPUT_FORMATTER(class_name)                                      \
     namespace {                                                                    \
     const bool SMBIOS_DETAIL_UNIQUE_NAME(smbios_output_formatter_registered_) = [] { \

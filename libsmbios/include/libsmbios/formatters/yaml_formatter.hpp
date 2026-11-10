@@ -62,7 +62,7 @@ namespace smbios {
 ///   document is valid UTF-8 for any firmware bytes (invalid UTF-8 becomes
 ///   U+FFFD) and no code point outside YAML 1.2 `c-printable` is emitted
 ///   raw: C0, DEL and C1 are escaped (ESC as `\e`), U+0085/U+2028/U+2029 as
-///   `\N`/`\L`/`\P`, U+FEFF/U+FFFE/U+FFFF as `﻿`/`￾`/`￿`;
+///   `\N`/`\L`/`\P`, U+FEFF/U+FFFE/U+FFFF as `\ufeff`/`\ufffe`/`\uffff`;
 ///   bidi overrides are printable and pass through as data;
 /// - output is deterministic: no timestamps, host or locale data, and
 ///   always `\n` line endings. Field values are never logged.
