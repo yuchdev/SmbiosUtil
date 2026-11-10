@@ -221,7 +221,11 @@ the following, and nothing beyond it. The threat model is
 - **YAML.** Every string (keys, values, the `type` value) is double-quoted, so `NO`, `1.10`, `0x0A`
   and `~` always load as strings. Controls, DEL and C1 are escaped, U+0085/U+2028/U+2029 become
   `\N`/`\L`/`\P`, and U+FEFF is escaped. No anchors, aliases, tags or block scalars are emitted.
-- **CSV.** RFC 4180 quoting (a cell with `"`, `,`, CR or LF is quoted, `"` doubled). A cell that
+- **CSV.** C0 controls other than TAB, CR and LF (so ESC included), DEL and the C1 controls
+  (U+0080-U+009F, so the 8-bit CSI U+009B included) are replaced with U+FFFD, because CSV has no
+  escape syntax; no ESC- or C1-introduced control sequence reaches a terminal. TAB, CR and LF are kept
+  as cell content (a bare CR can still return the cursor to column 0 when shown raw). RFC 4180
+  quoting (a cell with `"`, `,`, CR or LF is quoted, `"` doubled). A cell that
   begins with `=`, `+`, `-`, `@`, TAB or CR gets a leading `'` so spreadsheets do not evaluate it
   (CWE-1236). Values that begin with `-` therefore show the `'` too; this trade-off is accepted. The
   sample's `String 1` row shows the guard.

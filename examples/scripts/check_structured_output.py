@@ -8,7 +8,10 @@ Runs <command>, requires exit status 0, and checks its stdout:
 
 * json: must be a list of objects, each with a string "type" and an object
   "fields";
-* xml: must parse to exactly one root element;
+* xml: must parse to exactly one root element, and must contain no
+  ``<!DOCTYPE`` or ``<!ENTITY`` declaration (rejected before parsing, so no
+  entity is ever expanded - defence in depth against CWE-776; the formatter
+  never emits either);
 * csv: must parse (``csv`` module, RFC 4180) to the header row
   ``type,field_name,field_value`` followed by rows of exactly three columns;
 * yaml: the standard library has no YAML parser, so this is a *shape* check
@@ -64,7 +67,15 @@ def check_json(text: str) -> int:
 
 
 def check_xml(text: str) -> int:
-    """Validate the XML document (one root element); return its child count or raise ValueError."""
+    """Validate the XML document (one root element); return its child count or raise ValueError.
+
+    A DOCTYPE or ENTITY declaration is rejected before parsing, so ElementTree
+    never expands an internal entity (billion laughs, CWE-776, threat model
+    SR-9). The xml formatter never emits either, so this rejects nothing valid.
+    """
+    for marker in ("<!DOCTYPE", "<!ENTITY"):
+        if marker in text:
+            raise ValueError(f"XML contains a {marker} declaration, which is not allowed")
     try:
         root = ElementTree.fromstring(text)
     except ElementTree.ParseError as error:

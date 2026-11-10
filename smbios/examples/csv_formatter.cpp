@@ -30,6 +30,16 @@
 ///   format, and common CSV readers accept LF.
 /// - Every cell is first run through sanitize_utf8(), so the document is
 ///   valid UTF-8 whatever bytes the firmware strings hold.
+/// - Terminal safety (threat model SR-7, CWE-150): after sanitising, every
+///   C0 control except TAB, CR and LF (U+0000-U+0008, U+000B, U+000C,
+///   U+000E-U+001F, so ESC included), DEL (U+007F) and every C1 control
+///   (U+0080-U+009F, so the 8-bit CSI U+009B included) is replaced with
+///   U+FFFD. CSV has no escape syntax, so replacement (lossy) is the only
+///   option. TAB, CR and LF are kept because they are legitimate cell
+///   content under RFC 4180; CR and LF always force quoting (below), and a
+///   leading TAB or CR also gets the formula prefix. No ESC- or
+///   C1-introduced control sequence can therefore reach a terminal, though a
+///   bare CR inside a quoted cell can still move the cursor to column 0.
 /// - RFC 4180 quoting: a cell containing `"`, `,`, CR or LF is wrapped in
 ///   double quotes and each embedded `"` is doubled; any other cell is
 ///   written unquoted and unchanged.
@@ -52,6 +62,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 #include <libsmbios/formatters/formatter_escaping.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <variant>
@@ -59,13 +70,46 @@
 
 namespace {
 
-/// @brief Encodes one cell: UTF-8 sanitising, formula-injection
-/// neutralisation, then RFC 4180 quoting (see the file comment).
+/// @brief Replaces terminal-control code points in valid UTF-8 with U+FFFD:
+/// C0 except TAB/LF/CR, DEL, and C1 (see the file comment, SR-7).
+///
+/// Operates on bytes, which is exact only because `utf8` is already valid
+/// UTF-8 (sanitize_utf8() output): C0 and DEL are single bytes 0x00-0x1F and
+/// 0x7F, and C1 U+0080-U+009F is always the two-byte sequence `C2 80`-`C2 9F`.
+/// A byte >= 0x80 is never a single-byte code point, so no other sequence can
+/// match.
+/// @param utf8 valid UTF-8.
+/// @return valid UTF-8 with no C0 (other than TAB/LF/CR), DEL or C1.
+std::string replace_terminal_controls(const std::string& utf8)
+{
+    static const std::string kReplacement = "\xEF\xBF\xBD";
+    std::string out;
+    out.reserve(utf8.size());
+    for (std::size_t i = 0; i < utf8.size(); ++i) {
+        const auto byte = static_cast<unsigned char>(utf8[i]);
+        if ((byte < 0x20 && byte != '\t' && byte != '\n' && byte != '\r') || byte == 0x7F) {
+            out += kReplacement;
+        } else if (byte == 0xC2 && i + 1 < utf8.size()
+                   && static_cast<unsigned char>(utf8[i + 1]) <= 0x9F) {
+            // C2 is a valid lead here, so utf8[i + 1] is a continuation byte
+            // (>= 0x80); <= 0x9F selects exactly U+0080-U+009F.
+            out += kReplacement;
+            ++i;
+        } else {
+            out += utf8[i];
+        }
+    }
+    return out;
+}
+
+/// @brief Encodes one cell: UTF-8 sanitising, terminal-control replacement,
+/// formula-injection neutralisation, then RFC 4180 quoting (see the file
+/// comment).
 /// @param raw the cell's unescaped text; arbitrary bytes.
 /// @return the cell as it appears in the row.
 std::string csv_cell(const std::string& raw)
 {
-    std::string cell = smbios::sanitize_utf8(raw);
+    std::string cell = replace_terminal_controls(smbios::sanitize_utf8(raw));
 
     if (!cell.empty()) {
         const char lead = cell.front();

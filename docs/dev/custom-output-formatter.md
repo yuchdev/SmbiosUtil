@@ -15,30 +15,31 @@ inside your own program, skip formatters and read `AbstractSMBiosEntry::get_fiel
 The complete source is [`smbios/examples/csv_formatter.cpp`](../../smbios/examples/csv_formatter.cpp).
 Line numbers below refer to it.
 
-1. **Include only the public headers (lines 51-53).** `<libsmbios/output_formatter.hpp>`,
+1. **Include only the public headers (lines 61-63).** `<libsmbios/output_formatter.hpp>`,
    `<libsmbios/abstract_smbios_entry.hpp>` and `<libsmbios/formatters/formatter_escaping.hpp>`. Never
    include `libsmbios/tables/*.hpp`: a formatter sees every entry only through `get_type()` and
    `get_fields()`.
-2. **Subclass `IOutputFormatter` (lines 121-143).** Implement `render(const AbstractSMBiosEntry&)`,
+2. **Subclass `IOutputFormatter` (lines 165-187).** Implement `render(const AbstractSMBiosEntry&)`,
    which returns the text for one entry with no document framing, and `format_name()`, the
    lowercase, case-sensitive registry key (`"csv"`).
-3. **Optionally add framing (line 147).** `begin_document()`, `entry_separator()` and
+3. **Optionally add framing (line 191).** `begin_document()`, `entry_separator()` and
    `end_document()` default to empty strings. CSV overrides only `begin_document()` for its header
    row; JSON uses all three. The caller builds a document as `begin_document()`, each `render()`
    with `entry_separator()` between consecutive entries, then `end_document()`;
    `render_document()` in `output_formatter.hpp` does exactly that. The hooks take no entry, so they
    can never carry firmware data. The document must be well formed for zero, one and many entries.
-4. **Visit each `FieldValue` (lines 94-106).** A field is a `std::string`, `uint64_t`, `bool` or
+4. **Visit each `FieldValue` (lines 138-150).** A field is a `std::string`, `uint64_t`, `bool` or
    `std::vector<uint8_t>`. CSV uses `std::get_if`; `std::visit` works equally well.
    `field_value_to_string()` (`field_value.hpp`) is available for formats that carry no type
    information.
-5. **Reuse the escaping helpers (lines 66-89, 105).** `sanitize_utf8()` makes every string valid
+5. **Reuse the escaping helpers (lines 73-133, 149).** `sanitize_utf8()` makes every string valid
    UTF-8, and `hex_encode()` renders bytes. `xml_escape()`, `json_escape()` and
    `yaml_double_quoted_escape()` exist for those syntaxes. Never hand-roll a UTF-8 decoder: the
    helpers are strict and shared, and invalid input can then never combine with an escape to form a
-   structural character. CSV adds its own format-specific rules on top (RFC 4180 quoting and the
-   formula-injection guard).
-6. **Register in the `.cpp` only (line 152).** `REGISTER_OUTPUT_FORMATTER(smbios_examples::CsvFormatter)`
+   structural character. CSV adds its own format-specific rules on top: terminal-control
+   replacement (C0 except TAB/CR/LF, DEL and C1 become U+FFFD, since CSV has no escape syntax), RFC
+   4180 quoting and the formula-injection guard.
+6. **Register in the `.cpp` only (line 196).** `REGISTER_OUTPUT_FORMATTER(smbios_examples::CsvFormatter)`
    at namespace scope. Never put it in a header: it would register once per translation unit that
    includes the header and trip the duplicate-name check (the same trap as `REGISTER_SMBIOS_ENTRY`).
 

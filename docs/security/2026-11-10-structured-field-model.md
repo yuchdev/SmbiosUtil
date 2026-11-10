@@ -207,3 +207,46 @@ Scope: `git diff e7c2f75..c5bd074`.
 - **Invisible Unicode scan.** No raw U+0080-U+009F, U+200B-U+200F, U+2028-U+202E, U+2066-U+2069, U+FEFF, U+FFFE or U+FFFF in `libsmbios/`, `tests/unit/` or this document.
 - **Tests.** `smbios_unit_test` (build/macos): 602/602 cases pass.
 - Verdict: **PASS**.
+
+## Story 03.0 review - 2026-11-10
+
+Scope: `git diff 04ce886..8891637` (YAML formatter, external CSV formatter, CLI `--format`, `examples/`, `scripts/check_doc_samples.py`, CI hardware gate, golden fixtures).
+
+### Assets & trust boundaries (delta)
+- Firmware strings now reach two new sinks: YAML (`yaml_formatter.cpp`) and CSV (`smbios/examples/csv_formatter.cpp`). CSV output is likely to be opened in spreadsheets (CWE-1236).
+- New process boundary: CI runs PR-built `smbios` under `sudo` on Linux and pipes its stdout (which holds the runner's serials and UUIDs) into a stdlib-only checker.
+- Repo-controlled markdown markers drive file reads, and with `--write` file writes, in `check_doc_samples.py`.
+
+### Requirement verification
+| Check | Result | Evidence |
+|---|---|---|
+| YAML: every scalar double-quoted, including keys and type | **Met** | `yaml_formatter.cpp:22,49,56`. Bytes are hex and quoted (`:36`). uint64/bool are emitted plain, and their encoding cannot be influenced by firmware. |
+| YAML escape completeness, U+FEFF (SR-2) | **Met** | `formatter_escaping.cpp:229-255`. C0, DEL, C1, NEL, LS/PS, BOM, U+FFFE/U+FFFF are all escaped. Input is already strict UTF-8. |
+| YAML: no anchors, tags or aliases; deterministic | **Met** | Only the fixed `---`, `- type:`, `fields:` and `{}` are emitted outside quotes. There is no indicator character outside quoted scalars. |
+| CSV formula prefix applied after UTF-8 sanitising, to every cell | **Met** | `csv_formatter.cpp:68-75,111`. It covers type, name and value, and the six OWASP lead characters. |
+| RFC 4180 quoting | **Met** | `csv_formatter.cpp:77-88` (`"`, `,`, CR, LF). NUL cannot reach a string field (DMI strings end at NUL), and bytes are hex. |
+| CLI diagnostics value-free | **Met** | `main.cpp:104-107` echoes only argv and registry names. |
+| `read_fields` omits identifiers | **Met** | Allowlist only (`examples/read_fields/main.cpp:91,105`). |
+| `check_structured_output.py` safe parsing | **Met** | Stdlib only, run with `-I`, no eval/shell, prints counts/positions only. |
+| `check_doc_samples.py` path traversal | **Met** | `resolve()` plus a parents check (`:66-68`) rejects `..`, absolute paths and symlink escapes. |
+| CI secrets/injection | **Met** | Triggers are `push`/`pull_request` only. No `secrets.*` and no `github.event.*` interpolation; only the static `matrix.preset` is used. |
+| Golden fixtures | **Met** | `tests/data/output_formats/*` holds no serial, UUID or asset tag, only "Example" values. |
+
+### Findings
+#### [LOW] SR-6 `smbios_cli_format_csv` can dump the live table (serials/UUIDs) into the CI log
+`tests/integration/CMakeLists.txt` (`add_test(NAME smbios_cli_format_csv ...)`) runs the CLI directly with `PASS_REGULAR_EXPRESSION`. It is invoked via `ctest --output-on-failure` (`ci.yml` Windows integration step and sanitizers best-effort step). On a regex miss or a 60 s timeout, CTest prints the full stdout. That contradicts the "never echo stdout" rule that `run_quiet.cmake` and the hardware gate follow (CWE-532). Mitigation: route it through `check_structured_output.py --format csv` or `run_quiet.cmake`.
+
+#### [LOW] SR-7 CSV passes C0/C1 controls raw (terminal escape injection, CWE-150)
+`csv_formatter.cpp:68` sanitises UTF-8 only. ESC, CSI (U+009B) and bare CR inside quoted cells reach the terminal when `smbios --format csv` is not redirected. JSON has been terminal-safe since SR-1. Mitigation: document CSV as not terminal-safe (as for `text`/`xml`), or replace C0 except TAB/CR/LF, plus DEL and C1, with U+FFFD.
+
+#### [INFO] SR-8 Unknown-format diagnostic echoes argv unescaped
+`main.cpp:105`, `examples/format_table/main.cpp:44`. The user controls the input and it goes only to stderr. Optional: escape non-printables.
+
+#### [INFO] SR-9 XML checker relies on expat's billion-laughs protection
+`check_structured_output.py:69`. ElementTree expands internal entities. Expat >= 2.4.0 mitigates CVE-2013-0340 (CWE-776), and the formatter never emits a DOCTYPE. Defence in depth: reject input that contains `<!DOCTYPE` before parsing.
+
+#### [INFO] SR-10 `check_doc_samples.py --doc` accepts paths outside the repo
+`:161`. The operator supplies the path, and `--write` rewrites only fenced blocks inside it. Acceptable.
+
+### Verdict: PASS_WITH_FOLLOWUP (CONCERNS)
+No CRITICAL or HIGH findings, so merge is not blocked. SR-6 and SR-7 go to `cpp-expert`/`testing-expert` as follow-ups.

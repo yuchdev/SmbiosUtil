@@ -26,13 +26,15 @@ using namespace smbios::test;
 // `type,field_name,field_value` rows: every FieldValue alternative, RFC 4180
 // quoting of `"`, `,`, CR and LF, CSV formula-injection neutralisation
 // (CWE-1236, threat model INFO-6) for each of `=`, `+`, `-`, `@`, TAB and
-// CR, invalid UTF-8 replaced by U+FFFD, empty-field entries, and document
+// CR, invalid UTF-8 replaced by U+FFFD, C0 (except TAB/CR/LF), DEL and C1
+// controls replaced by U+FFFD (SR-7, CWE-150), empty-field entries, and document
 // framing for zero, one and many entries.
 // Boundaries: UINT64_MAX / 0, an empty and a two-byte vector, an empty
 // string, a lead character that is only dangerous at position 0.
 // On failure first check: a null get_output_formatter("csv") means
 // csv_formatter.cpp fell out of SOURCES in tests/unit/CMakeLists.txt; else
-// csv_cell() (neutralise, then quote - in that order) in
+// csv_cell() (sanitise, replace controls, neutralise, then quote - in that
+// order) and replace_terminal_controls() in
 // smbios/examples/csv_formatter.cpp.
 
 namespace {
@@ -145,6 +147,56 @@ BOOST_AUTO_TEST_CASE(InvalidUtf8IsReplacedTestCase)
     const std::string rendered = render_single(std::string("Caf\xE9"));
     BOOST_CHECK_EQUAL(rendered, "T,F,Caf" + kReplacement + "\n");
     BOOST_CHECK(is_valid_utf8(rendered));
+}
+
+/// Invalid-input case (SR-7, CWE-150): ESC, a whole ANSI CSI sequence, DEL
+/// and the other C0 controls (except TAB/CR/LF) become U+FFFD, so no raw
+/// terminal control byte reaches the output.
+BOOST_AUTO_TEST_CASE(C0ControlsAndDelAreReplacedTestCase)
+{
+    BOOST_CHECK_EQUAL(render_single(std::string("a\x1B[2Jb")), "T,F,a" + kReplacement + "[2Jb\n");
+    BOOST_CHECK_EQUAL(render_single(std::string("a\x7F" "b")), "T,F,a" + kReplacement + "b\n");
+    BOOST_CHECK_EQUAL(render_single(std::string("\x01\x08\x0B\x0C\x1F")),
+                      "T,F," + kReplacement + kReplacement + kReplacement + kReplacement + kReplacement + "\n");
+    // Embedded NUL (a std::string can hold one, a DMI string cannot).
+    BOOST_CHECK_EQUAL(render_single(std::string("a\0b", 3)), "T,F,a" + kReplacement + "b\n");
+}
+
+/// Invalid-input case (SR-7): the C1 range U+0080-U+009F, including the
+/// 8-bit CSI U+009B, becomes U+FFFD; U+00A0 just past it is kept.
+BOOST_AUTO_TEST_CASE(C1ControlsAreReplacedTestCase)
+{
+    BOOST_CHECK_EQUAL(render_single(std::string("a\xC2\x9B" "2Jb")), "T,F,a" + kReplacement + "2Jb\n");
+    BOOST_CHECK_EQUAL(render_single(std::string("\xC2\x80\xC2\x85\xC2\x9F")),
+                      "T,F," + kReplacement + kReplacement + kReplacement + "\n");
+    BOOST_CHECK_EQUAL(render_single(std::string("\xC2\xA0\xC3\xA9")), "T,F,\xC2\xA0\xC3\xA9\n");
+}
+
+/// Edge case (SR-7): a raw C1 byte that is not valid UTF-8 is replaced by
+/// sanitize_utf8() first, so it cannot slip past the control filter.
+BOOST_AUTO_TEST_CASE(RawC1ByteIsReplacedTestCase)
+{
+    const std::string rendered = render_single(std::string("a\x9B" "b"));
+    BOOST_CHECK_EQUAL(rendered, "T,F,a" + kReplacement + "b\n");
+    BOOST_CHECK(is_valid_utf8(rendered));
+}
+
+/// Edge case (SR-7): TAB, LF and CR are kept, not replaced; LF and CR still
+/// force RFC 4180 quoting, and an inner TAB alone does not.
+BOOST_AUTO_TEST_CASE(TabCrLfAreKeptTestCase)
+{
+    BOOST_CHECK_EQUAL(render_single(std::string("a\tb")), "T,F,a\tb\n");
+    BOOST_CHECK_EQUAL(render_single(std::string("a\nb")), "T,F,\"a\nb\"\n");
+    BOOST_CHECK_EQUAL(render_single(std::string("a\rb")), "T,F,\"a\rb\"\n");
+}
+
+/// Edge case (SR-7): a control in the type and field-name cells is
+/// replaced too, and a replaced lead control is not a formula lead.
+BOOST_AUTO_TEST_CASE(ControlsInTypeAndNameCellsAreReplacedTestCase)
+{
+    FieldsTestEntry entry("\x1BT", {NamedField{"\xC2\x9B" "F", std::string("\x1B=x")}});
+    BOOST_CHECK_EQUAL(csv().render(entry),
+                      kReplacement + "T," + kReplacement + "F," + kReplacement + "=x\n");
 }
 
 /// Edge case: an entry with no fields still yields one row with empty name
