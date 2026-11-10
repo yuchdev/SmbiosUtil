@@ -21,8 +21,14 @@ namespace smbios {
 /// Security note: the output is **not** sanitised. Firmware strings,
 /// including ESC/C1 terminal control sequences (CWE-150), reach the output
 /// unchanged, because R3 requires byte-identity with render_to_description().
-/// This is a pre-existing gap tracked as a post-0009 follow-up; use a
-/// structured format (`xml`, `json`) when the output is not trusted.
+/// This is a pre-existing gap tracked as a post-0009 follow-up. Switching to
+/// a structured format does not by itself make output terminal-safe: `xml`
+/// and `json` guarantee document well-formedness for any firmware bytes, and
+/// `xml` still passes DEL and the C1 controls (e.g. U+009B CSI) through as
+/// legal character data. Use `json` when untrusted output may be displayed
+/// directly in a terminal: it escapes every C0, DEL and C1 code point
+/// (threat model SR-1), leaving only display concerns such as bidi
+/// overrides to the consumer.
 ///
 /// Registered as `"text"` via REGISTER_OUTPUT_FORMATTER in
 /// text_formatter.cpp. Both members are defined out of line there, so a

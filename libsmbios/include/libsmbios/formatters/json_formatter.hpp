@@ -51,8 +51,10 @@ namespace smbios {
 /// `json.Number`, jq 1.7+) read them exactly. JavaScript `JSON.parse` and
 /// any other IEEE-754-double consumer silently round integers above 2^53
 /// (9007199254740992) - e.g. 64-bit memory-error addresses and extended
-/// sizes. Whether to string-encode such values is an open question; today
-/// they are always bare numbers.
+/// sizes. Decision (recorded in milestone 0009 status.md): integers
+/// are always emitted as exact bare digits and never string-encoded, so the
+/// document itself is lossless; a consumer that may see values above 2^53
+/// must parse numbers with an arbitrary-precision or 64-bit integer reader.
 ///
 /// Object keys are the field names. Field names are unique within one
 /// entry (contract C1, enforced by the get_fields() coverage tests), so no
@@ -61,9 +63,10 @@ namespace smbios {
 /// Security properties (threat model INFO-6):
 /// - every string value, the `type` value and every key pass through
 ///   json_escape(), so the document is valid JSON and valid UTF-8 for any
-///   firmware bytes (invalid UTF-8 becomes U+FFFD; no raw C0 byte, and so
-///   no raw ESC, is emitted; U+2028/U+2029 are escaped for JavaScript
-///   embedding);
+///   firmware bytes (invalid UTF-8 becomes U+FFFD; no raw C0, DEL or C1
+///   code point - and so neither ESC nor the 8-bit CSI U+009B - is emitted,
+///   which makes `json` the recommended format for terminal display;
+///   U+2028/U+2029 are escaped for JavaScript embedding);
 /// - output is deterministic: no timestamps, host or locale data, and
 ///   always `\n` line endings. Field values are never logged.
 ///

@@ -20,7 +20,9 @@ using namespace smbios;
 // self-registering output formatter registry in isolation, against
 // throwaway test-local formatters. Mirrors smbios_entry_factory_test.cpp's
 // structure case-for-case: registered lookup succeeds, unregistered lookup
-// returns nullptr, duplicate registration throws std::logic_error.
+// returns nullptr, duplicate registration throws std::logic_error. Also: a
+// namespace-qualified class name registers through the macro, and an empty
+// format name throws std::invalid_argument.
 // Boundaries: no built-in formatter (text/xml/json) is referenced here, so
 // this suite does not depend on which of them are linked in; the
 // enumeration case asserts "sorted and contains the fake", never an exact
@@ -73,6 +75,35 @@ public:
 // Registered at namespace scope (static-init time), exactly as a real
 // formatter's own .cpp file would do.
 REGISTER_OUTPUT_FORMATTER(FakeTestFormatter)
+
+namespace formatter_registry_test_ns {
+
+/// @brief Registry key of the namespace-qualified throwaway formatter.
+const char* const kNamespacedFormatName = "fake-namespaced-format";
+
+/// @brief Throwaway formatter living in a named namespace, so it can only be
+/// registered under its qualified name (the shape of Story 03.0's
+/// third-party CSV example, e.g. `ns::CsvFormatter`).
+class NamespacedTestFormatter : public smbios::IOutputFormatter {
+public:
+    std::string render(const smbios::AbstractSMBiosEntry& /*entry*/) const override { return "namespaced-render"; }
+    std::string format_name() const override { return kNamespacedFormatName; }
+};
+
+/// @brief Formatter that forgets to name itself; never registered through
+/// the macro (it would terminate at static init).
+class EmptyNameTestFormatter : public smbios::IOutputFormatter {
+public:
+    std::string render(const smbios::AbstractSMBiosEntry& /*entry*/) const override { return {}; }
+    std::string format_name() const override { return {}; }
+};
+
+} // namespace formatter_registry_test_ns
+
+// A namespace-qualified class name used to break the macro (it pasted
+// `class_name##_formatter_registered`). Also a second registration in this
+// TU, proving the generated variable names do not collide.
+REGISTER_OUTPUT_FORMATTER(formatter_registry_test_ns::NamespacedTestFormatter)
 
 BOOST_AUTO_TEST_SUITE(OutputFormatterRegistryUnitTests)
 
@@ -146,6 +177,29 @@ BOOST_AUTO_TEST_CASE(DuplicateRegistrationMessageNamesOnlyFormatTestCase)
 BOOST_AUTO_TEST_CASE(NullRegistrationThrowsTestCase)
 {
     BOOST_CHECK_THROW(register_output_formatter(nullptr), std::invalid_argument);
+}
+
+/// Regression case: REGISTER_OUTPUT_FORMATTER accepts a namespace-qualified
+/// class name, and the formatter resolves by name to that type.
+BOOST_AUTO_TEST_CASE(NamespaceQualifiedRegistrationResolvesTestCase)
+{
+    const IOutputFormatter* formatter = get_output_formatter(formatter_registry_test_ns::kNamespacedFormatName);
+
+    BOOST_REQUIRE(formatter != nullptr);
+    BOOST_CHECK(dynamic_cast<const formatter_registry_test_ns::NamespacedTestFormatter*>(formatter) != nullptr);
+    BOOST_CHECK_EQUAL(formatter->format_name(), formatter_registry_test_ns::kNamespacedFormatName);
+}
+
+/// Invalid-input case: a formatter with an empty format_name() is rejected
+/// with std::invalid_argument, and nothing is stored under "".
+BOOST_AUTO_TEST_CASE(EmptyFormatNameRegistrationThrowsTestCase)
+{
+    BOOST_CHECK_THROW(register_output_formatter(std::make_unique<formatter_registry_test_ns::EmptyNameTestFormatter>()),
+                      std::invalid_argument);
+    BOOST_CHECK(get_output_formatter("") == nullptr);
+
+    const std::vector<std::string> names = registered_output_formatter_names();
+    BOOST_CHECK(std::find(names.begin(), names.end(), std::string()) == names.end());
 }
 
 /// Normal case: the three framing hooks default to the empty string when a

@@ -6,7 +6,6 @@
 
 #include <cstdint>
 #include <string>
-#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -24,27 +23,20 @@ std::string json_string(const std::string& text)
 }
 
 /// @brief The JSON value for one field (see JsonFormatter's value encoding
-/// table).
+/// table). JSON records the alternative, so this dispatches on it, using the
+/// shared field_value_to_string() encoding for the textual form.
 std::string json_value(const FieldValue& value)
 {
-    return std::visit([](const auto& alternative) -> std::string {
-        using T = std::decay_t<decltype(alternative)>;
-        if constexpr (std::is_same_v<T, std::string>) {
-            return json_string(alternative);
-        }
-        else if constexpr (std::is_same_v<T, uint64_t>) {
-            // Integer formatting: exact decimal digits, locale-independent,
-            // never through a double and never in exponent form.
-            return std::to_string(alternative);
-        }
-        else if constexpr (std::is_same_v<T, bool>) {
-            return alternative ? "true" : "false";
-        }
-        else {
-            static_assert(std::is_same_v<T, std::vector<uint8_t>>, "unhandled FieldValue alternative");
-            return "\"" + hex_encode(alternative) + "\"";
-        }
-    }, value);
+    if (const auto* text = std::get_if<std::string>(&value)) {
+        return json_string(*text);
+    }
+    if (std::holds_alternative<std::vector<uint8_t>>(value)) {
+        // hex_encode() output: [0-9a-f] only, so no escaping is needed.
+        return "\"" + field_value_to_string(value) + "\"";
+    }
+    // uint64_t: exact decimal digits (never via a double, never in exponent
+    // form) as a bare JSON number; bool: a bare `true`/`false` literal.
+    return field_value_to_string(value);
 }
 
 } // namespace

@@ -50,6 +50,15 @@ namespace smbios {
 /// - output is deterministic: no timestamps, host or locale data, and
 ///   always `\n` line endings. Field values are never logged.
 ///
+/// @warning Terminal display: the guarantee is document well-formedness,
+/// not terminal safety. ESC and the other forbidden C0 controls are
+/// replaced, but DEL and the C1 controls U+007F-U+009F (including U+009B,
+/// the 8-bit CSI introducer) are legal XML 1.0 character data and pass
+/// through raw, because the only way to escape them is a character
+/// reference, which this writer never emits (threat model SR-1). Bidi
+/// overrides pass through too. Prefer `json` for output that may be shown
+/// directly in a terminal.
+///
 /// Registered as `"xml"` via REGISTER_OUTPUT_FORMATTER in xml_formatter.cpp.
 /// Every member is defined out of line there, so naming this class links
 /// its registration into a binary that does not force-load libsmbios.

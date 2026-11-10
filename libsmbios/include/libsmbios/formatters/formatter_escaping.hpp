@@ -71,8 +71,12 @@ std::string sanitize_utf8(const std::string& s);
 /// Passed through unchanged as data: TAB, LF and CR; DEL and the C1
 /// controls U+007F-U+009F (legal in XML 1.0); bidi overrides
 /// (U+202A-U+202E, U+2066-U+2069) and every other valid character.
-/// Neutralising bidi or C1 for display is the consumer's job (the escaper
-/// guarantees document structure, not display safety). Note that a
+/// Neutralising bidi or C1 for display is the consumer's job: the escaper
+/// guarantees document well-formedness, not terminal display safety. In
+/// particular a raw C1 control such as U+009B (CSI) reaches the output
+/// unchanged, because XML can only escape it with a character reference,
+/// which this policy forbids (threat model SR-1). Use json_escape() (the
+/// `json` format) when output may be shown directly in a terminal. Note that a
 /// conforming XML parser normalises a raw CR (or CR LF) in character data to
 /// LF, and TAB/LF/CR in attribute values to spaces; this escaper does not
 /// encode them as character references.
@@ -93,14 +97,21 @@ std::string xml_escape(const std::string& s);
 /// 3. Every code point U+0000-U+001F is escaped: `\b` `\f` `\n` `\r` `\t`
 ///    where a short form exists, otherwise `\u00XX` with lowercase hex
 ///    digits (so ESC becomes `\u001b`). No raw C0 byte is ever emitted.
-/// 4. U+2028 LINE SEPARATOR and U+2029 PARAGRAPH SEPARATOR become ` `
-///    and ` `. Both are legal raw in JSON, but escaping them keeps the
+/// 4. DEL and the C1 controls U+007F-U+009F become `\u007f`-`\u009f`
+///    (threat model SR-1). They are legal raw in JSON, but escaping them is
+///    lossless and keeps 8-bit terminal control introducers such as U+009B
+///    (CSI) out of the output, so a JSON document viewed directly in a
+///    terminal cannot carry an ESC- or C1-introduced control sequence.
+/// 5. U+2028 LINE SEPARATOR and U+2029 PARAGRAPH SEPARATOR become `\u2028`
+///    and `\u2029`. Both are legal raw in JSON, but escaping them keeps the
 ///    output safe to embed in a JavaScript source context.
 ///
-/// Every other code point - including `/`, DEL, the C1 controls, U+FFFE,
-/// U+FFFF and the bidi overrides - is emitted as raw UTF-8.
+/// Every other code point - including `/`, U+FEFF, U+FFFE, U+FFFF and the
+/// bidi overrides - is emitted as raw UTF-8. Bidi overrides remain the
+/// consumer's display concern.
 /// @param s arbitrary input bytes.
-/// @return valid UTF-8 that forms a valid JSON string body.
+/// @return valid UTF-8 that forms a valid JSON string body, containing no
+/// raw C0, DEL or C1 code point.
 std::string json_escape(const std::string& s);
 
 /// @brief Escapes `s` for use inside a YAML 1.2 double-quoted scalar
@@ -117,7 +128,11 @@ std::string json_escape(const std::string& s);
 ///    NEXT LINE, which becomes `\N`.
 /// 5. U+2028 and U+2029 become `\L` and `\P` (YAML 1.1 parsers treat them,
 ///    and U+0085, as line breaks).
-/// 6. U+FFFE and U+FFFF become `￾` and `￿`.
+/// 6. U+FEFF (byte order mark / ZERO WIDTH NO-BREAK SPACE) becomes
+///    `\ufeff` (threat model SR-2): it is inside `c-printable`, but YAML
+///    1.2 §5.2 forbids a BOM inside a document and some parsers strip it at
+///    a line start, so it is escaped losslessly rather than emitted raw.
+/// 7. U+FFFE and U+FFFF become `\ufffe` and `\uffff`.
 ///
 /// Hex digits in every escape are lowercase. After these rules no code
 /// point outside YAML 1.2's `c-printable` set (§5.1) remains raw. Bidi

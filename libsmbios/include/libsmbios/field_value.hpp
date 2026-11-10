@@ -26,4 +26,25 @@ struct NamedField {
     FieldValue value;
 };
 
+/// @brief Stringifies one FieldValue with the encoding every structured
+/// formatter shares (milestone 0009 Story 02.0):
+/// - `std::string` -> the string as-is, **unescaped**;
+/// - `uint64_t` -> its exact decimal digits (e.g. `18446744073709551615`),
+///   locale-independent, never via a `double` and never in exponent form;
+/// - `bool` -> `"true"` or `"false"`;
+/// - `std::vector<uint8_t>` -> hex_encode() of the bytes (two lowercase hex
+///   digits per byte, no separators; `""` for an empty vector).
+///
+/// Only the `std::string` alternative can carry firmware-controlled text;
+/// the other three produce only `[0-9a-z]`. The result is therefore *not*
+/// safe to embed in any structured format as-is: a formatter must still run
+/// a string result through the matching escaper in
+/// libsmbios/formatters/formatter_escaping.hpp (e.g. xml_escape()). A
+/// formatter that records the alternative (e.g. JSON's bare numbers and
+/// booleans) should dispatch on the variant itself rather than use this.
+/// Never throws except std::bad_alloc.
+/// @param value the field value to stringify.
+/// @return the value's textual form, as described above.
+std::string field_value_to_string(const FieldValue& value);
+
 } // namespace smbios

@@ -210,8 +210,11 @@ std::string smbios::json_escape(const std::string& s)
         case 0x2029: out += "\\u2029"; return;
         default: break;
         }
-        if (code_point < 0x20) {
-            append_hex_escape(out, "\\u", code_point, 4); // e.g. ESC -> \u001b
+        // C0 (e.g. ESC -> \u001b), plus DEL and C1 (e.g. CSI U+009B ->
+        // \u009b, threat model SR-1): lossless, and keeps every terminal
+        // control introducer out of the raw output.
+        if (code_point < 0x20 || (code_point >= 0x7F && code_point <= 0x9F)) {
+            append_hex_escape(out, "\\u", code_point, 4);
             return;
         }
         append_utf8(out, code_point);
@@ -239,6 +242,7 @@ std::string smbios::yaml_double_quoted_escape(const std::string& s)
         case 0x85:   out += "\\N";  return;
         case 0x2028: out += "\\L";  return;
         case 0x2029: out += "\\P";  return;
+        case 0xFEFF: out += "\\ufeff"; return; // BOM, SR-2
         case 0xFFFE: out += "\\ufffe"; return;
         case 0xFFFF: out += "\\uffff"; return;
         default: break;

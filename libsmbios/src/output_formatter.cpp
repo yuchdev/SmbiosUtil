@@ -28,6 +28,11 @@ void smbios::register_output_formatter(std::unique_ptr<IOutputFormatter> formatt
         throw std::invalid_argument("cannot register a null output formatter");
     }
     std::string name = formatter->format_name();
+    if (name.empty()) {
+        // An empty key could never be selected by name (e.g. `--format=`)
+        // and would only hide a formatter that forgot to name itself.
+        throw std::invalid_argument("cannot register an output formatter with an empty format name");
+    }
     auto& registry = formatter_registry();
     if (registry.find(name) != registry.end()) {
         // Programming error: two formatter classes (or two
@@ -60,4 +65,10 @@ std::vector<std::string> smbios::registered_output_formatter_names()
         names.push_back(item.first);
     }
     return names;
+}
+
+std::string smbios::render_document(const IOutputFormatter& formatter,
+                                    const std::vector<const AbstractSMBiosEntry*>& entries)
+{
+    return render_document(formatter, entries.begin(), entries.end());
 }

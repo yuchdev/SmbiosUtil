@@ -65,6 +65,34 @@ public:
 // use of REGISTER_SMBIOS_ENTRY in this translation unit.
 REGISTER_SMBIOS_ENTRY(kFakeHandlerValue, FakeTestEntry)
 
+/// @brief Unused SMBiosHandler-shaped value for the namespace-qualified
+/// registration case below; not one of SMBios::SMBiosHandler's members.
+constexpr uint8_t kNamespacedFakeHandlerValue = 252;
+
+namespace factory_test_ns {
+
+/// @brief Throwaway entry living in a named namespace, so it can only be
+/// registered under its qualified name `factory_test_ns::NamespacedFakeTestEntry`.
+class NamespacedFakeTestEntry : public AbstractSMBiosEntry {
+public:
+    NamespacedFakeTestEntry(const DMIHeader& header, const SMBiosVersion& /*version*/, const uint8_t* table_end)
+        : AbstractSMBiosEntry(header, table_end)
+    {
+    }
+
+    std::string get_type() const override { return "Namespaced Fake Test Entry"; }
+    std::string render_to_description() const override { return get_type(); }
+    std::vector<NamedField> get_fields() const override { return {}; }
+};
+
+} // namespace factory_test_ns
+
+// A namespace-qualified class name used to break the macro (it pasted
+// `class_name##_registered`, and `::` cannot be part of an identifier). It
+// also places a second registration in this TU, proving the generated
+// variable names do not collide.
+REGISTER_SMBIOS_ENTRY(kNamespacedFakeHandlerValue, factory_test_ns::NamespacedFakeTestEntry)
+
 BOOST_AUTO_TEST_SUITE(SMBiosEntryFactoryUnitTests)
 
 /// Normal case: a type registered via REGISTER_SMBIOS_ENTRY resolves to a
@@ -83,6 +111,20 @@ BOOST_AUTO_TEST_CASE(CreateReturnsRegisteredFakeEntryTestCase)
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<FakeTestEntry*>(entry.get()) != nullptr);
     BOOST_CHECK_EQUAL(entry->get_type(), "Fake Test Entry");
+}
+
+/// Regression case: REGISTER_SMBIOS_ENTRY accepts a namespace-qualified
+/// class name, and the entry resolves through create() to that type.
+BOOST_AUTO_TEST_CASE(CreateReturnsNamespaceQualifiedRegisteredEntryTestCase)
+{
+    DMIHeader header{};
+    header.type = kNamespacedFakeHandlerValue;
+
+    std::unique_ptr<AbstractSMBiosEntry> entry = SMBiosEntryFactory().create(header, SMBiosVersion{2, 0}, nullptr);
+
+    BOOST_REQUIRE(entry != nullptr);
+    BOOST_CHECK(dynamic_cast<factory_test_ns::NamespacedFakeTestEntry*>(entry.get()) != nullptr);
+    BOOST_CHECK_EQUAL(entry->get_type(), "Namespaced Fake Test Entry");
 }
 
 /// Edge case: a handler value nothing ever registered returns nullptr,

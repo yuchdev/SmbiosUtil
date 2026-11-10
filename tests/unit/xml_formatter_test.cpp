@@ -196,6 +196,19 @@ BOOST_AUTO_TEST_CASE(XmlFormatterPassesBidiThroughTestCase)
     BOOST_CHECK(is_well_formed_xml(out));
 }
 
+/// Policy pin (threat model SR-1): unlike `json`, `xml` passes DEL and the
+/// C1 controls (here U+009B CSI) through raw, because XML 1.0 allows them
+/// and the only escape would be a character reference, which the policy
+/// forbids. The document stays well-formed; terminal safety is not promised.
+BOOST_AUTO_TEST_CASE(XmlFormatterPassesC1ControlsThroughTestCase)
+{
+    const std::string c1 = "\xC2\x9B" "2J\x7F\xC2\x9F";
+    const std::string out = XmlFormatter().render(single_field(std::string(c1)));
+    BOOST_CHECK_EQUAL(out, single_field_xml(c1));
+    BOOST_CHECK(out.find("&#") == std::string::npos);
+    BOOST_CHECK(is_well_formed_xml(out));
+}
+
 /// Edge case (Task 03 case 8): a 255-byte vector renders as exactly 510
 /// lowercase hex characters, untruncated.
 BOOST_AUTO_TEST_CASE(XmlFormatterRendersMaximumByteFieldTestCase)

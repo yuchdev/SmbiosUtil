@@ -23,7 +23,8 @@
 // and adds no dependency. The JSON/XML well-formedness validators
 // (is_well_formed_json/is_well_formed_xml/is_valid_utf8) live in
 // structured_output_validators.hpp/.cpp (Task 03); this header includes it
-// so every formatter test gets them.
+// so every formatter test gets them. Whole documents are built with the
+// library's own smbios::render_document() (output_formatter.hpp).
 
 namespace smbios {
 namespace test {
@@ -131,23 +132,6 @@ inline std::vector<std::pair<std::string, std::string>> invalid_utf8_cases()
         {"\xF4\x90\x80\x80", r + r + r + r},         // U+110000, above U+10FFFF
         {"Caf\xE9", "Caf" + r},                      // Latin-1, truncated at end
     };
-}
-
-/// @brief Renders `entries` exactly as the CLI frames a document:
-/// begin_document(), then each render() with entry_separator() between
-/// consecutive entries, then end_document().
-inline std::string render_document(const IOutputFormatter& formatter,
-                                   const std::vector<const AbstractSMBiosEntry*>& entries)
-{
-    std::string out = formatter.begin_document();
-    for (size_t i = 0; i < entries.size(); ++i) {
-        if (i != 0) {
-            out += formatter.entry_separator();
-        }
-        out += formatter.render(*entries[i]);
-    }
-    out += formatter.end_document();
-    return out;
 }
 
 /// @brief True iff `s` contains any raw byte in [low, high].

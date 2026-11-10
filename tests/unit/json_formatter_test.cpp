@@ -175,14 +175,14 @@ BOOST_AUTO_TEST_CASE(JsonFormatterReplacesInvalidUtf8VendorTestCase)
 /// Security cases (Task 03 cases 2, 3): every C0 control is escaped -
 /// short forms where defined, lowercase \u00XX otherwise, ESC -> \u001b -
 /// so no raw C0 byte (and no raw ESC of an ANSI sequence) appears; DEL
-/// passes raw.
+/// becomes \u007f (SR-1).
 BOOST_AUTO_TEST_CASE(JsonFormatterEscapesControlCharactersTestCase)
 {
     const std::string controls = JsonFormatter().render(single_field(std::string(all_c0_controls_and_del())));
     BOOST_CHECK_EQUAL(controls, single_field_json(
         "\"\\u0001\\u0002\\u0003\\u0004\\u0005\\u0006\\u0007\\b\\t\\n\\u000b\\f\\r\\u000e\\u000f"
         "\\u0010\\u0011\\u0012\\u0013\\u0014\\u0015\\u0016\\u0017\\u0018\\u0019\\u001a\\u001b"
-        "\\u001c\\u001d\\u001e\\u001f\x7F\""));
+        "\\u001c\\u001d\\u001e\\u001f\\u007f\""));
     BOOST_CHECK(is_well_formed_json(controls));
 
     const std::string ansi = JsonFormatter().render(single_field(std::string("\x1b[31mRED\x1b[0m")));
@@ -200,6 +200,19 @@ BOOST_AUTO_TEST_CASE(JsonFormatterLineSeparatorsAndNoncharactersTestCase)
     BOOST_CHECK_EQUAL(out, single_field_json("\"" + bidi + "\\u2028\\u2029" "\xEF\xBF\xBE\xEF\xBF\xBF" "\""));
     BOOST_CHECK(out.find("\xE2\x80\xA8") == std::string::npos);
     BOOST_CHECK(out.find("\xE2\x80\xA9") == std::string::npos);
+    BOOST_CHECK(is_well_formed_json(out));
+}
+
+/// Regression case (threat model SR-1), at formatter level: a firmware
+/// string holding the 8-bit CSI introducer U+009B followed by `2J` (clear
+/// screen) renders with \u009b, never the raw `C2 9B` pair, and DEL and the
+/// last C1 control (U+009F) are escaped too; the document stays valid.
+BOOST_AUTO_TEST_CASE(JsonFormatterEscapesC1ControlsRegressionTestCase)
+{
+    const std::string out = JsonFormatter().render(single_field(std::string("\xC2\x9B" "2J\x7F\xC2\x9F")));
+    BOOST_CHECK_EQUAL(out, single_field_json("\"\\u009b2J\\u007f\\u009f\""));
+    BOOST_CHECK(out.find("\xC2\x9B") == std::string::npos);
+    BOOST_CHECK(!contains_byte_in_range(out, 0x7F, 0xFF));
     BOOST_CHECK(is_well_formed_json(out));
 }
 

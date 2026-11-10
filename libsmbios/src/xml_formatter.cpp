@@ -6,8 +6,6 @@
 
 #include <cstdint>
 #include <string>
-#include <type_traits>
-#include <variant>
 #include <vector>
 
 // R4: this writer sees entries only through get_type()/get_fields(). It must
@@ -18,26 +16,13 @@ using namespace smbios;
 namespace {
 
 /// @brief XML character data for one field value (see XmlFormatter's value
-/// encoding table). Every string goes through xml_escape(); the other
-/// alternatives produce only [0-9a-z] and need no escaping.
+/// encoding table): the shared field_value_to_string() encoding, escaped.
+/// Only the string alternative can need escaping (the others produce only
+/// [0-9a-z], which xml_escape() leaves unchanged), but escaping every result
+/// keeps the "everything goes through xml_escape()" invariant unconditional.
 std::string xml_value(const FieldValue& value)
 {
-    return std::visit([](const auto& alternative) -> std::string {
-        using T = std::decay_t<decltype(alternative)>;
-        if constexpr (std::is_same_v<T, std::string>) {
-            return xml_escape(alternative);
-        }
-        else if constexpr (std::is_same_v<T, uint64_t>) {
-            return std::to_string(alternative); // exact decimal digits
-        }
-        else if constexpr (std::is_same_v<T, bool>) {
-            return alternative ? "true" : "false";
-        }
-        else {
-            static_assert(std::is_same_v<T, std::vector<uint8_t>>, "unhandled FieldValue alternative");
-            return hex_encode(alternative);
-        }
-    }, value);
+    return xml_escape(field_value_to_string(value));
 }
 
 } // namespace

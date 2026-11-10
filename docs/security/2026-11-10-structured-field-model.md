@@ -138,3 +138,62 @@ serializer acceptance criteria.
 
 Handoffs: fixes to `cpp-expert` (HIGH-1, LOW-4, LOW-5); regression and fuzz coverage to
 `testing-expert` (HIGH-1 test, MEDIUM-2 harness extension).
+
+---
+
+## Story 02.0 review - 2026-11-10
+
+Scope: `git diff 04e93f4..HEAD -- libsmbios tests` (code commits `f3447b2`, `edc344b`, `92a768e`):
+`formatter_escaping.cpp`, `xml_formatter.cpp`, `json_formatter.cpp`, `text_formatter.cpp`,
+`output_formatter.cpp`, and the Task 03 test validators.
+
+### Assets & trust boundaries (delta)
+Firmware strings and byte payloads (untrusted, any byte 0x01-0xFF, length up to the table size)
+→ `get_fields()` → `for_each_code_point` (strict UTF-8) → per-format escaper → document text
+handed to the caller (CLI stdout, `smbios_c` consumers, files). Field names and type labels are
+library constants. Format names are code constants. Nothing is logged or persisted.
+
+### Requirement verification
+
+| Prior item | Status | Evidence |
+|---|---|---|
+| INFO-6: strict UTF-8 with U+FFFD | **Met** | `formatter_escaping.cpp:42-117`. The lead-byte classes match Unicode Table 3-7. Narrowing the second-byte range rejects E0/F0 overlongs (`:68-70`, `:78-80`), ED surrogates (`:71-73`) and anything above U+10FFFF on F4 (`:81-83`). C0/C1/F5-FF/stray continuations are rejected at `:85-91`. Every read is guarded (`:47`, `:96`) and each step advances at least 1 byte (`:115`). `append_utf8` is only ever given scalar values. Tests: `formatter_escaping_test.cpp:116-176` (maximal subparts, all 256 single bytes, property sweep). |
+| INFO-6: XML forbidden code points replaced, never referenced | **Met** | `formatter_escaping.cpp:157-163,180-183`. The forbidden set (C0 except TAB/LF/CR, plus U+FFFE/U+FFFF) is exactly the complement of XML 1.0 `Char` once surrogates are excluded. No `&#` is emitted anywhere. The only fixed markup is the XML declaration (`xml_formatter.cpp:75`). No DOCTYPE or other PI is ever emitted, which `xml_formatter_test.cpp:177,256` and the validator's `<!`/`<?` rejection (`structured_output_validators.cpp:282-284`) assert. |
+| INFO-6: no firmware text in names (CWE-91) | **Met** | Element names are literals. Field name and type are emitted only as escaped, double-quoted attribute values (`xml_formatter.cpp:51,59`), and `"` is escaped (`formatter_escaping.cpp:188`). All 45 `get_type()` implementations return string literals. `get_fields_coverage_test.cpp` `FieldNamesAreFirmwareIndependent` checks that names are printable ASCII and the same under hostile strings. |
+| INFO-6: JSON escaping complete | **Met** | `formatter_escaping.cpp:200-218` escapes `"`, `\` and all of U+0000-U+001F (short forms or `\u00xx`), plus U+2028/U+2029, which satisfies RFC 8259 §7. Keys and the type label go through the same path (`json_formatter.cpp:56,64`). Integers are exact digits (`:38`), and the 2^53 limit is documented (`json_formatter.hpp` @warning). |
+| INFO-6: YAML double-quoted escaper complete | **Met** (one INFO below) | `formatter_escaping.cpp:226-251`. Every code point outside YAML 1.2 `c-printable` is escaped: C0, DEL, C1 (with U+0085 as `\N`), U+FFFE and U+FFFF. U+2028/U+2029 are also escaped, as `\L`/`\P`. Every escape used is valid in both YAML 1.1 and 1.2. |
+| INFO-6: raw bytes hex-encoded, generic cap | **Met by documented decision** | `hex_encode` (`formatter_escaping.cpp:255-264`) reserves exactly `2*size`. The multiplication cannot wrap, because `vector<uint8_t>::max_size() <= PTRDIFF_MAX`. There is no cap, and the reason is documented at `formatter_escaping.hpp:136-141`. I checked that every byte-vector source is bounded by one formatted area: `additional_information_entry.cpp:144`, `management_controller_host_interface_entry.cpp:102`, `system_boot_information_entry.cpp:75-82`, `processor_additional_information_entry.cpp:111`. Accepted. |
+| LOW-3: clamp decision | **Met (decided and documented)** | Renderers never clamp (`status.md` "Carried forward"). Unclamped output is pinned by `xml_formatter_test.cpp:266`. Getter-side clamping is still an open follow-up, so LOW-3 itself stays open at entry level. |
+| LOW-5: `const char*` → `bool` | **Met (test-pinned)** | `field_value_test.cpp:78-88` (`NamedFieldStringLiteralStaysStringTestCase`) fails on a pre-P1957 library. This is a runtime check rather than a compile-time one, which is acceptable for a robustness item. |
+| Registry error messages leak nothing | **Met** | `output_formatter.cpp:28,38`. The messages contain only a null notice or the code-constant format name. No field value can reach them. |
+
+### Findings
+
+#### [LOW] SR-1 C1 controls (incl. U+009B CSI) are emitted raw in JSON and XML, contradicting the "use a structured format when output is not trusted" guidance
+- Vector / evidence: `formatter_escaping.cpp:213-217` (JSON escapes only < U+0020) and `:157-163,190` (XML passes U+007F-U+009F through), as documented at `formatter_escaping.hpp:71-75,100-101`. `text_formatter.hpp:24-25` tells users to prefer `xml`/`json` for untrusted output. A firmware string containing `C2 9B 32 4A` (UTF-8 U+009B followed by `2J`) is valid UTF-8 and reaches stdout unchanged. Terminals that act on UTF-8-encoded C1 controls (e.g. xterm) interpret it as CSI.
+- Impact: terminal escape injection when structured output is viewed directly in a terminal (CWE-150). The 7-bit ESC introducer is neutralised (ESC becomes `\u001b` in JSON and is replaced in XML); only the 8-bit C1 introducers are not. Document structure is unaffected.
+- Mitigation (`cpp-expert`): in `json_escape`, also emit U+007F-U+009F as `\u00xx`. This is lossless and keeps the output valid JSON, with no contract change. For XML, keep the current behaviour, since C1 is legal data and character references are banned by policy. Reword `text_formatter.hpp:24-25` to say that structured formats guarantee *document structure*, not terminal display safety. Regression test (`testing-expert`): `json_escape("\xC2\x9B")` must equal `\u009b`.
+
+#### [INFO] SR-2 YAML escaper passes U+FEFF (BOM) raw
+- Vector / evidence: `formatter_escaping.cpp:242-250`. U+FEFF lies inside `c-printable`, so the output is spec-valid. YAML 1.2 §5.2, however, says a BOM must not appear inside a document, and some parsers strip it at line starts.
+- Impact: interoperability and integrity only. Story 03.0 should not ship this behaviour unexamined.
+- Mitigation: emit `\ufeff` in `yaml_double_quoted_escape` (lossless). Optionally do the same in JSON.
+
+#### [INFO] SR-3 Registry is unsynchronised; `register_output_formatter` is public
+- Vector / evidence: `output_formatter.cpp:17-41`, `output_formatter.hpp:59-70`. A plain `std::map` with no lock. Static initialisation within a module is single-threaded, and `get_output_formatter`/`registered_output_formatter_names` only read, so the intended use is race-free. A caller that registers after `main` while another thread looks up a formatter causes a data race (CWE-362). A duplicate registration throws during static init and calls `std::terminate`. That is intended fail-fast behaviour, but if it ever happened inside `smbios_c` it would abort the host process at `dlopen`. Format names are code constants, so this is reachable only through a programming error. `smbios_c`'s export allowlist keeps `register_output_formatter` out of the shared library's ABI.
+- Mitigation: add "not thread-safe; static-init only" to the `register_output_formatter` doc comment. If Story 03.0 adds runtime or custom registration, add a mutex (or freeze the registry after init) at that point. The returned pointer is valid until static destruction, not "for the rest of the program's lifetime" (`output_formatter.hpp:75`); a doc nit.
+
+#### [INFO] SR-4 XML end-of-line and attribute normalisation change CR/TAB/LF on round trip
+- Vector / evidence: `formatter_escaping.cpp:157-163` passes raw TAB/LF/CR through, as documented at `formatter_escaping.hpp:75-78`. A conforming parser reads CR in character data as LF. Attribute values are constants (printable ASCII, test-enforced), so they are unaffected.
+- Impact: low-grade integrity loss for firmware strings that contain CR. Not exploitable.
+- Mitigation: accepted as documented. Revisit only if exact XML round-tripping becomes a requirement.
+
+#### [INFO] SR-5 Test validators are safe to reuse
+- `structured_output_validators.cpp`: JSON recursion is capped at depth 256 (`:72,92`). The XML validator is iterative, with an explicit stack (`:274`). Allocation is linear in input size: decoded strings take at most 4 bytes per input byte, plus the key set. Every `substr`/index use is bounded. One nit: after a trailing backslash, `string()` advances `pos_` past `size()` (`:176-178`) before returning `false`. It never reads there, but a fuzz reuse should keep the "return immediately" invariant. The decoder (`:27-52`) is independent of the library's decoder, so the two genuinely cross-check each other.
+
+### Accepted residual risks (status.md "Notes & decisions")
+- **No runtime duplicate-key assert: agree.** Names are library constants, not firmware-derived, which `FieldNamesAreFirmwareIndependent` covers across all 45 types. `is_well_formed_json` rejects duplicate keys after decoding escapes. Revisit if names ever come from data, as recorded.
+- **`text` unsanitised under R3 (CWE-150 follow-up): agree, with conditions.** It is byte-identical to the pre-existing `render_to_description()` path, so it is not a regression. The header warning is in place. Conditions: (a) the follow-up must be tracked by an issue or roadmap item, not only a note; (b) the "prefer structured formats" advice must be corrected, or SR-1 fixed, because JSON and XML currently pass C1 controls too.
+
+### Verdict: PASS_WITH_FOLLOWUP (CONCERNS)
+No CRITICAL or HIGH findings, so merge is not blocked. INFO-6, LOW-3 (renderer-side decision) and LOW-5 are met. Follow-ups: SR-1 to `cpp-expert`, with a regression test to `testing-expert`; SR-2 before Story 03.0's YAML writer ships; SR-3 doc comment.

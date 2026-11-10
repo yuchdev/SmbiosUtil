@@ -19,8 +19,9 @@ using smbios::test::kReplacement;
 // table-driven input/expected-output pairs: the strict UTF-8 sanitising
 // step (maximal-subpart U+FFFD replacement), xml_escape() (replace the
 // XML 1.0-forbidden set, escape the five specials), json_escape() (short
-// forms, \u00XX, U+2028/U+2029), yaml_double_quoted_escape() (YAML short
-// forms, \xXX for C0/DEL/C1, \N \L \P, \ufffe \uffff) and hex_encode().
+// forms, \u00XX for C0/DEL/C1, U+2028/U+2029), yaml_double_quoted_escape()
+// (YAML short forms, \xXX for C0/DEL/C1, \N \L \P, \ufeff \ufffe \uffff)
+// and hex_encode().
 // Boundaries: empty input; every byte 0x00-0xFF on its own; a seeded
 // pseudo-random sweep asserting the output invariants (valid UTF-8, no
 // forbidden raw bytes, sanitize idempotence) for arbitrary bytes.
@@ -248,22 +249,24 @@ BOOST_AUTO_TEST_CASE(JsonEscapeSpecialCharactersTestCase)
 
 /// Security case (Task 03 case 2): every C0 byte is escaped - short forms
 /// for \b \t \n \f \r, lowercase \u00XX otherwise (ESC -> \u001b); DEL
-/// passes raw; NUL -> \u0000.
+/// -> \u007f (SR-1); NUL -> \u0000.
 BOOST_AUTO_TEST_CASE(JsonEscapeEscapesEveryControlTestCase)
 {
     const std::string expected =
         "\\u0001\\u0002\\u0003\\u0004\\u0005\\u0006\\u0007\\b\\t\\n\\u000b\\f\\r\\u000e\\u000f"
         "\\u0010\\u0011\\u0012\\u0013\\u0014\\u0015\\u0016\\u0017\\u0018\\u0019\\u001a\\u001b"
-        "\\u001c\\u001d\\u001e\\u001f\x7F";
+        "\\u001c\\u001d\\u001e\\u001f\\u007f";
     const std::string out = json_escape(smbios::test::all_c0_controls_and_del());
     BOOST_CHECK_EQUAL(out, expected);
     BOOST_CHECK(!smbios::test::contains_byte_in_range(out, 0x00, 0x1F));
+    BOOST_CHECK(!smbios::test::contains_byte_in_range(out, 0x7F, 0x7F));
     BOOST_CHECK_EQUAL(json_escape(std::string("\0", 1)), "\\u0000");
 }
 
 /// Security cases (Task 03 cases 1, 3, 4, 5): invalid UTF-8 -> U+FFFD;
-/// ANSI ESC escaped; U+2028/U+2029 -> \u2028/\u2029; bidi, C1, U+FFFE and
-/// U+FFFF pass through raw; valid multi-byte passes through.
+/// ANSI ESC escaped; U+2028/U+2029 -> \u2028/\u2029; C1 -> \u00XX (SR-1);
+/// bidi, U+FFFE and U+FFFF pass through raw; valid multi-byte passes
+/// through.
 BOOST_AUTO_TEST_CASE(JsonEscapeUnicodeAndHostileInputTestCase)
 {
     const std::string& r = kReplacement;
@@ -274,11 +277,48 @@ BOOST_AUTO_TEST_CASE(JsonEscapeUnicodeAndHostileInputTestCase)
         {kLineSep + "x" + kParaSep, "\\u2028x\\u2029"},
         {kRlo + kLri + kPdi, kRlo + kLri + kPdi},
         {kFFFE + kFFFF, kFFFE + kFFFF},
-        {kCsi + kNel, kCsi + kNel},
+        {kCsi + kNel, "\\u009b\\u0085"},
     });
     for (const auto& c : smbios::test::invalid_utf8_cases()) {
         BOOST_CHECK_EQUAL(json_escape(c.first), c.second);
     }
+}
+
+/// Regression case (threat model SR-1): the C1 introducer U+009B (CSI)
+/// used to pass through json_escape() raw, so `C2 9B 32 4A` reached a
+/// terminal as CSI 2J. It must now be escaped as \u009b, as must DEL and
+/// every other C1 control, losslessly and with lowercase hex.
+BOOST_AUTO_TEST_CASE(JsonEscapeEscapesDelAndC1RegressionTestCase)
+{
+    BOOST_CHECK_EQUAL(json_escape("\xC2\x9B"), "\\u009b");
+    BOOST_CHECK_EQUAL(json_escape("\xC2\x9B" "2J"), "\\u009b2J");
+    BOOST_CHECK_EQUAL(json_escape("\x7F"), "\\u007f");
+
+    static const char kHex[] = "0123456789abcdef";
+    std::string all_c1;
+    std::string expected;
+    for (unsigned code_point = 0x80; code_point <= 0x9F; ++code_point) {
+        all_c1.push_back(static_cast<char>(0xC0 | (code_point >> 6)));
+        all_c1.push_back(static_cast<char>(0x80 | (code_point & 0x3F)));
+        expected += "\\u00";
+        expected.push_back(kHex[code_point >> 4]);
+        expected.push_back(kHex[code_point & 0xF]);
+    }
+    const std::string out = json_escape(all_c1);
+    BOOST_CHECK_EQUAL(out, expected);
+    // No raw C1 in UTF-8 form (lead byte C2 only ever starts U+0080-U+00BF).
+    BOOST_CHECK(!smbios::test::contains_byte_in_range(out, 0x80, 0xFF));
+}
+
+/// Edge case (SR-1 boundaries): U+007E and U+00A0, the code points either
+/// side of the DEL..C1 block, still pass through raw.
+BOOST_AUTO_TEST_CASE(JsonEscapeC1BoundariesPassThroughTestCase)
+{
+    check_cases(json_escape, {
+        {"~", "~"},
+        {"\xC2\xA0", "\xC2\xA0"},
+        {"~\x7F\xC2\x9F\xC2\xA0", "~\\u007f\\u009f\xC2\xA0"},
+    });
 }
 
 // ----------------------------------------------------------------- YAML ---
@@ -331,6 +371,22 @@ BOOST_AUTO_TEST_CASE(YamlEscapeUnicodeAndHostileInputTestCase)
     for (const auto& c : smbios::test::invalid_utf8_cases()) {
         BOOST_CHECK_EQUAL(yaml_double_quoted_escape(c.first), c.second);
     }
+}
+
+/// Regression case (threat model SR-2): U+FEFF (BOM) used to pass through
+/// the YAML escaper raw; YAML 1.2 forbids a BOM inside a document, so it is
+/// now escaped losslessly as \ufeff, wherever it appears. JSON keeps it
+/// raw (only the YAML escaper changed).
+BOOST_AUTO_TEST_CASE(YamlEscapeEscapesByteOrderMarkTestCase)
+{
+    const std::string bom = "\xEF\xBB\xBF"; // U+FEFF
+    check_cases(yaml_double_quoted_escape, {
+        {bom, "\\ufeff"},
+        {bom + "Vendor", "\\ufeffVendor"},
+        {"a" + bom + "b" + bom, "a\\ufeffb\\ufeff"},
+        {"\xEF\xBB\xBE", "\xEF\xBB\xBE"}, // U+FEFE, a neighbour, stays raw
+    });
+    BOOST_CHECK_EQUAL(json_escape(bom), bom);
 }
 
 // ------------------------------------------------------------------ hex ---
