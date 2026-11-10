@@ -33,7 +33,7 @@ std::string OemStringsEntry::render_to_description() const
     description << "Header type: " << get_type() << '\n';
     const uint8_t count = get_string_count();
     description << "String Count: " << static_cast<unsigned>(count) << '\n';
-    for (uint8_t index = 1; index <= count; ++index) {
+    for (unsigned index = 1; index <= count; ++index) {
         description << "String " << static_cast<unsigned>(index) << ": " << get_string_at(index) << '\n';
     }
 
@@ -58,7 +58,7 @@ std::vector<NamedField> OemStringsEntry::get_fields() const
     std::vector<NamedField> fields;
     const uint8_t count = get_string_count();
     fields.push_back({"String Count", static_cast<uint64_t>(count)});
-    for (uint8_t index = 1; index <= count; ++index) {
+    for (unsigned index = 1; index <= count; ++index) {
         fields.push_back({"String " + std::to_string(static_cast<unsigned>(index)), get_string_at(index)});
     }
     return fields;

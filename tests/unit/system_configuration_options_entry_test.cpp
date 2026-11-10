@@ -1,5 +1,7 @@
 #include <cstdint>
 #include <memory>
+#include <sstream>
+#include <string>
 #include <vector>
 
 #include <libsmbios/smbios.hpp>
@@ -210,6 +212,71 @@ BOOST_AUTO_TEST_CASE(SystemConfigurationOptionsEntryGetFieldsCountBeyondStringsR
         {"Option 1", str("Only")},
         {"Option 2", str("Bad index")},
     });
+}
+
+// Regression: security finding HIGH-1 (CWE-835/770), see
+// docs/security/2026-11-10-structured-field-model.md.
+//
+// Type: unit - deterministic, synthetic buffers, no hardware/privileges.
+// Scenario: Count = 0xFF (spec-legal maximum). The 1-based loop over
+// 1..Count used a uint8_t counter, which wrapped 255 -> 0 and never
+// terminated, growing the output until allocation failed.
+// Boundaries: count = 255 with only two real strings - indices 3..255 fall
+// back to dmi_string()'s "Bad index" sentinel; output must stop at index 255.
+// On failure first check: the loop counter type in SystemConfigurationOptionsEntry::get_fields()
+// / render_to_description() (libsmbios/src/system_configuration_options_entry.cpp) - it must be wider than uint8_t. A
+// timeout (rather than an assertion failure) means the wrap-around is back.
+
+/// Regression case: get_fields() with Count = 0xFF returns exactly 256 fields
+/// ("Option Count" + "Option 1".."Option 255") and terminates.
+BOOST_AUTO_TEST_CASE(SystemConfigurationOptionsEntryGetFieldsMaxCountTerminatesTestCase, *boost::unit_test::timeout(10))
+{
+    using namespace smbios::test;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemConfigurationOptions, std::vector<uint8_t>{0xFF},
+                          std::vector<std::string>{"First", "Second"});
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    SystemConfigurationOptionsEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    std::vector<NamedField> expected{{"Option Count", num(255)}};
+    for (unsigned index = 1; index <= 255; ++index) {
+        const char* value = index == 1 ? "First" : index == 2 ? "Second" : "Bad index";
+        expected.push_back({"Option " + std::to_string(index), str(value)});
+    }
+
+    const std::vector<NamedField> fields = entry.get_fields();
+    BOOST_REQUIRE_EQUAL(fields.size(), static_cast<size_t>(256));
+    check_fields_equal(fields, expected);
+}
+
+/// Regression case: render_to_description() with Count = 0xFF terminates and
+/// emits exactly 256 count/item lines ("Option Count" + 255 "Option N"),
+/// after the "Header type" line.
+BOOST_AUTO_TEST_CASE(SystemConfigurationOptionsEntryRenderMaxCountTerminatesTestCase, *boost::unit_test::timeout(10))
+{
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemConfigurationOptions, std::vector<uint8_t>{0xFF},
+                          std::vector<std::string>{"First", "Second"});
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    SystemConfigurationOptionsEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    std::string expected = "Header type: System Configuration Options\nOption Count: 255\n";
+    for (unsigned index = 1; index <= 255; ++index) {
+        const char* value = index == 1 ? "First" : index == 2 ? "Second" : "Bad index";
+        expected += "Option " + std::to_string(index) + ": " + value + "\n";
+    }
+
+    const std::string description = entry.render_to_description();
+    std::istringstream lines(description);
+    std::string line;
+    size_t item_lines = 0;
+    while (std::getline(lines, line)) {
+        if (line.rfind("Option ", 0) == 0) ++item_lines;
+    }
+    BOOST_CHECK_EQUAL(item_lines, static_cast<size_t>(256));
+    BOOST_CHECK_EQUAL(description, expected);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

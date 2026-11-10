@@ -18,6 +18,24 @@ test-only seam the hermetic unit-test layer uses
 `libsmbios/include/libsmbios/smbios.hpp`) - no `ISmbiosSource`, no real hardware
 access, is ever involved.
 
+After the walk, the harness also decodes every walked header the same way the
+`smbios` CLI and `smbios_c` do: `SMBiosEntryFactory::create()` (skipping
+`nullptr` for unregistered types), then `render_to_description()` and
+`get_fields()` on the result. This fuzzes every registered entry decoder's
+offset/length math, not just the table walk (security finding MEDIUM-2 in
+`docs/security/2026-11-10-structured-field-model.md`). The SMBIOS version
+passed to the decoders is fixed at 3.9 rather than taken from the host, so
+version-gated fields are reachable and runs reproduce across machines. The
+target links `libsmbios` as a whole archive (`-force_load` /
+`--whole-archive`, like the CLI), otherwise no `REGISTER_SMBIOS_ENTRY` static
+initializer would run and the factory would return `nullptr` for everything.
+When `SMBIOS_BUILD_FUZZERS=ON`, `libsmbios` itself is also compiled with
+`-fsanitize=fuzzer-no-link,address,undefined`, so libFuzzer gets coverage
+feedback from the decoders and ASan/UBSan see their memory accesses. This is
+also required for correctness: without it, libc++'s ASan container
+annotations abort (`CHECK failed: asan_poisoning.cpp`) when the instrumented
+harness clears a `std::vector` that uninstrumented `libsmbios` code filled.
+
 To avoid reconstructing a real `smbios::SMBios` (which walks the real
 `ISmbiosSource` chain in its constructor) on every one of libFuzzer's
 thousands-to-millions of calls per run, the harness constructs **one**
@@ -65,7 +83,7 @@ is additive only.
 
 ```sh
 cd build/macos/libsmbios/bin   # wherever CMAKE_RUNTIME_OUTPUT_DIRECTORY put it
-./read_smbios_table_fuzzer -max_total_time=60
+./read_smbios_table_fuzzer -max_total_time=60 -timeout=5
 ```
 
 A short run (minutes, not hours) is enough to prove the harness actually
@@ -93,7 +111,14 @@ Useful extra flags:
   records the specific local run performed when this task landed.
 - **Clang-only.** No GCC/MSVC fallback is provided or planned - libFuzzer
   itself does not support those toolchains.
-- Only exercises the buffer-parsing path (`read_smbios_table()`/
-  `count_smbios_structures()`/the string-walk inside it) - it does not
-  exercise any `ISmbiosSource` (those read real firmware/OS state and are
-  out of scope for a byte-buffer fuzzer).
+- Exercises the buffer-parsing path (`read_smbios_table()`/
+  `count_smbios_structures()`/the string-walk inside it) and every
+  registered entry decoder (`render_to_description()`/`get_fields()`) - it
+  does not exercise any `ISmbiosSource` (those read real firmware/OS state
+  and are out of scope for a byte-buffer fuzzer).
+- Build with `-DCMAKE_BUILD_TYPE=Release` (or otherwise define `NDEBUG`) for
+  decoder fuzzing: a few decoders still `assert(false)` on out-of-spec enum
+  bytes (pre-existing, finding LOW-4), which aborts a debug build on input
+  the release build handles safely.
+- Pass `-timeout=5` (or similar) so a non-terminating decoder loop is
+  reported as a finding instead of stalling the run.

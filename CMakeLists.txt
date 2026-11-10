@@ -250,7 +250,34 @@ if(SMBIOS_BUILD_FUZZERS)
             -fsanitize=fuzzer,address,undefined)
     endif()
 
+    # The harness decodes every walked header through SMBiosEntryFactory
+    # (security finding MEDIUM-2) but names no concrete entry class, so -
+    # exactly as for the smbios CLI (smbios/src/CMakeLists.txt) - libsmbios
+    # must be linked as a whole archive, or no REGISTER_SMBIOS_ENTRY static
+    # initializer would run and create() would return nullptr for every type.
+    if(APPLE)
+        target_link_options(${SMBIOS_FUZZER_TARGET} PRIVATE "LINKER:-force_load,$<TARGET_FILE:libsmbios>")
+    else()
+        target_link_options(${SMBIOS_FUZZER_TARGET} PRIVATE
+            "LINKER:--whole-archive,$<TARGET_FILE:libsmbios>,--no-whole-archive")
+    endif()
+
     target_link_libraries(${SMBIOS_FUZZER_TARGET} PRIVATE libsmbios)
+
+    # Instrument libsmbios itself (coverage + ASan/UBSan), not just the
+    # harness translation unit: the decoders under test live there, so
+    # without this libFuzzer gets no coverage feedback from them and ASan
+    # cannot see their memory accesses. It is also required for correctness:
+    # libc++'s ASan container annotations abort ("CHECK failed:
+    # asan_poisoning.cpp") when a std::vector grown by uninstrumented
+    # libsmbios code is cleared by the instrumented harness (the
+    # parse_synthetic_table() seam). The INTERFACE link option lets every
+    # other consumer of libsmbios in this fuzz-only build link the
+    # sanitizer runtimes too.
+    target_compile_options(libsmbios PRIVATE
+        -fsanitize=fuzzer-no-link,address,undefined
+        -g)
+    target_link_options(libsmbios INTERFACE -fsanitize=address,undefined)
 
     set_target_properties(${SMBIOS_FUZZER_TARGET} PROPERTIES FOLDER "Tests")
 endif()
