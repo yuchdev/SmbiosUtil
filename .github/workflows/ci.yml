@@ -59,6 +59,14 @@ jobs:
       - name: Check c-versions GPL isolation
         run: ${{ runner.os == 'Windows' && 'python' || 'python3' }} scripts/check_cversions_isolation.py
 
+      # Milestone 0009, Story 03.0, Task 03 (D3): every output sample in
+      # docs/output-formats.md must equal its generated golden file under
+      # tests/data/output_formats/ byte-for-byte. Stdlib-only Python, no
+      # build needed, platform-independent - so one OS is enough.
+      - name: Check doc output samples match golden files
+        if: runner.os == 'Linux'
+        run: python3 scripts/check_doc_samples.py --check
+
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11.6
         with:
@@ -130,7 +138,12 @@ jobs:
         # not a firmware or GetSystemFirmwareTable() problem. --timeout 60
         # stays as the bound for any future hang: it fails fast as a
         # reported timeout instead of silently consuming the whole job.
-        run: ctest --test-dir build/${{ matrix.preset }} -C Debug --output-on-failure --timeout 60 -R "smbios_unit_test|smbios_mock_test|smbios_c_|smbios_cli_unknown_format"
+        #
+        # Milestone 0009, Story 03.0, Task 03: smbios_example_* (examples/)
+        # are must-pass too - they read the live machine but degrade to an
+        # empty, well-formed document when no table is readable (D2), so
+        # they pass with or without privileges.
+        run: ctest --test-dir build/${{ matrix.preset }} -C Debug --output-on-failure --timeout 60 -R "smbios_unit_test|smbios_mock_test|smbios_c_|smbios_cli_unknown_format|smbios_example_"
 
       # Milestone 0005, Story 04.0, Task 02: unlike Linux/macOS's legacy
       # scan, Windows's native source (GetSystemFirmwareTable(), via
@@ -227,8 +240,9 @@ jobs:
           ASAN_OPTIONS: ${{ matrix.os == 'macos-latest' && 'detect_leaks=0:detect_container_overflow=0' || 'detect_container_overflow=0' }}
         # Milestone 0007, Story 03.0: smbios_c_* (tests/c_abi/) joins this
         # hard-gate bucket, not the best-effort one below - see the build
-        # job's "Run unprivileged tests" step for why.
-        run: ctest --output-on-failure --timeout 60 -R 'smbios_unit_test|smbios_mock_test|smbios_c_|smbios_cli_unknown_format'
+        # job's "Run unprivileged tests" step for why. Milestone 0009's
+        # smbios_example_* join it for the same reason (they degrade, D2).
+        run: ctest --output-on-failure --timeout 60 -R 'smbios_unit_test|smbios_mock_test|smbios_c_|smbios_cli_unknown_format|smbios_example_'
 
       - name: Run privileged tests best-effort (smbios_integration_test, smbios_perf_test)
         if: steps.build.outcome == 'success'
