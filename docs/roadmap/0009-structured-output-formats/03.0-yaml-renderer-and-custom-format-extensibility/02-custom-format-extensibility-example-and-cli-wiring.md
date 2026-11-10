@@ -87,6 +87,23 @@ Prove R5 with a real, separately built CSV formatter that lives outside
   message on `stderr`, before any SMBIOS read is attempted.
 - The `text` path is byte-identical to the pre-milestone CLI output on
   stdout (R3).
+- *Amended 2026-11-10 (security-auditor INFO-6):* **CSV formula injection
+  (CWE-1236).**
+  - Neutralise formula injection with a single quote. If a cell value
+    (after `hex_encode()` for bytes) starts with `=`, `+`, `-`, `@`, TAB
+    or CR, prefix it with `'`, then apply RFC 4180 quoting.
+  - `-` is common in real values (for example negative-looking part
+    numbers), and those values gain a visible `'`. That trade-off is
+    accepted and documented in `csv_formatter.cpp`'s header comment.
+  - Test: `tests/unit/csv_formatter_test.cpp` (new) covers each of the six
+    leading characters, a value with an embedded `"`, `,` and newline, and
+    a benign value that must be unchanged.
+    - The example is not part of `libsmbios`, so `tests/unit/CMakeLists.txt`
+      adds `smbios/examples/csv_formatter.cpp` to `smbios_unit_test`'s
+      sources. This is build wiring only; the source itself is not edited.
+    - The test reaches the formatter via `get_output_formatter("csv")`,
+      fed by Story 02.0 Task 03's `FieldsTestEntry`.
+  - Source: [threat model INFO-6](../../../security/2026-11-10-structured-field-model.md).
 
 ## Tests
 

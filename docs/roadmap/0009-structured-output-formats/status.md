@@ -255,6 +255,27 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
   They must also decide whether to clamp the repeated-record counts that are
   not checked against structure length.
+  - *Amended 2026-11-10 (security-auditor INFO-6):* folded into the Story 02.0
+    specs (README, Tasks 01-03) and the Story 03.0 Task 01/02 specs.
+    Renderer stance on LOW-3: **render exactly what `get_fields()` returns,
+    and never clamp in a renderer.**
+- **Follow-up (LOW-3), entry getters, not renderers:** clamp the
+  repeated-record loops in Memory Channel, Firmware Inventory, Event Log
+  descriptors, MCHI protocol records and Firmware Language to
+  `min(count, records that fit in Length)`. Expose the declared count as
+  its own field, and change `render_to_description()` and `get_fields()`
+  together so they stay in agreement. Story 02.0 Task 03 case 11's expected
+  count moves with it.
+- **Former open questions (security-auditor INFO-6). Resolved 2026-11-10 by
+  the loop taking the reversible default; revisit any of them on request:**
+  - JSON `uint64_t` values stay exact-digit numbers, and the 2^53 limit is
+    documented. Switch to strings only if a JavaScript consumer appears,
+    since a switch changes the type contract of every integer field.
+  - Stripping ESC/C1 controls from `text` / `render_to_description()`
+    (CWE-150) is a **post-0009 follow-up**. R3 forbids it inside this
+    milestone.
+  - Escaping U+2028/U+2029 in JSON is kept. The output is still valid JSON
+    and is safe when embedded in JavaScript.
 - **Non-blocking review suggestions:**
   - Add a shared `hex_string()` helper to remove the duplicated hex
     formatting.

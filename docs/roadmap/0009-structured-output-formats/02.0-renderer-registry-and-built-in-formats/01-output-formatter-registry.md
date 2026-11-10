@@ -89,6 +89,18 @@ Task 02 and Story 03.0 build against this interface.
   is a cleaner user experience than an uncaught exception's stack unwind.
 - **Names are case-sensitive and lowercase.** The built-in names are
   `text`, `xml`, `json` and `yaml`.
+- *Amended 2026-11-10 (security-auditor INFO-6):* **framing and errors
+  carry no firmware data.**
+  - `begin_document()`, `entry_separator()` and `end_document()` take no
+    entry and return only fixed, formatter-owned text, such as the XML
+    declaration and root element, or the JSON `[`/`,`/`]`. They therefore
+    cannot be a firmware-injection point.
+  - The concatenated output must be one well-formed document for zero, one
+    and many entries. [Task 03](03-tests.md) case 9 asserts this.
+  - The `std::logic_error` raised on a duplicate name, and every other
+    registry or formatter diagnostic, names only the format name or the
+    field name. It never includes a field value or a raw DMI string.
+    Source: [threat model INFO-6](../../../security/2026-11-10-structured-field-model.md).
 
 ## Tests
 
@@ -110,4 +122,6 @@ Task 02 and Story 03.0 build against this interface.
 - [ ] The registry behaves identically in shape and failure modes to the
       entry-type registry. Verify this with a side-by-side read of both
       test files, not just by inspecting the code.
+- [ ] *Amended 2026-11-10 (security-auditor INFO-6):* the framing hooks
+      return fixed text only, and no diagnostic includes a field value.
 - [ ] `smbios_unit_test` is green.

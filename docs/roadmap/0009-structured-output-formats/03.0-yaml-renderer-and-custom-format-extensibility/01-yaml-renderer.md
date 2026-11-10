@@ -40,6 +40,22 @@ question is settled: the 2026-11-10 ratified decision says "no
   - A `uint64_t` is an unquoted decimal, and a `bool` is an unquoted
     `true`/`false`.
   - A `std::vector<uint8_t>` is a double-quoted `hex_encode()` string.
+  - *Amended 2026-11-10 (security-auditor INFO-6):* **control and
+    non-printable characters.** `yaml_double_quoted_escape()` first applies
+    Story 02.0's strict UTF-8 sanitising (invalid sequences become U+FFFD).
+    It then escapes `"` and `\`, and escapes every code point outside the
+    YAML 1.2 `c-printable` set (§5.1), not only C0:
+    - U+0000-U+001F use the YAML short forms where they exist (`\0 \a \b
+      \t \n \v \f \r \e`) and `\xXX` otherwise. ESC becomes `\e`, so no raw
+      `0x1B` is emitted.
+    - DEL and C1 (U+007F-U+009F) become `\xXX`.
+    - U+0085, U+2028 and U+2029 become `\N`, `\L` and `\P`, because YAML 1.1
+      parsers treat them as line breaks.
+    - U+FFFE and U+FFFF become `￾` and `￿`.
+    - Bidi overrides are printable, so they pass through as data. See
+      [Story 02.0 Task 02](../02.0-renderer-registry-and-built-in-formats/02-text-xml-and-json-renderers.md).
+    - The emitter never writes `&anchor`, `*alias`, `!tag` or `%` directives.
+      Source: [threat model INFO-6](../../../security/2026-11-10-structured-field-model.md).
   - Concatenating per-entry renders yields one valid YAML sequence, so YAML
     needs no extra document framing. It is still subject to whatever Story
     02.0 Task 01 decided for the other formats.
@@ -68,6 +84,11 @@ question is settled: the 2026-11-10 ratified decision says "no
     `"yes"`, `"1.10"`, `"0x0A"`, `"~"`, `"null"`, a value containing
     `": "`, a leading `-`, an embedded `"`/`\`, a newline, and invalid
     UTF-8. All must be double-quoted and correctly escaped.
+  - *Amended 2026-11-10 (security-auditor INFO-6):* it covers every byte
+    0x01-0x1F and 0x7F, a C1 byte pair (`C2 9B`, CSI), an ANSI sequence
+    `"\x1b[31m"`, U+0085, U+2028, U+2029, U+FFFE and U+202E. It asserts the
+    exact escape for each, and that no raw C0, C1 or DEL byte appears in the
+    output.
 - Dev-only round-trip: pipe the same renders through Python's
   `yaml.safe_load` (PyYAML, a developer-machine tool, not a build or CI
   dependency). Confirm every value round-trips with its intended type.

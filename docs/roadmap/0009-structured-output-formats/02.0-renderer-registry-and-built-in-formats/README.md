@@ -4,6 +4,15 @@
 **Status:** ⬜ Not started
 **Depends on:** Story 01.0 (`get_fields()` pure virtual on all 45 entry types)
 
+> **Security-sensitive** (*amended 2026-11-10, security-auditor INFO-6*).
+> This story serializes untrusted, firmware-controlled strings and bytes
+> into machine-readable documents. A `--read-file` dump is fully
+> attacker-controlled. The escaping, UTF-8, byte-cap and field-name rules
+> in [Task 02](02-text-xml-and-json-renderers.md) are acceptance criteria,
+> not style. The security tests in [Task 03](03-tests.md) gate story exit.
+> Threat model: [docs/security/2026-11-10-structured-field-model.md](../../../security/2026-11-10-structured-field-model.md)
+> (INFO-6, LOW-3, LOW-5). Request a security-auditor review in this story's `/pr-review`.
+
 ## Scope
 
 This story implements:
@@ -44,6 +53,14 @@ This story implements:
 - **Escaping is shared.** XML, JSON and YAML escaping, invalid-UTF-8
   handling and the raw-byte hex encoding live in one internal helper
   (Task 02). Each writer does not carry its own copy.
+- *Amended 2026-11-10 (security-auditor INFO-6/LOW-3):* **render exactly
+  what `get_fields()` returns.**
+  - Writers never clamp, drop or synthesise fields.
+  - Placeholder records produced by unvalidated firmware counts (LOW-3) are
+    fixed in the entry getters, as a follow-up, not in the renderers.
+  - Field names are library constants, never firmware bytes.
+
+  See Task 02's Constraints.
 - **Registration and linking.** Built-in formatters live in `libsmbios`.
   They register at static-init time only when their object file is linked:
   - `smbios`, `smbios_c` and `tests/c_abi` already force-load `libsmbios`
