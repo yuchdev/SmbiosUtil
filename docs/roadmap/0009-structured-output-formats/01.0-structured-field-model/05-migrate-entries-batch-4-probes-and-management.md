@@ -84,11 +84,14 @@
 - **Coverage case** (new, in `tests/unit/smbios_entry_factory_test.cpp` or
   a new `tests/unit/get_fields_coverage_test.cpp`).
   - For every one of the 45 registered SMBIOS type values, build a
-    minimal valid structure with `SyntheticTableBuilder`, create it through
+    valid structure long enough to reach every version and length tier
+    (*amended 2026-11-10:* a minimal structure trips existing `assert(false)`
+    getters) with `SyntheticTableBuilder`, create it through
     `SMBiosEntryFactory::create()`, and assert `get_fields()` is callable
     and yields unique names.
-  - `InactiveEntry` must yield an empty vector. Every other type must yield
-    at least one field.
+  - `InactiveEntry` and `BootIntegrityServicesEntry` must yield an empty
+    vector, because neither one's text output carries data fields
+    (*amended 2026-11-10*). Every other type must yield at least one field.
   - Because `smbios_unit_test` does not force-load `libsmbios`, this test
     TU must `#include` all 45 entry headers and reference each class (as
     the existing entry tests do), so that every registration object file

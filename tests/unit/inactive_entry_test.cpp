@@ -79,8 +79,8 @@ BOOST_AUTO_TEST_CASE(WrongTypeThrowsTestCase)
 
 /// get_fields() (milestone 0009, Story 01.0, Task 02). Type: unit.
 /// Scenario: InactiveEntry's text carries no data fields, so get_fields()
-/// deliberately returns an empty vector (not the TEMPORARY base default -
-/// this is its own override). Boundary: header-only, the only shape this
+/// deliberately returns an empty vector (its own override of the pure-virtual
+/// base). Boundary: header-only, the only shape this
 /// structure takes. On failure first check: InactiveEntry::get_fields() in
 /// libsmbios/src/inactive_entry.cpp.
 BOOST_AUTO_TEST_CASE(InactiveEntryGetFieldsIsDeliberatelyEmptyTestCase)

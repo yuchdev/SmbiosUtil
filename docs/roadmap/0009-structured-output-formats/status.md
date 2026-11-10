@@ -6,7 +6,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 | Story | Name                                           | Status         | Tests |
 |-------|----------------------------------------------------|----------------|-------|
-| 01.0  | Structured field model                             | 🔶 In progress (4/6 tasks) | 492 unit |
+| 01.0  | Structured field model                             | 🔶 In progress (5/6 tasks) | 514 unit |
 | 02.0  | Renderer registry and built-in formats             | ⬜ Not started | -     |
 | 03.0  | YAML renderer and custom-format extensibility      | ⬜ Not started | -     |
 
@@ -154,3 +154,24 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
     test registration. It is clean with `detect_container_overflow=0`.
     This is likely an uninstrumented-Boost false positive; confirm against
     CI's sanitizer job at story close.
+- **2026-11-10 - Story 01.0 Task 05 (batch 4) passed verify-task, with spec
+  amendments.**
+  - `BootIntegrityServicesEntry` yields no fields, like `InactiveEntry`,
+    because its text output is only the header and a fixed sentence.
+  - The coverage test uses a 0x60 formatted area filled with `0x02`, at
+    SMBIOS 3.9, rather than a minimal structure.
+  - Structured output is a *text-parity* view: fields that
+    `render_to_description()` never prints are not emitted (OEM-defined
+    probe data, IPMI modifier bits, host-interface specific bytes). A
+    complete decode would be new scope.
+  - Its 45-row coverage table is hand-maintained, because the factory has no
+    enumeration API. Task 06 should close this drift gap.
+  - More mirrored quirks for follow-up:
+    - Probe and threshold values are decoded as unsigned `uint16_t`, so a
+      negative temperature prints as 65526. dmidecode treats these values
+      as signed.
+    - The IPMI spec revision is BCD with no validation and no dot.
+    - Handles and addresses are printed in decimal in the
+      management-device, component and IPMI structures.
+    - When a host-interface record count overstates the buffer, the
+      missing records are filled with defaults.

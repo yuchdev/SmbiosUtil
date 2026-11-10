@@ -29,7 +29,7 @@ and `smbios_unit_test` green**:
 | 02 | [Migrate entries, batch 1: platform and firmware](02-migrate-entries-batch-1-platform-and-firmware.md) | ✅ Complete (`07568f5`) | 05     |
 | 03 | [Migrate entries, batch 2: processor and memory](03-migrate-entries-batch-2-processor-and-memory.md) | ✅ Complete (`2373683`) | 05     |
 | 04 | [Migrate entries, batch 3: slots, devices and power](04-migrate-entries-batch-3-slots-devices-and-power.md) | ✅ Complete (`bac07b9`) | 05     |
-| 05 | [Migrate entries, batch 4: probes and management; make `get_fields()` pure virtual](05-migrate-entries-batch-4-probes-and-management.md) | ⬜ Not started | 06     |
+| 05 | [Migrate entries, batch 4: probes and management; make `get_fields()` pure virtual](05-migrate-entries-batch-4-probes-and-management.md) | ✅ Complete (`b27a4da`) | 06     |
 | 06 | [Tests](06-tests.md)                                                   | ⬜ Not started | -      |
 
 Tasks 02, 03 and 04 are independent of each other once Task 01 has landed,
