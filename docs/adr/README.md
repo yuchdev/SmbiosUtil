@@ -10,6 +10,8 @@ are in `assets/`.
 |------------|--------------------------------|--------|------|
 | [0001](0001-per-os-smbios-source-libraries.md) | Per-OS SMBIOS source libraries | Proposed | 2026-11-06 |
 | [0002](0002-tables-segment-for-smbios-entry-types.md) | `tables/` segment for SMBIOS structure-type entry classes | Proposed | 2026-11-08 |
+| [0003](0003-gui-toolkit-for-smbios-visualization.md) | GUI toolkit for SMBIOS visualization | Proposed | 2026-11-10 |
+| [0004](0004-package-manager-distribution.md) | Package manager distribution for `libsmbios` and `smbios_c` | Proposed | 2026-11-10 |
 
 ## Template
 
