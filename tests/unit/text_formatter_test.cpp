@@ -28,6 +28,9 @@ using namespace smbios::test;
 // deliberately does NOT sanitise (known CWE-150 gap, post-0009 follow-up).
 // Also: `text` resolves through the registry, and keeps the empty framing
 // hooks (the CLI owns the text preamble).
+// Task 03 adds the text legs of security cases 2/4/5 and 9 (hostile
+// valid-UTF-8 vendors pass through; a framed hostile document is the plain
+// concatenation of render_to_description()).
 // Boundaries: one well-formed structure per entry, formatted area filled
 // with 0x02 at SMBIOS 3.9 (same shape as get_fields_coverage_test.cpp).
 // On failure first check: libsmbios/src/text_formatter.cpp (must return
@@ -135,6 +138,41 @@ BOOST_AUTO_TEST_CASE(TextFormatterPassesAnsiEscapeThroughKnownGapTestCase)
     const std::string out = TextFormatter().render(**entry);
     BOOST_CHECK(out == (**entry).render_to_description());
     BOOST_CHECK(out.find("Vendor: " + ansi + "\n") != std::string::npos);
+}
+
+/// Security cases (Task 03 cases 2, 4, 5, text leg): every C0 control plus
+/// DEL, bidi overrides with U+2028/U+2029, and U+FFFE/U+FFFF as a BIOS
+/// vendor reach `text` byte-identically to render_to_description() - `text`
+/// sanitises nothing (R3; same known CWE-150 gap as the ANSI case above).
+BOOST_AUTO_TEST_CASE(TextFormatterPassesHostileValidUtf8ThroughTestCase)
+{
+    const IOutputFormatter* formatter = get_output_formatter("text");
+    BOOST_REQUIRE(formatter != nullptr);
+    for (const auto& v : hostile_valid_utf8_values()) {
+        BOOST_TEST_CONTEXT(v.first) {
+            auto entry = make_bios_entry(v.second);
+            BOOST_REQUIRE(entry->get() != nullptr);
+            const std::string out = formatter->render(**entry);
+            BOOST_CHECK(out == (**entry).render_to_description());
+            BOOST_CHECK(out.find("Vendor: " + v.second + "\n") != std::string::npos);
+        }
+    }
+}
+
+/// Edge case (Task 03 case 9, text leg): framing the hostile multi-entry
+/// corpus through the registry yields exactly the concatenation of every
+/// entry's render_to_description() - no framing, separators or rewriting.
+BOOST_AUTO_TEST_CASE(TextFormatterRegistryDocumentIsConcatenationTestCase)
+{
+    const IOutputFormatter* formatter = get_output_formatter("text");
+    BOOST_REQUIRE(formatter != nullptr);
+    const HostileDocumentCorpus corpus;
+    std::string expected;
+    for (const AbstractSMBiosEntry* entry : corpus.entries()) {
+        expected += entry->render_to_description();
+    }
+    BOOST_CHECK(render_document(*formatter, corpus.entries()) == expected);
+    BOOST_CHECK_EQUAL(render_document(*formatter, {}), "");
 }
 
 /// Edge case: a test double's description is returned verbatim - `text`

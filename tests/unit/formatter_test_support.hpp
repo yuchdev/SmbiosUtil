@@ -1,8 +1,9 @@
 #pragma once
 
-#include <cctype>
 #include <cstdint>
+#include <limits>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -13,13 +14,16 @@
 #include <libsmbios/field_value.hpp>
 #include <libsmbios/output_formatter.hpp>
 
+#include "structured_output_validators.hpp"
 #include "synthetic_table_builder.hpp"
 
-// Shared test-support for milestone 0009 Story 02.0 Task 02's formatter
-// tests (formatter_escaping_test.cpp, text/xml/json_formatter_test.cpp).
-// Header-only and test-only: never included by libsmbios production
-// sources. Adds no dependency - the structural checks here are deliberately
-// small; the full RFC 8259 / XML 1.0 validators belong to Task 03.
+// Shared test-support for milestone 0009 Story 02.0's formatter tests
+// (formatter_escaping_test.cpp, text/xml/json_formatter_test.cpp).
+// Header-only and test-only: never included by libsmbios library sources,
+// and adds no dependency. The JSON/XML well-formedness validators
+// (is_well_formed_json/is_well_formed_xml/is_valid_utf8) live in
+// structured_output_validators.hpp/.cpp (Task 03); this header includes it
+// so every formatter test gets them.
 
 namespace smbios {
 namespace test {
@@ -146,35 +150,6 @@ inline std::string render_document(const IOutputFormatter& formatter,
     return out;
 }
 
-/// @brief Strict RFC 3629 UTF-8 check, written independently of
-/// libsmbios's sanitize_utf8() so the two cross-check each other.
-inline bool is_valid_utf8(const std::string& s)
-{
-    size_t i = 0;
-    while (i < s.size()) {
-        const auto b0 = static_cast<unsigned char>(s[i]);
-        size_t length = 0;
-        uint32_t cp = 0;
-        if (b0 < 0x80) { ++i; continue; }
-        else if ((b0 & 0xE0) == 0xC0) { length = 2; cp = b0 & 0x1F; }
-        else if ((b0 & 0xF0) == 0xE0) { length = 3; cp = b0 & 0x0F; }
-        else if ((b0 & 0xF8) == 0xF0) { length = 4; cp = b0 & 0x07; }
-        else { return false; }
-        if (i + length > s.size()) return false;
-        for (size_t k = 1; k < length; ++k) {
-            const auto b = static_cast<unsigned char>(s[i + k]);
-            if ((b & 0xC0) != 0x80) return false;
-            cp = (cp << 6) | (b & 0x3F);
-        }
-        const uint32_t min_for_length[] = {0, 0, 0x80, 0x800, 0x10000};
-        if (cp < min_for_length[length]) return false;      // overlong
-        if (cp >= 0xD800 && cp <= 0xDFFF) return false;     // surrogate
-        if (cp > 0x10FFFF) return false;                    // out of range
-        i += length;
-    }
-    return true;
-}
-
 /// @brief True iff `s` contains any raw byte in [low, high].
 inline bool contains_byte_in_range(const std::string& s, unsigned char low, unsigned char high)
 {
@@ -185,226 +160,6 @@ inline bool contains_byte_in_range(const std::string& s, unsigned char low, unsi
     return false;
 }
 
-/// @brief Minimal structural XML check for this writer's output subset:
-/// valid UTF-8; no XML 1.0-forbidden C0 byte; an optional leading
-/// `<?xml ...?>` declaration; then exactly one root element with balanced,
-/// correctly nested tags; attribute values double-quoted; every `&` one of
-/// the five predefined entities; no `<!` construct (DOCTYPE, ENTITY,
-/// comment, CDATA) and no other processing instruction; only whitespace
-/// outside the root. Not a general XML parser (the full validator is Story
-/// 02.0 Task 03's), but it rejects every structural break an escaping bug
-/// could cause.
-inline bool is_structurally_valid_xml(const std::string& doc)
-{
-    if (!is_valid_utf8(doc)) return false;
-    for (const char c : doc) {
-        const auto b = static_cast<unsigned char>(c);
-        if (b < 0x20 && b != 0x09 && b != 0x0A && b != 0x0D) return false;
-    }
-    if (doc.find("\xEF\xBF\xBE") != std::string::npos || doc.find("\xEF\xBF\xBF") != std::string::npos) {
-        return false; // U+FFFE / U+FFFF
-    }
-    auto is_space = [](char c) { return c == ' ' || c == '\t' || c == '\n' || c == '\r'; };
-    auto is_name_char = [](char c) {
-        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-';
-    };
-    auto valid_reference = [&doc](size_t amp) {
-        for (const char* entity : {"&amp;", "&lt;", "&gt;", "&quot;", "&apos;"}) {
-            if (doc.compare(amp, std::char_traits<char>::length(entity), entity) == 0) return true;
-        }
-        return false;
-    };
-
-    size_t i = 0;
-    const std::string declaration = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-    if (doc.compare(0, declaration.size(), declaration) == 0) i = declaration.size();
-
-    std::vector<std::string> open;
-    bool root_seen = false;
-    while (i < doc.size()) {
-        const char c = doc[i];
-        if (c == '&') {
-            if (open.empty() || !valid_reference(i)) return false;
-            ++i;
-        }
-        else if (c == '>') {
-            if (open.empty()) return false;
-            ++i; // legal in character data, though this writer escapes it
-        }
-        else if (c != '<') {
-            if (open.empty() && !is_space(c)) return false; // text outside root
-            ++i;
-        }
-        else if (doc.compare(i, 2, "</") == 0) {
-            i += 2;
-            const size_t start = i;
-            while (i < doc.size() && is_name_char(doc[i])) ++i;
-            if (open.empty() || doc.substr(start, i - start) != open.back()) return false;
-            if (i >= doc.size() || doc[i] != '>') return false;
-            open.pop_back();
-            ++i;
-        }
-        else {
-            ++i;
-            const size_t start = i;
-            while (i < doc.size() && is_name_char(doc[i])) ++i;
-            if (i == start) return false; // `<!`, `<?`, `< ` ...
-            if (open.empty()) {
-                if (root_seen) return false; // second root
-                root_seen = true;
-            }
-            open.push_back(doc.substr(start, i - start));
-            while (true) {
-                while (i < doc.size() && is_space(doc[i])) ++i;
-                if (i >= doc.size()) return false;
-                if (doc[i] == '>') { ++i; break; }
-                if (doc.compare(i, 2, "/>") == 0) { i += 2; open.pop_back(); break; }
-                const size_t attr = i;
-                while (i < doc.size() && is_name_char(doc[i])) ++i;
-                if (i == attr || i + 1 >= doc.size() || doc[i] != '=' || doc[i + 1] != '"') return false;
-                i += 2;
-                while (i < doc.size() && doc[i] != '"') {
-                    if (doc[i] == '<') return false;
-                    if (doc[i] == '&' && !valid_reference(i)) return false;
-                    ++i;
-                }
-                if (i >= doc.size()) return false;
-                ++i; // closing quote
-            }
-        }
-    }
-    return root_seen && open.empty();
-}
-
-/// @brief Minimal RFC 8259 recursive-descent check: valid UTF-8; one value
-/// with only whitespace around it; strings with no raw U+0000-U+001F and
-/// only the standard escapes (`\uXXXX` with four hex digits); numbers per
-/// the grammar; no duplicate key within one object (compared on the
-/// escaped key text, which is exact for this writer's canonical escaping).
-/// The fuller validator with its own self-tests is Story 02.0 Task 03's.
-class JsonStructureChecker {
-public:
-    /// @return true iff `doc` is one well-formed JSON text.
-    static bool check(const std::string& doc)
-    {
-        if (!is_valid_utf8(doc)) return false;
-        JsonStructureChecker checker(doc);
-        checker.skip_space();
-        if (!checker.value(0)) return false;
-        checker.skip_space();
-        return checker.pos_ == doc.size();
-    }
-
-private:
-    explicit JsonStructureChecker(const std::string& doc) : doc_(doc) {}
-
-    bool at_end() const { return pos_ >= doc_.size(); }
-    char peek() const { return at_end() ? '\0' : doc_[pos_]; }
-    void skip_space()
-    {
-        while (!at_end() && (peek() == ' ' || peek() == '\t' || peek() == '\n' || peek() == '\r')) ++pos_;
-    }
-    bool literal(const char* word)
-    {
-        const size_t n = std::char_traits<char>::length(word);
-        if (doc_.compare(pos_, n, word) != 0) return false;
-        pos_ += n;
-        return true;
-    }
-    bool value(int depth)
-    {
-        if (depth > 64) return false;
-        switch (peek()) {
-        case '{': return object(depth);
-        case '[': return array(depth);
-        case '"': { std::string ignored; return string(ignored); }
-        case 't': return literal("true");
-        case 'f': return literal("false");
-        case 'n': return literal("null");
-        default: return number();
-        }
-    }
-    bool object(int depth)
-    {
-        ++pos_; // '{'
-        skip_space();
-        if (peek() == '}') { ++pos_; return true; }
-        std::vector<std::string> keys;
-        while (true) {
-            std::string key;
-            if (peek() != '"' || !string(key)) return false;
-            for (const auto& seen : keys) {
-                if (seen == key) return false; // duplicate key
-            }
-            keys.push_back(key);
-            skip_space();
-            if (peek() != ':') return false;
-            ++pos_;
-            skip_space();
-            if (!value(depth + 1)) return false;
-            skip_space();
-            if (peek() == ',') { ++pos_; skip_space(); continue; }
-            if (peek() == '}') { ++pos_; return true; }
-            return false;
-        }
-    }
-    bool array(int depth)
-    {
-        ++pos_; // '['
-        skip_space();
-        if (peek() == ']') { ++pos_; return true; }
-        while (true) {
-            if (!value(depth + 1)) return false;
-            skip_space();
-            if (peek() == ',') { ++pos_; skip_space(); continue; }
-            if (peek() == ']') { ++pos_; return true; }
-            return false;
-        }
-    }
-    bool string(std::string& raw)
-    {
-        const size_t start = ++pos_; // past opening quote
-        while (!at_end()) {
-            const auto c = static_cast<unsigned char>(doc_[pos_]);
-            if (c == '"') { raw = doc_.substr(start, pos_ - start); ++pos_; return true; }
-            if (c < 0x20) return false; // raw control character
-            if (c == '\\') {
-                ++pos_;
-                const char e = peek();
-                if (e == 'u') {
-                    for (int k = 1; k <= 4; ++k) {
-                        if (pos_ + k >= doc_.size() || !std::isxdigit(static_cast<unsigned char>(doc_[pos_ + k]))) return false;
-                    }
-                    pos_ += 5;
-                    continue;
-                }
-                if (std::string("\"\\/bfnrt").find(e) == std::string::npos || e == '\0') return false;
-            }
-            ++pos_;
-        }
-        return false; // unterminated
-    }
-    bool number()
-    {
-        auto digit = [this] { return !at_end() && peek() >= '0' && peek() <= '9'; };
-        if (peek() == '-') ++pos_;
-        if (peek() == '0') { ++pos_; }
-        else if (digit()) { while (digit()) ++pos_; }
-        else return false;
-        if (peek() == '.') { ++pos_; if (!digit()) return false; while (digit()) ++pos_; }
-        if (peek() == 'e' || peek() == 'E') {
-            ++pos_;
-            if (peek() == '+' || peek() == '-') ++pos_;
-            if (!digit()) return false;
-            while (digit()) ++pos_;
-        }
-        return true;
-    }
-
-    const std::string& doc_;
-    size_t pos_ = 0;
-};
-
 /// @brief Every byte 0x01-0x1F followed by 0x7F (Task 03 case 2's input).
 inline std::string all_c0_controls_and_del()
 {
@@ -414,6 +169,102 @@ inline std::string all_c0_controls_and_del()
     }
     s.push_back('\x7F');
     return s;
+}
+
+/// @brief The valid-UTF-8 hostile values of Task 03 cases 2-5, each paired
+/// with a unique field name: every C0 control plus DEL, an ANSI SGR
+/// sequence, bidi overrides/isolates plus U+2028/U+2029, and the XML
+/// non-characters U+FFFE/U+FFFF. None contains NUL, so each can also be a
+/// DMI string.
+inline std::vector<std::pair<std::string, std::string>> hostile_valid_utf8_values()
+{
+    return {
+        {"Controls", all_c0_controls_and_del()},
+        {"ANSI", "\x1b[31mRED\x1b[0m"},
+        {"Bidi and separators", "\xE2\x80\xAE" "\xE2\x81\xA6" "\xE2\x81\xA9" "\xE2\x80\xA8" "\xE2\x80\xA9"},
+        {"Noncharacters", "\xEF\xBF\xBE" "\xEF\xBF\xBF"},
+    };
+}
+
+/// @brief Task 03 case 9(c)'s multi-entry document content, owning every
+/// entry it hands out: one real synthetic representative of each Story 01.0
+/// batch (BIOS Information, Processor Information, System Slots,
+/// Temperature Probe) whose DMI strings are hostile, a real InactiveEntry,
+/// one BIOS Information entry per hostile vendor of cases 1-5, and two test
+/// doubles - one carrying the case 2-5 values plus the case 6/8 boundary
+/// values, one with no fields. Not copyable or movable (the entries view
+/// buffers it owns).
+class HostileDocumentCorpus {
+public:
+    /// @throws std::runtime_error if a synthetic type fails to resolve
+    /// through the entry factory (its registration was not linked).
+    HostileDocumentCorpus()
+    {
+        const std::vector<uint8_t> batch_types{
+            static_cast<uint8_t>(SMBios::BIOSInformation),      // Story 01.0 batch 1
+            static_cast<uint8_t>(SMBios::ProcessorInformation), // batch 2
+            static_cast<uint8_t>(SMBios::SystemSlots),          // batch 3
+            static_cast<uint8_t>(SMBios::TemperatureProbe),     // batch 4
+        };
+        // 0x02 fill: every string index selects string 2 (the ANSI value).
+        for (const uint8_t type : batch_types) {
+            synthetic_.push_back(std::make_unique<SyntheticEntry>(
+                type, std::vector<uint8_t>(0x60, 0x02),
+                std::vector<std::string>{"Caf\xE9", "\x1b[31mRED\x1b[0m"}));
+        }
+        synthetic_.push_back(std::make_unique<SyntheticEntry>(static_cast<uint8_t>(SMBios::Inactive),
+                                                              std::vector<uint8_t>{}, std::vector<std::string>{}));
+        for (const auto& c : invalid_utf8_cases()) {
+            synthetic_.push_back(make_bios_entry(c.first));
+        }
+        std::vector<NamedField> hostile_fields;
+        for (const auto& v : hostile_valid_utf8_values()) {
+            synthetic_.push_back(make_bios_entry(v.second));
+            hostile_fields.push_back(NamedField{v.first, std::string(v.second)});
+        }
+        std::vector<uint8_t> all_bytes;
+        for (int b = 0x00; b <= 0xFE; ++b) {
+            all_bytes.push_back(static_cast<uint8_t>(b));
+        }
+        hostile_fields.push_back(NamedField{"Max", std::numeric_limits<uint64_t>::max()});
+        hostile_fields.push_back(NamedField{"2^53+1", uint64_t{9007199254740993ull}});
+        hostile_fields.push_back(NamedField{"Bytes", all_bytes});
+        hostile_fields.push_back(NamedField{"No Bytes", std::vector<uint8_t>{}});
+        hostile_fields.push_back(NamedField{"Flag", true});
+        doubles_.push_back(std::make_unique<FieldsTestEntry>("Hostile Values", std::move(hostile_fields)));
+        doubles_.push_back(std::make_unique<FieldsTestEntry>("No Fields", std::vector<NamedField>{}));
+
+        for (const auto& s : synthetic_) {
+            if (s->get() == nullptr) {
+                throw std::runtime_error("HostileDocumentCorpus: synthetic entry type not registered");
+            }
+            entries_.push_back(s->get());
+        }
+        for (const auto& d : doubles_) {
+            entries_.push_back(d.get());
+        }
+    }
+
+    HostileDocumentCorpus(const HostileDocumentCorpus&) = delete;
+    HostileDocumentCorpus& operator=(const HostileDocumentCorpus&) = delete;
+
+    /// @return every entry, in document order; valid while `*this` lives.
+    const std::vector<const AbstractSMBiosEntry*>& entries() const { return entries_; }
+
+private:
+    std::vector<std::unique_ptr<SyntheticEntry>> synthetic_;
+    std::vector<std::unique_ptr<FieldsTestEntry>> doubles_;
+    std::vector<const AbstractSMBiosEntry*> entries_;
+};
+
+/// @brief Counts non-overlapping occurrences of `needle` in `haystack`.
+inline size_t count_occurrences(const std::string& haystack, const std::string& needle)
+{
+    size_t count = 0;
+    for (size_t pos = haystack.find(needle); pos != std::string::npos; pos = haystack.find(needle, pos + needle.size())) {
+        ++count;
+    }
+    return count;
 }
 
 } // namespace test

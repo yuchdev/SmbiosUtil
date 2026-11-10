@@ -54,6 +54,7 @@
 
 #include "synthetic_table_builder.hpp"
 #include "field_assertions.hpp"
+#include "formatter_test_support.hpp"
 
 #include <boost/test/unit_test.hpp>
 
@@ -67,7 +68,9 @@ using namespace smbios;
 // concrete class, and that class's get_fields() (pure virtual since this
 // task) is callable and yields unique field names. InactiveEntry and
 // BootIntegrityServicesEntry yield an empty vector (their text output has
-// no data fields); every other type yields at least one field.
+// no data fields); every other type yields at least one field. Story 02.0
+// Task 03 adds FieldNamesAreFirmwareIndependent (security case 10): the
+// name sequence does not change when every DMI string is hostile.
 // Boundaries: one well-formed structure per type, its formatted area filled
 // with 0x02 bytes (the conventional SMBIOS "Unknown" enum code, and a valid
 // string index into the two strings supplied) and long enough (0x64) to
@@ -149,19 +152,28 @@ std::vector<CoverageCase> all_registered_types()
 
 #undef COVERAGE_CASE
 
-DMIHeader make_header(const std::vector<uint8_t>& buffer)
-{
-    DMIHeader header{};
-    header.type = buffer[0];
-    header.length = buffer[1];
-    header.handle = static_cast<uint16_t>(buffer[2] | (buffer[3] << 8));
-    header.data = buffer.data();
-    return header;
-}
-
 /// Formatted-area length (header excluded): total structure length 0x64,
 /// at least as long as every type's longest DSP0134 3.9.0 layout.
 constexpr size_t kFormattedAreaLength = 0x60;
+
+/// @brief Builds one `type` structure (0x02-filled formatted area, so every
+/// string index selects string 2) with `strings` and returns its ordered
+/// get_fields() names, after checking they are unique.
+std::vector<std::string> field_names_for(uint8_t type, const std::vector<std::string>& strings)
+{
+    const std::vector<uint8_t> buffer =
+        smbios::test::SyntheticTableBuilder().add_structure(type, std::vector<uint8_t>(kFormattedAreaLength, 0x02), strings).build();
+    std::unique_ptr<AbstractSMBiosEntry> entry = SMBiosEntryFactory().create(
+        smbios::test::make_header(buffer), SMBiosVersion{3, 9}, buffer.data() + buffer.size());
+    BOOST_REQUIRE(entry != nullptr);
+    const std::vector<NamedField> fields = entry->get_fields();
+    smbios::test::check_unique_field_names(fields);
+    std::vector<std::string> names;
+    for (const NamedField& field : fields) {
+        names.push_back(field.name);
+    }
+    return names;
+}
 
 } // namespace
 
@@ -193,7 +205,7 @@ BOOST_AUTO_TEST_CASE(GetFieldsCoversEveryRegisteredTypeTestCase)
             std::vector<uint8_t> buffer = builder.build();
 
             std::unique_ptr<AbstractSMBiosEntry> entry =
-                factory.create(make_header(buffer), SMBiosVersion{3, 9}, buffer.data() + buffer.size());
+                factory.create(smbios::test::make_header(buffer), SMBiosVersion{3, 9}, buffer.data() + buffer.size());
             BOOST_REQUIRE(entry != nullptr);
             BOOST_CHECK(coverage_case.is_expected_class(entry.get()));
 
@@ -204,6 +216,39 @@ BOOST_AUTO_TEST_CASE(GetFieldsCoversEveryRegisteredTypeTestCase)
             }
             else {
                 BOOST_CHECK(!fields.empty());
+            }
+        }
+    }
+}
+
+/// Security case (Task 03 case 10, INFO-6 / CWE-91): for all 45 registered
+/// types, the ordered get_fields() name sequence is identical whether every
+/// DMI string is "A" or one of the case-1 invalid-UTF-8 values - names are
+/// library constants, never derived from firmware text - each name is
+/// printable ASCII (0x20-0x7E), and names stay unique under hostile
+/// strings, so map-shaped formats never see a duplicate key.
+/// On failure: the type's get_fields() is building a name from a string
+/// value (or from string content, e.g. its length).
+BOOST_AUTO_TEST_CASE(FieldNamesAreFirmwareIndependent)
+{
+    for (const auto& coverage_case : all_registered_types()) {
+        BOOST_TEST_CONTEXT("type " << static_cast<unsigned>(coverage_case.type) << " (" << coverage_case.class_name << ")") {
+            const std::vector<std::string> baseline = field_names_for(coverage_case.type, {"A", "A"});
+            for (const std::string& name : baseline) {
+                BOOST_TEST_CONTEXT("name \"" << name << '"') {
+                    BOOST_CHECK(!name.empty());
+                    for (const char c : name) {
+                        const auto b = static_cast<unsigned char>(c);
+                        BOOST_CHECK(b >= 0x20 && b <= 0x7E);
+                    }
+                }
+            }
+            for (const auto& hostile : smbios::test::invalid_utf8_cases()) {
+                BOOST_TEST_CONTEXT("hostile string of " << hostile.first.size() << " bytes") {
+                    const std::vector<std::string> names =
+                        field_names_for(coverage_case.type, {hostile.first, hostile.first});
+                    BOOST_CHECK_EQUAL_COLLECTIONS(names.begin(), names.end(), baseline.begin(), baseline.end());
+                }
             }
         }
     }

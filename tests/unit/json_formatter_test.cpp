@@ -27,8 +27,11 @@ using namespace smbios::test;
 // Boundaries: UINT64_MAX / 0 / 2^53+1, a 0-byte and a 255-byte vector,
 // every C0 control plus DEL, U+FFFE/U+FFFF, bidi overrides.
 // Well-formedness is asserted by exact expected text plus
-// JsonStructureChecker (formatter_test_support.hpp); the real-parser round
-// trip is Task 03's dev-only Python check.
+// is_well_formed_json() (structured_output_validators.hpp, self-tested in
+// structured_output_validators_test.cpp); the real-parser round trip is
+// Task 03's dev-only Python check. Task 03 adds the whole-document case 9
+// (zero/one/hostile multi-entry, through the registry) and the LOW-3
+// placeholder-record pin (case 11).
 // On failure first check: libsmbios/src/json_formatter.cpp's json_value()
 // visitor and render() layout; for escaping, formatter_escaping.cpp; for a
 // null registry lookup, that this TU still constructs JsonFormatter.
@@ -101,7 +104,7 @@ BOOST_AUTO_TEST_CASE(JsonFormatterRendersEveryAlternativeTestCase)
         "  }";
     const std::string out = JsonFormatter().render(entry);
     BOOST_CHECK_EQUAL(out, expected);
-    BOOST_CHECK(JsonStructureChecker::check(out));
+    BOOST_CHECK(is_well_formed_json(out));
 }
 
 /// Edge case (Task 03 case 7): an entry with no fields - a real synthetic
@@ -113,7 +116,7 @@ BOOST_AUTO_TEST_CASE(JsonFormatterRendersEmptyFieldsTestCase)
     BOOST_REQUIRE((*inactive).get_fields().empty());
     const std::string out = JsonFormatter().render(*inactive);
     BOOST_CHECK_EQUAL(out, "  {\n    \"type\": \"Inactive\",\n    \"fields\": {}\n  }");
-    BOOST_CHECK(JsonStructureChecker::check(out));
+    BOOST_CHECK(is_well_formed_json(out));
 }
 
 /// Edge case: exact framing for zero, one and two entries; each document
@@ -130,7 +133,7 @@ BOOST_AUTO_TEST_CASE(JsonFormatterDocumentFramingTestCase)
 
     const std::string zero = render_document(formatter, {});
     BOOST_CHECK_EQUAL(zero, "[\n\n]\n");
-    BOOST_CHECK(JsonStructureChecker::check(zero));
+    BOOST_CHECK(is_well_formed_json(zero));
 
     const std::string two = render_document(formatter, {&a, &b});
     BOOST_CHECK_EQUAL(two,
@@ -146,8 +149,8 @@ BOOST_AUTO_TEST_CASE(JsonFormatterDocumentFramingTestCase)
         "    \"fields\": {}\n"
         "  }\n"
         "]\n");
-    BOOST_CHECK(JsonStructureChecker::check(two));
-    BOOST_CHECK(JsonStructureChecker::check(render_document(formatter, {&a})));
+    BOOST_CHECK(is_well_formed_json(two));
+    BOOST_CHECK(is_well_formed_json(render_document(formatter, {&a})));
     BOOST_CHECK(two.find('\r') == std::string::npos); // always \n, never CRLF
 }
 
@@ -164,7 +167,7 @@ BOOST_AUTO_TEST_CASE(JsonFormatterReplacesInvalidUtf8VendorTestCase)
             const std::string out = formatter.render(**entry);
             BOOST_CHECK(out.find("\"type\": \"BIOS Information\"") != std::string::npos);
             BOOST_CHECK(out.find("\"Vendor\": \"" + c.second + "\",") != std::string::npos);
-            BOOST_CHECK(JsonStructureChecker::check(render_document(formatter, {entry->get()})));
+            BOOST_CHECK(is_well_formed_json(render_document(formatter, {entry->get()})));
         }
     }
 }
@@ -180,7 +183,7 @@ BOOST_AUTO_TEST_CASE(JsonFormatterEscapesControlCharactersTestCase)
         "\"\\u0001\\u0002\\u0003\\u0004\\u0005\\u0006\\u0007\\b\\t\\n\\u000b\\f\\r\\u000e\\u000f"
         "\\u0010\\u0011\\u0012\\u0013\\u0014\\u0015\\u0016\\u0017\\u0018\\u0019\\u001a\\u001b"
         "\\u001c\\u001d\\u001e\\u001f\x7F\""));
-    BOOST_CHECK(JsonStructureChecker::check(controls));
+    BOOST_CHECK(is_well_formed_json(controls));
 
     const std::string ansi = JsonFormatter().render(single_field(std::string("\x1b[31mRED\x1b[0m")));
     BOOST_CHECK_EQUAL(ansi, single_field_json("\"\\u001b[31mRED\\u001b[0m\""));
@@ -197,7 +200,7 @@ BOOST_AUTO_TEST_CASE(JsonFormatterLineSeparatorsAndNoncharactersTestCase)
     BOOST_CHECK_EQUAL(out, single_field_json("\"" + bidi + "\\u2028\\u2029" "\xEF\xBF\xBE\xEF\xBF\xBF" "\""));
     BOOST_CHECK(out.find("\xE2\x80\xA8") == std::string::npos);
     BOOST_CHECK(out.find("\xE2\x80\xA9") == std::string::npos);
-    BOOST_CHECK(JsonStructureChecker::check(out));
+    BOOST_CHECK(is_well_formed_json(out));
 }
 
 /// Edge case (Task 03 case 8): a 255-byte vector renders as exactly 510
@@ -224,21 +227,66 @@ BOOST_AUTO_TEST_CASE(JsonFormatterMixedDocumentIsValidTestCase)
     BOOST_REQUIRE(inactive.get() != nullptr);
 
     const std::string doc = render_document(JsonFormatter(), {bios->get(), inactive.get(), &fields});
-    BOOST_CHECK(JsonStructureChecker::check(doc));
+    BOOST_CHECK(is_well_formed_json(doc));
 }
 
-/// Invalid-input sanity for the test-local checker itself: it rejects the
-/// structural breaks an escaping bug would cause, so a passing check above
-/// is meaningful.
-BOOST_AUTO_TEST_CASE(JsonStructureCheckerRejectsBrokenDocumentsTestCase)
+/// Security case (Task 03 case 9): rendered through the registry exactly as
+/// the CLI frames a document, (a) zero entries, (b) one real entry and (c)
+/// the hostile multi-entry corpus (one representative per Story 01.0 batch
+/// with hostile DMI strings, an InactiveEntry, every case 1-5 hostile
+/// vendor, the case 6/8 boundary values, an empty double) are each one
+/// well-formed JSON text; (c) has one top-level object per entry and
+/// carries no raw C0 byte, ESC or U+2028/U+2029.
+BOOST_AUTO_TEST_CASE(JsonFormatterRegistryDocumentsAreWellFormedTestCase)
 {
-    BOOST_CHECK(!JsonStructureChecker::check("{\"a\": \"x\"y\"}"));       // unescaped quote
-    BOOST_CHECK(!JsonStructureChecker::check("{\"a\": \"\x1b\"}"));       // raw control
-    BOOST_CHECK(!JsonStructureChecker::check("{\"a\": 1, \"a\": 2}"));    // duplicate key
-    BOOST_CHECK(!JsonStructureChecker::check("[1,]"));                    // trailing comma
-    BOOST_CHECK(!JsonStructureChecker::check("{\"a\": \"\xC0\xAF\"}"));   // invalid UTF-8
-    BOOST_CHECK(!JsonStructureChecker::check("[] x"));                    // trailing garbage
-    BOOST_CHECK(JsonStructureChecker::check("{\"a\": [1, -2.5e3, true, null, \"\\u00e9\"]}"));
+    JsonFormatter linked; // names the class so its registration is linked
+    const IOutputFormatter* formatter = get_output_formatter("json");
+    BOOST_REQUIRE(formatter != nullptr);
+
+    const std::string zero = render_document(*formatter, {});
+    BOOST_CHECK(is_well_formed_json(zero));
+
+    auto bios = make_bios_entry("Plain Vendor");
+    BOOST_REQUIRE(bios->get() != nullptr);
+    const std::string one = render_document(*formatter, {bios->get()});
+    BOOST_CHECK(is_well_formed_json(one));
+    BOOST_CHECK_EQUAL(count_occurrences(one, "\n  {\n    \"type\": "), static_cast<size_t>(1));
+
+    const HostileDocumentCorpus corpus;
+    const std::string many = render_document(*formatter, corpus.entries());
+    BOOST_CHECK(is_well_formed_json(many));
+    BOOST_CHECK_EQUAL(count_occurrences(many, "\n  {\n    \"type\": "), corpus.entries().size());
+    BOOST_CHECK(many.find("\"type\": \"Inactive\",\n    \"fields\": {}") != std::string::npos);
+    BOOST_CHECK(many.find("\"Max\": 18446744073709551615,") != std::string::npos);
+    BOOST_CHECK(!contains_byte_in_range(many, 0x00, 0x08));
+    BOOST_CHECK(!contains_byte_in_range(many, 0x0B, 0x1F)); // LF only as framing whitespace
+    BOOST_CHECK(many.find('\t') == std::string::npos);
+    BOOST_CHECK(many.find("\xE2\x80\xA8") == std::string::npos);
+    BOOST_CHECK(many.find("\xE2\x80\xA9") == std::string::npos);
+    BOOST_CHECK(is_valid_utf8(many));
+}
+
+/// Security case (Task 03 case 11, LOW-3 stance pin): a synthetic Memory
+/// Channel entry declares 5 devices but its Length holds only 1 record.
+/// get_fields() keeps text parity and emits all 5 (4 fabricated as 0), and
+/// `json` renders exactly as many fields as get_fields() returns - neither
+/// dropping nor adding. When the getter-side clamp lands, the expected 13
+/// below moves with the getter.
+BOOST_AUTO_TEST_CASE(JsonFormatterRendersPlaceholderRecordsUnclampedTestCase)
+{
+    SyntheticEntry channel(static_cast<uint8_t>(SMBios::MemoryChannel),
+                           {0x04, 0x10, 0x05, /* record 1 */ 0x07, 0x34, 0x12}, {});
+    BOOST_REQUIRE(channel.get() != nullptr);
+    const std::vector<NamedField> fields = (*channel).get_fields();
+    BOOST_REQUIRE_EQUAL(fields.size(), static_cast<size_t>(3 + 2 * 5)); // stance: unclamped
+
+    const std::string out = JsonFormatter().render(*channel);
+    BOOST_CHECK(is_well_formed_json(out));
+    BOOST_CHECK_EQUAL(count_occurrences(out, "\n      \""), fields.size());
+    BOOST_CHECK(out.find("\"Memory Device Count\": 5,") != std::string::npos);
+    BOOST_CHECK(out.find("\"Handle 1\": 4660,") != std::string::npos);  // the one real record
+    BOOST_CHECK(out.find("\"Load 5\": 0,") != std::string::npos);       // fabricated placeholder
+    BOOST_CHECK(out.find("\"Handle 5\": 0\n") != std::string::npos);    // ...rendered, not clamped
 }
 
 BOOST_AUTO_TEST_SUITE_END()

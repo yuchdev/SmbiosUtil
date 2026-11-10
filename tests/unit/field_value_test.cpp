@@ -67,6 +67,26 @@ BOOST_AUTO_TEST_CASE(NamedFieldHoldsEachAlternativeTestCase)
     BOOST_CHECK(std::get<std::vector<uint8_t>>(bytes.value) == raw);
 }
 
+/// Security case (Story 02.0 Task 03, LOW-5): a string value stays a
+/// string. The project convention `NamedField{"x", std::string("y")}` must
+/// hold the std::string alternative; and a bare literal - which a
+/// pre-P0608/P1957 standard library would bind to `bool` (value true) -
+/// must also select std::string under this toolchain.
+/// On failure: the standard library predates P1957; wrap every literal in
+/// std::string(...) (FieldsTestEntry's rule) or add a `const char*`
+/// NamedField constructor, per the threat model's LOW-5 mitigation.
+BOOST_AUTO_TEST_CASE(NamedFieldStringLiteralStaysStringTestCase)
+{
+    NamedField wrapped{"x", std::string("y")};
+    BOOST_REQUIRE(std::holds_alternative<std::string>(wrapped.value));
+    BOOST_CHECK_EQUAL(std::get<std::string>(wrapped.value), "y");
+
+    NamedField bare{"x", "y"};
+    BOOST_REQUIRE(std::holds_alternative<std::string>(bare.value));
+    BOOST_CHECK(!std::holds_alternative<bool>(bare.value));
+    BOOST_CHECK_EQUAL(std::get<std::string>(bare.value), "y");
+}
+
 /// Invalid-access case: std::get with the wrong alternative throws.
 BOOST_AUTO_TEST_CASE(NamedFieldWrongAlternativeThrowsTestCase)
 {
