@@ -30,7 +30,7 @@ and `smbios_unit_test` green**:
 | 03 | [Migrate entries, batch 2: processor and memory](03-migrate-entries-batch-2-processor-and-memory.md) | ✅ Complete (`2373683`) | 05     |
 | 04 | [Migrate entries, batch 3: slots, devices and power](04-migrate-entries-batch-3-slots-devices-and-power.md) | ✅ Complete (`bac07b9`) | 05     |
 | 05 | [Migrate entries, batch 4: probes and management; make `get_fields()` pure virtual](05-migrate-entries-batch-4-probes-and-management.md) | ✅ Complete (`b27a4da`) | 06     |
-| 06 | [Tests](06-tests.md)                                                   | ⬜ Not started | -      |
+| 06 | [Tests](06-tests.md)                                                   | ✅ Complete (2026-11-10) | -      |
 
 Tasks 02, 03 and 04 are independent of each other once Task 01 has landed,
 and may run in any order or in parallel. Task 05 is last because it flips

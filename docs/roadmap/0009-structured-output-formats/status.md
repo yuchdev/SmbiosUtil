@@ -6,7 +6,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 | Story | Name                                           | Status         | Tests |
 |-------|----------------------------------------------------|----------------|-------|
-| 01.0  | Structured field model                             | 🔶 In progress (5/6 tasks) | 514 unit |
+| 01.0  | Structured field model                             | ✅ Complete (2026-11-10) | 518 unit |
 | 02.0  | Renderer registry and built-in formats             | ⬜ Not started | -     |
 | 03.0  | YAML renderer and custom-format extensibility      | ⬜ Not started | -     |
 
@@ -175,3 +175,93 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
       management-device, component and IPMI structures.
     - When a host-interface record count overstates the buffer, the
       missing records are filled with defaults.
+
+## Story details
+
+### Story 01.0 - Structured field model (✅ 2026-11-10)
+
+**Delivered**
+- `libsmbios/include/libsmbios/field_value.hpp`:
+  - `FieldValue` is `std::variant<std::string, uint64_t, bool, std::vector<uint8_t>>`.
+  - `NamedField` is `{name, value}`.
+- `AbstractSMBiosEntry`:
+  - `get_fields() const = 0`, pure virtual. The compiler now makes every
+    current and future entry type implement it.
+  - A protected `bitset_to_fields()` helper.
+- `get_fields()` is implemented on all 45 registered entry types, in four
+  batches (`07568f5`, `2373683`, `bac07b9`, `b27a4da`).
+  - Each one mirrors its own `render_to_description()`: same fields, same
+    guards, same order.
+  - Each one is built only from existing getters (R1).
+  - Text output is byte-identical (R3).
+  - `InactiveEntry` and `BootIntegrityServicesEntry` return an empty list
+    on purpose.
+- Small private predicate helpers are shared between the text and field
+  paths. They are logically identical to the code they replaced, and
+  feature-reviewer confirmed this.
+  - Baseboard: `feature_flags_present`.
+  - Processor: `characteristics_are_none`.
+  - Cache: `sram_types_are_none`.
+  - Slots: `characteristics_sentinel`.
+- **Security fix (`30cb8b3`)**, from security-auditor HIGH-1 (CWE-835/770):
+  - The OEM Strings and System Configuration Options loops used a
+    `uint8_t` counter. With a count of 0xFF the counter wrapped and the
+    loop never ended. This affected both `render_to_description()` (a
+    defect already on `master`) and `get_fields()`.
+  - The counters are now `unsigned`.
+  - Regression tests run under `timeout(10)`.
+- **Fuzzer hardening (`30cb8b3`)**, from MEDIUM-2:
+  - The fuzzer now creates each entry and calls `render_to_description()`
+    and `get_fields()` on it.
+  - `libsmbios` is now instrumented under `SMBIOS_BUILD_FUZZERS`.
+  - A 60 s Release run was clean: 208,868 executions.
+- Threat model: `docs/security/2026-11-10-structured-field-model.md`.
+
+**Tests / gate**
+- `smbios_unit_test`: 518/518 cases (415 before this story), 9485
+  assertions.
+  - `tests/unit/field_value_test.cpp`
+  - `tests/unit/field_assertions.hpp`, which provides the ordered-field and
+    unique-name checks
+  - `tests/unit/get_fields_coverage_test.cpp`, which covers all 45 types
+    through the factory
+  - Per-type `GetFieldsMatchesDecodedValues`, `HonoursLengthTiers` and
+    `ExpandsBitmask` cases
+- Full `ctest` on macOS: 9/9.
+- CI run 42793526301 on `a1828bd`: green on all 5 jobs, all three OSes.
+- `/verify-task`: PASS on Tasks 01, 02, 03 and 05. Task 04 was PARTIAL and
+  resolved by amending the spec.
+- `/pr-review`:
+  - feature-reviewer: LGTM.
+  - security-auditor: CONCERNS, with the HIGH and MEDIUM items fixed in
+    `30cb8b3`. The LOW items are carried forward, see below.
+
+**Reconciliation note**
+- The original `02-migrate-entries-to-structured-fields.md` and `03-tests.md`
+  were *superseded* by Tasks 02-05 (four batches) and 06. They were deleted
+  during Phase R.
+- The Task 04 and Task 05 specs were *amended in place*. The amendments are
+  dated in each file.
+
+**Carried forward**
+- **To Story 02.0's spec**, from security-auditor INFO-6 and LOW-3. The
+  serializers must:
+  - replace invalid UTF-8 with U+FFFD;
+  - strip XML-illegal control characters;
+  - use double-quoted YAML;
+  - neutralise CSV formula injection;
+  - account for the JSON 2^53 integer precision limit;
+  - cap byte fields.
+
+  They must also decide whether to clamp the repeated-record counts that are
+  not checked against structure length.
+- **Non-blocking review suggestions:**
+  - Add a shared `hex_string()` helper to remove the duplicated hex
+    formatting.
+  - Add a 0xFF-fill uniqueness variant for the bitmask types.
+  - Add a text-vs-fields label-order parity check.
+  - Add an enumeration API for the factory registry, so the hand-maintained
+    45-row coverage table cannot drift.
+- **Follow-up defects**, existing getter quirks that are mirrored rather
+  than fixed. They are listed in the Task 03/04/05 notes above. The
+  Debug-build `assert(false)` getters (LOW-4) also stop Debug fuzzing early.
