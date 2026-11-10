@@ -1,7 +1,7 @@
 # 02 - Text, XML and JSON renderers
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-10)
 **Depends on:** Task 01
 
 ## Objective

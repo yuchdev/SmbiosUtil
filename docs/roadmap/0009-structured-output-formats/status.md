@@ -7,7 +7,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | Story | Name                                           | Status         | Tests |
 |-------|----------------------------------------------------|----------------|-------|
 | 01.0  | Structured field model                             | ✅ Complete (2026-11-10) | 518 unit |
-| 02.0  | Renderer registry and built-in formats             | 🔶 In progress (2/3 tasks) | 569 unit |
+| 02.0  | Renderer registry and built-in formats             | ✅ Complete (2026-11-10) | 602 unit |
 | 03.0  | YAML renderer and custom-format extensibility      | ⬜ Not started | -     |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
@@ -341,3 +341,48 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
     unique across all 45 types when every string is hostile.
 
   Revisit if a formatter ever derives names from data.
+
+### Story 02.0 - Renderer registry and built-in formats (✅ 2026-11-10)
+
+**Delivered**
+- Contract C2: `IOutputFormatter` (`render`, `format_name`, and the
+  `begin_document`/`entry_separator`/`end_document` framing hooks), the
+  Meyers-singleton registry and `REGISTER_OUTPUT_FORMATTER` (`f3447b2`).
+- `text`, `xml` and `json` formatters plus the shared
+  `formatter_escaping` helpers: strict UTF-8 with U+FFFD replacement,
+  XML/JSON/YAML escapers and lowercase `hex_encode` (`edc344b`).
+  - `text` is byte-identical to `render_to_description()` (R3).
+  - `xml` and `json` use only `get_type()` and `get_fields()` (R4).
+- Structured-output validators and the hostile-document security cases
+  (`92a768e`).
+- Review fixes (`c5bd074`):
+  - JSON escapes C1 controls U+007F..U+009F (SR-1); YAML escapes U+FEFF
+    (SR-2); registry documented as static-init only (SR-3).
+  - `render_document()` (nulls skipped, no stray separators) and
+    `field_value_to_string()` are now public API.
+  - Both registration macros accept namespace-qualified class names
+    (`__COUNTER__` via `registration_name.hpp`); `REGISTER_SMBIOS_ENTRY`
+    had the same flaw.
+  - An empty `format_name()` throws `std::invalid_argument`.
+
+**Tests / gate**
+- `smbios_unit_test`: 602/602 cases (518 at Story 01.0 close). Full
+  `ctest` on macOS: 9/9.
+- `/verify-task`: PASS on Tasks 01, 02 and 03.
+- `/pr-review` round 1: feature-reviewer REQUEST_CHANGES, security-auditor
+  CONCERNS (SR-1..SR-3). Round 2, on `c5bd074`: feature-reviewer LGTM,
+  security-auditor PASS.
+- The local `build/macos-asan` tree failed to link during the security
+  re-check; this was not investigated, and CI's sanitizer jobs on this push
+  are the authoritative signal.
+
+**Reconciliation note**
+- No task spec was superseded. `render_document()` and
+  `field_value_to_string()` go beyond the Task 01/02 specs as review-driven
+  additions; Story 03.0 (YAML, CSV, CLI wiring) should build on them rather
+  than re-implementing document framing.
+
+**Carried forward**
+- CWE-150 terminal escapes in `text`: post-0009 follow-up, see Notes &
+  decisions. Recommend opening a tracked issue at milestone close.
+- SR-4 (XML normalises CR to LF) accepted as is.

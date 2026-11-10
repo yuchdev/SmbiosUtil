@@ -197,3 +197,13 @@ library constants. Format names are code constants. Nothing is logged or persist
 
 ### Verdict: PASS_WITH_FOLLOWUP (CONCERNS)
 No CRITICAL or HIGH findings, so merge is not blocked. INFO-6, LOW-3 (renderer-side decision) and LOW-5 are met. Follow-ups: SR-1 to `cpp-expert`, with a regression test to `testing-expert`; SR-2 before Story 03.0's YAML writer ships; SR-3 doc comment.
+
+### Story 02.0 re-check - 2026-11-10
+Scope: `git diff e7c2f75..c5bd074`.
+- **SR-1 resolved.** `json_escape` now escapes U+007F..U+009F as `\u00XX` (`formatter_escaping.cpp:213-218`), with regression tests for U+009B. The XML header now says it guarantees well-formedness, not terminal safety, and recommends `json` (`formatter_escaping.hpp`, `xml_formatter.hpp`, `text_formatter.hpp`).
+- **SR-2 resolved.** YAML maps U+FEFF to `﻿` (`formatter_escaping.cpp:245`), with a test.
+- **SR-3 resolved.** The registry is documented as static-init only and not thread-safe, and the pointer is valid until static destruction (`output_formatter.hpp`). An empty format name is now rejected.
+- **New code.** `render_document` only concatenates hooks that the formatter owns and skips null entries, so it adds no framing of its own. `field_value_to_string` returns strings unescaped, as documented. XML escapes every result, and JSON only adds quotes around `[0-9a-f]` hex. No diagnostic contains a field value. The only interpolated value is `format_name()`, which is a code constant. `SMBIOS_DETAIL_UNIQUE_NAME` (`__COUNTER__`) has no security impact.
+- **Invisible Unicode scan.** No raw U+0080-U+009F, U+200B-U+200F, U+2028-U+202E, U+2066-U+2069, U+FEFF, U+FFFE or U+FFFF in `libsmbios/`, `tests/unit/` or this document.
+- **Tests.** `smbios_unit_test` (build/macos): 602/602 cases pass.
+- Verdict: **PASS**.
