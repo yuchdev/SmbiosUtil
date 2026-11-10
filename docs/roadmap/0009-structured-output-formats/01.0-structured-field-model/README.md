@@ -26,7 +26,7 @@ and `smbios_unit_test` green**:
 | #  | Document                                                        | Status         | Blocks |
 |----|------------------------------------------------------------------------|----------------|--------|
 | 01 | [FieldValue and entry interface](01-fieldvalue-and-entry-interface.md)   | ✅ Complete (`b5489e9`) | 02, 03, 04, 05 |
-| 02 | [Migrate entries, batch 1: platform and firmware](02-migrate-entries-batch-1-platform-and-firmware.md) | ⬜ Not started | 05     |
+| 02 | [Migrate entries, batch 1: platform and firmware](02-migrate-entries-batch-1-platform-and-firmware.md) | ✅ Complete (`07568f5`) | 05     |
 | 03 | [Migrate entries, batch 2: processor and memory](03-migrate-entries-batch-2-processor-and-memory.md) | ⬜ Not started | 05     |
 | 04 | [Migrate entries, batch 3: slots, devices and power](04-migrate-entries-batch-3-slots-devices-and-power.md) | ⬜ Not started | 05     |
 | 05 | [Migrate entries, batch 4: probes and management; make `get_fields()` pure virtual](05-migrate-entries-batch-4-probes-and-management.md) | ⬜ Not started | 06     |

@@ -6,7 +6,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 
 | Story | Name                                           | Status         | Tests |
 |-------|----------------------------------------------------|----------------|-------|
-| 01.0  | Structured field model                             | 🔶 In progress (1/6 tasks) | 415 unit |
+| 01.0  | Structured field model                             | 🔶 In progress (2/6 tasks) | 443 unit |
 | 02.0  | Renderer registry and built-in formats             | ⬜ Not started | -     |
 | 03.0  | YAML renderer and custom-format extensibility      | ⬜ Not started | -     |
 
