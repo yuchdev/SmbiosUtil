@@ -9,6 +9,11 @@ find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS unit_test_framework REQUIRED)
 
 file(GLOB SOURCES *.cpp)
 
+# The `csv` example formatter lives outside libsmbios (smbios/examples/, R5);
+# compile it in directly so csv_formatter_test.cpp can reach it through the
+# registry. Build wiring only - the example source is not edited for tests.
+list(APPEND SOURCES ${CMAKE_SOURCE_DIR}/smbios/examples/csv_formatter.cpp)
+
 include_directories(${Boost_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../../libsmbios/include)
 
 add_executable(${TARGET} ${SOURCES})
