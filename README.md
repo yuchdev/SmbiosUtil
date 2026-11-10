@@ -2,7 +2,7 @@
 
 A cross-platform C++20 library and command-line tool that reads the SMBIOS/DMI firmware table and reports what it finds: BIOS, motherboard, CPU, memory, and 45 of the 49 structure types the SMBIOS 3.9.0 specification defines (the remaining 4 are either the table's own terminator or marked obsolete by the spec itself - see [SMBIOS structure coverage](#smbios-structure-coverage) below).
 
-Windows, Linux, and macOS all have native, unprivileged ways to read the table - no root/admin needed on any of the three. Each falls back to a legacy BIOS physical-memory scan only if its native path is unavailable.
+Windows, Linux, and macOS all have native ways to read the table - no root/admin needed on Windows or macOS; on Linux, sysfs's DMI table is typically root-only (mode 0400), so run as root there (see [CLI usage](docs/cli-usage.md#privileges)). Each falls back to a legacy BIOS physical-memory scan only if its native path is unavailable.
 
 * **`libsmbios`** - the core library. All system calls, all structure parsing, no UI.
 * **`smbios`** - the command-line front end (`libsmbios`'s own namespace is `smbios::` everywhere; the CLI target happens to share that name).
@@ -25,7 +25,30 @@ Then run it:
 ./build/<preset>/smbios/bin/smbios
 ```
 
-No elevated privileges needed. See [CLI usage](docs/cli-usage.md) for the full option list and sample output.
+No elevated privileges needed on Windows/macOS (Linux typically needs root). See [CLI usage](docs/cli-usage.md) for the full option list and sample output.
+
+## Structured output
+
+```bash
+./build/<preset>/smbios/bin/smbios --format json    # text (default), xml, json, yaml, csv
+```
+
+Excerpt of the JSON shape, taken from the synthetic test fixture (`tests/data/output_formats/sample.json`), not from a real machine:
+
+```json
+[
+  {
+    "type": "BIOS Information",
+    "fields": {
+      "Vendor": "Example \"Firmware\" & Co.",
+      "Version": "Example 1.0",
+      "PCI is supported": true
+    }
+  }
+]
+```
+
+See [Output formats](docs/output-formats.md) for every format.
 
 ## Setup guide
 
@@ -59,7 +82,7 @@ cmake --build .
 ctest --test-dir build/<preset> --output-on-failure
 ```
 
-Four C++ suites: `smbios_unit_test` (hermetic, synthetic-table-based, always green - this is where every one of the 45 implemented structure types gets its own coverage), `smbios_mock_test`, `smbios_perf_test`, and `smbios_integration_test` (the latter two read real hardware, so they need root/admin and degrade cleanly - not crash - without it), plus 5 individual `smbios_c_*` test executables under `tests/c_abi/` that exercise the C ABI shim (one of them, `smbios_c_compile_as_c_test`, is a plain C program - proof the public header genuinely compiles as C, not just C++ with `extern "C"`). See [test subsystem](docs/test/test-subsystem.md) for the full breakdown.
+Four C++ suites: `smbios_unit_test` (hermetic, synthetic-table-based, always green - this is where every one of the 45 implemented structure types gets its own coverage), `smbios_mock_test`, `smbios_perf_test`, and `smbios_integration_test` (the latter two read real hardware, so they need root/admin and degrade cleanly - not crash - without it), plus 5 individual `smbios_c_*` test executables under `tests/c_abi/` that exercise the C ABI shim (one of them, `smbios_c_compile_as_c_test`, is a plain C program - proof the public header genuinely compiles as C, not just C++ with `extern "C"`). Examples under `examples/` are also tested: the `smbios_example_*` CTest entries (skip them with `-DSMBIOS_BUILD_EXAMPLES=OFF`), and CI checks the doc samples with `scripts/check_doc_samples.py`. See [test subsystem](docs/test/test-subsystem.md) for the full breakdown.
 
 ## SMBIOS structure coverage
 
@@ -69,6 +92,9 @@ Four C++ suites: `smbios_unit_test` (hermetic, synthetic-table-based, always gre
 
 - **[CLI usage](docs/cli-usage.md)** - options, sample output, what's not yet wired up.
 - **[Architecture overview](docs/architecture/overview.md)** - the `ISmbiosSource` chain, the field-table accessor pattern, and how to add a new structure type.
+- **[Output formats](docs/output-formats.md)** - the `--format` values, their layouts and escaping.
+- **[Custom output formatter](docs/dev/custom-output-formatter.md)** - adding your own format via the formatter registry.
+- **[Examples](examples/README.md)** - standalone programs that consume `libsmbios`.
 - **[Test subsystem](docs/test/test-subsystem.md)** - what's tested, how, and why each category matters.
 - **[Fuzzing](docs/dev/fuzzing.md)** - the local-only hardening harness for the table parser.
 - **[C++ coding standard](docs/dev/cpp_coding_standard.md)** - style, Doxygen, and ownership conventions for contributors.
