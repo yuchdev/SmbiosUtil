@@ -350,12 +350,20 @@ jobs:
 
       # Package list from the vcpkg glfw3 port's own message
       # (ports/glfw3/portfile.cmake); Wayland is not enabled.
+      # A first run sat in this step until the 30-minute job timeout with its
+      # output discarded. So: non-interactive (a debconf prompt would wait
+      # forever), a bounded wait for the apt lock, a step-level timeout so a
+      # hang fails in minutes, and -qq output left visible (it is short).
       - name: Install GLFW system packages (Linux)
         if: runner.os == 'Linux'
+        timeout-minutes: 10
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq --no-install-recommends \
-            libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config > /dev/null
+          set -eu
+          sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq -o DPkg::Lock::Timeout=120
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
+            -o DPkg::Lock::Timeout=120 \
+            libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config
+          echo "ok: GLFW system packages installed"
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11.6
