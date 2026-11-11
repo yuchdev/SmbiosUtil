@@ -82,3 +82,14 @@ None of this task's own; [Task 03](03-tests.md) is the story's exit gate.
 - **Criterion 1 reworded:** "smbios_gui object files/link step visible in the log" now reads "the job found and reported the built `smbios_gui` binary (one `ok:` line)" - object files are deliberately not printed.
 - **Unverified (needs a real push):** the job on GitHub runners; Windows/Linux `-gui` presets configuring; apt behaviour; a deliberately broken `main.cpp` failing all three OSes.
 
+### CI debugging findings (2026-11-11) - what the first real Linux runs taught
+
+The `gui-build` Linux job failed for four independent reasons, found one at a time (each with a probe or the job's own bounded output), none in the GUI code:
+
+1. **Ubuntu mirror DNS.** On the runners, DNS for `azure.archive` / `archive` / `security.ubuntu.com` failed (24.04 and 26.04 images alike; `mirrors.edge.kernel.org` resolved), so `apt-get update` fetched nothing and `apt-get install` stalled until the timeout. Fix: use the default mirrors when `azure.archive.ubuntu.com` resolves, else the kernel.org Ubuntu mirror (verified: update 6 s, whole install 39 s). Two earlier guesses (a debconf prompt / apt lock, then the 26.04 image) were wrong; the runner is pinned to `ubuntu-24.04` only because the fallback was verified there.
+2. **A bug in the bounded-failure script.** GitHub starts `shell: bash` with `-e`; the bare `"$@" > "$log"` exited the step before any diagnostics were printed. Fixed with `|| rc=$?` and re-tested under the exact CI flags (`bash --noprofile --norc -e -o pipefail`); the earlier local test had not used `-e`. Rule: test every workflow `run:` block under the runner's real shell flags.
+3. **Missing autotools.** `glfw3` depends on `libx11` on Linux, which vcpkg builds from source with `vcpkg_make`; that needs `autoconf autoconf-archive automake libtool` from the system (see `ports/vcpkg-make/vcpkg_make.cmake`). The glfw3 port's own message - the source of the original five-package list - does not list them. Final Linux package list: `libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config autoconf autoconf-archive automake libtool`.
+4. **Step timeouts.** Every apt stall had burned the 30-minute job ceiling; the apt step now has its own 10-minute timeout, short fetch timeouts and one retry.
+
+Verified on real runners: a Linux-only probe ran the same steps and `cmake --preset linux-gui` + `cmake --build --preset linux-gui` both exited 0 and produced `build/linux-gui/smbios_gui/bin/smbios_gui` (6.5 MB); `gui-build` on macOS and Windows passed in two full runs. The probe workflow was deleted afterwards.
+
