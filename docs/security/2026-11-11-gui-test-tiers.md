@@ -384,3 +384,51 @@ code review:
 Fixes go to `cpp-expert` (R-9, R-12 to R-14, R-16). Harness and guard tests go to
 `testing-expert` (R-5, R-8, R-10, R-17 to R-20). Follow-up, not blocking: add
 `permissions: contents: read` to `gui-build` (T-6).
+
+## Post-implementation verification - 2026-11-12
+
+Scope: `git diff fe67df3~1..HEAD -- . ':!docs/roadmap'` (HEAD d86d695; code last changed in
+c9f67fa) and `.github/workflows/ci.yml` `gui-build`. CI run 43083659559 (head c9f67fa): all 8
+jobs succeeded, and every `gui-build` log prints "no test hook strings in the shipped
+smbios_gui" and "no gui-local tests configured".
+
+| Req | Result | Evidence |
+|-----|--------|----------|
+| R-1..R-4 | PASS | root `CMakeLists.txt:41-75` recomputes `SMBIOS_CI_ENVIRONMENT` on every configure and FORCEs OFF; `tests/gui/CMakeLists.txt` and `smbios_gui/CMakeLists.txt:223` re-check the three-part condition; `SMBIOS_GUI_LOCAL_ONLY_TESTS` is target-PRIVATE, and `local_only_guard.hpp` is the first include in every local `.cpp`; no preset sets the variables |
+| R-5/R-6 | PASS | every captured-text assertion uses the double-parenthesised boolean form with a counts-only message; `gui-ci` runs in `run_quiet`, `--timeout 60`, under `bash -e` with `rc` capture |
+| R-7 | PASS | `ci.yml` uses `grep -a -c -F -e` for both patterns; exit >1 or a non-number fails closed; green on all 3 OSes |
+| R-8 | PASS | `Total Tests:` is parsed after `tr -d '\r'`; a missing line is a failure; checks by label and by name; `find` has no `-type f` and covers `smbios_gui_autoexit*` |
+| R-9 | PASS | `headless_imgui.cpp:108-119` sets the hooks and `:223-229` checks them every frame |
+| R-10/R-11 | PASS | the R-10 FATAL_ERROR check is present; under `smbios_gui/`, only `main.cpp` (2 hook blocks plus the signature `#if/#else`) and `CMakeLists.txt` changed |
+| R-12..R-15 | PASS | the twin has a PRIVATE define, its own `add_executable`, no OBJECT library, no `install()`, and outputs to the test bin dir; the deferred FATAL_ERROR guard's limits are documented in `test-subsystem.md` and backstopped by `InertCompileLines`; `hook_inertness_check.cmake` fails closed; CI shipped-binary count is 0 on all 3 OSes |
+| R-16 | PASS (POSIX) / UNVERIFIED (Windows) | `fork` + `execv`, `consteval` `LiteralArg`, absolute paths checked as regular files, only async-signal-safe calls in the child, fds >= 3 closed except the exec-error pipe, SIGPIPE reset, 30 s deadline with process-group kill and reap, 64 MiB cap, output kept in memory; see F-2/F-3 |
+| R-17 | PASS | `mkdtemp`; the directory is removed after the synchronous spawn has reaped the child |
+| R-18 | PASS | in-memory all-nodes leg plus a 4-write OS leg on one identifier-free entry; compare-before-restore; a change by others fails the case; notices before the first write and after the restore |
+| R-19/R-20 | PASS | every Boost case calls `skip_if_root`, with no elevation hint; one `same_bytes` helper; parity is compared via JSON and skips only if both sides report 0; reports are capped at 20 lines and contain only counts, indices, type codes and handles |
+| R-21 | PASS | `grep -rnE 'popen\|system\(\|posix_spawnp' tests/gui/` returns nothing; `SMBIOS_GUI_TEST_HOOKS` appears only in `main.cpp`, the CMake guard and definition lines, the inertness script and docs |
+| R-22 | PASS | `CLAUDE.md`, `test-subsystem.md` and `manual-testing.md` document the twin status, the clipboard caveats, "close screen shares" and "never as root" |
+| Branch hygiene | PASS | `git ls-files .github/workflows` lists only `ci.yml`; the probe workflows were deleted; the THROWAWAY revert is net-zero; `grep -rn THROWAWAY tests/` is empty |
+
+Findings (none CRITICAL/HIGH/MEDIUM):
+- [LOW] F-1 (carry-over, T-6): `ci.yml` still has no `permissions: contents: read` (CWE-250).
+- [LOW] F-2: `process_spawn.cpp:258`: the blocking exec-error `read()` runs before the deadline
+  applies, so a child that stalls between `fork` and `execv` (for example `chdir` on a hung
+  mount) is bounded only by the CTest TIMEOUT (CWE-400). The child also inherits the signal
+  mask and the ignored dispositions other than SIGPIPE; the deadline kill uses SIGKILL, so this
+  is harmless.
+- [LOW] F-3 (UNVERIFIED Windows branch): `process_spawn.cpp:559-565`: on `WAIT_FAILED`, or if a
+  grandchild holds the pipes, the code reaches `join()` without terminating the job, which can
+  hang until the CTest TIMEOUT. Call `TerminateJobObject` on any result other than
+  `WAIT_OBJECT_0`.
+- [INFO] `clipboard_round_trip_test.cpp:321` skips on `read_failed` (not under the both-zero
+  rule). This is acceptable because the OS-clipboard leg is not the parity oracle and
+  `LiveParity` fails on `read_failed`.
+- [INFO] `tests/gui/CMakeLists.txt:208-209` embeds build paths as C string literals. A `"` or `\`
+  in the path breaks the compile, which fails safe.
+- [INFO] `ci.yml:469` prints a bounded tail when the summary is missing. It runs only after
+  ctest exits 0, so no test output is printed (`--output-on-failure`).
+- [INFO] the local `build/macos` tree holds a stale cache with `SMBIOS_BUILD_GUI=ON`
+  (Nov 11), so the "default tree has no GUI" evidence must come from a fresh tree or CI's
+  `build` job.
+
+Post-implementation verdict: **PASS_WITH_FOLLOWUP** (F-1..F-3 to `cpp-expert`; not merge-blocking).

@@ -56,11 +56,12 @@ absolute-from-repo-root Markdown link:
 This roadmap takes `libbios` from a two-structure, Windows/pre-UEFI-Linux
 prototype to a portable, UEFI-capable C++20 library with a modern,
 dependency-managed build, a C ABI alongside its C++ one, tracked upstream
-references, and machine-parsable output. The thirteen milestones below are
+references, and machine-parsable output. The fourteen milestones below are
 intentionally sequential - each is the foundation the next one is built
 on. Milestones 0011-0013 extend that scope beyond the core C++ library
 itself - a GUI built on top of it, package-manager distribution of it, and
-bindings for other languages against its C ABI:
+bindings for other languages against its C ABI. Milestone 0014 turns to
+the project's own CI:
 
 1. **0001** gives every later milestone a working, reproducible,
    vcpkg-based build before any source code changes land.
@@ -122,6 +123,13 @@ bindings for other languages against its C ABI:
     `cargo add`/`pip install`-able, not just linkable from C/C++; it adds
     no new `smbios_c` functions, strictly consuming the curated C surface
     0007 already shipped.
+14. **0014** reworks `.github/workflows/ci.yml` from scratch on a report
+    contract (one line per passing step, a bounded excerpt per failing
+    one, never megabytes and never repeated), one tested step runner,
+    pinned runners and tools, and bounded job summaries. It keeps every
+    check today's workflow performs, through an inventory parity gate, and
+    changes no shipped code. It is best landed before the CI tasks of
+    0012/0013, so their jobs are written once on the new contract.
 
 ## Milestones
 
@@ -140,5 +148,6 @@ bindings for other languages against its C ABI:
 | 0011 | GUI visualization tool (`smbios_gui`, Dear ImGui)                    | [plan.md](./0011-gui-visualization-tool/plan.md)                   | [status.md](./0011-gui-visualization-tool/status.md)                     |
 | 0012 | Package manager distribution (`libsmbios` install rules, self-hosted vcpkg port for `smbios_c`, GitHub Releases) | [plan.md](./0012-package-manager-distribution/plan.md) | [status.md](./0012-package-manager-distribution/status.md) |
 | 0013 | Language bindings (Rust `smbios-sys`/`smbios`, Python `smbios`) over `smbios_c` | [plan.md](./0013-language-bindings/plan.md)          | [status.md](./0013-language-bindings/status.md)                          |
+| 0014 | CI rework from scratch (report contract, step runner, pinned runners, bounded summaries) | [plan.md](./0014-ci-rework-from-scratch/plan.md) | [status.md](./0014-ci-rework-from-scratch/status.md) |
 
 **Legend (status.md files):** ✅ Complete · 🔶 In progress / partial · ⬜ Not started

@@ -9,9 +9,11 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 01.0  | App shell: windowing, GPU backend and build target      | ✅ Complete | macOS build + unit suite; 4s launch smoke |
 | 02.0  | SMBIOS browsing UI: entry tree and field table           | ✅ Complete | 676 unit cases (40+2 new GUI), ASan/UBSan clean; parity 26 = 26 |
 | 03.0  | Cross-platform build integration                         | ✅ Complete | CI run 43052749581: 8/8 jobs green (gui-build on 3 OSes) |
-| 04.0  | GUI test tiers: CI-safe and local-only                   | 🔶 In progress (4/5 tasks) | - |
+| 04.0  | GUI test tiers: CI-safe and local-only                   | ✅ Complete | 32/32 macos-gui fresh tree; CI run 43083659559 8/8 (gui-ci on 3 OSes, local tier absent) |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
+
+**Milestone gate status (2026-11-12):** all four stories ✅. Exit gates: (1) **parity** - registered-type nodes match `smbios --format text`/`json` on the maintainer's Mac, 26 = 26 (the GUI shows 6 extra Unknown nodes by design), automated in the local tier; (2) **tests** - fresh `macos-gui` tree 32/32, fresh default `macos` tree 21/21, and CI run 43083659559 8/8 green on Linux, macOS and Windows (including `gui-build` x3: no hook strings in the shipped binary, `gui-ci` passed, no local tier); (3) **reviews** - `/verify-task` on every task and `/pr-review` per story (Stories 01.0-04.0), security reviews PASS or PASS_WITH_FOLLOWUP with none critical, high or medium; (4) `/link-check` clean (255 files). **Owed by the maintainer (not automatable):** a real-window human pass of `docs/test/manual-testing.md` (M-01 Escape/title-bar exit status 0, M-05, M-07, M-11, M-12, M-13) on at least one OS. **Not verified:** the local-only test tier on Linux and Windows (the Windows branches of the spawn helper and temp directory have never been compiled). Follow-ups are listed per story above; CI is to be reworked in a separate milestone (see the roadmap index).
 
 ## Notes & decisions
 
@@ -98,4 +100,32 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 - 2026-11-12 04.0/Task 02 (PASS after doc fixes): headless Dear ImGui spike S1-S7 recorded in the Task 02 spec (S1/S2/S3/S5/S7 PASS on macOS + all three CI runners; **S4 and S6 PARTIAL** - the text oracle cannot test clipping/visibility because logging disables clipping, and the duplicate-ID signal is hover-scoped; Task 03 amended accordingly). CI: `gui-build` runs `ctest -L gui-ci` + the hook-string and local-tier-absent guards; run 43065947037 was 8/8 green. Found by a probe: runners' ctest 4.4.5 prints `100% tests passed out of N` (3.31 adds `, 0 tests failed`); gate fixed to accept both. Negative proof performed (CI run 43067987979, throwaway failing assertion): `gui-build` failed with bounded, fixture-free output on all three OSes; commit reverted. **Closes the Story 03.0 item "a deliberately broken source fails the job on all three OSes".**
 - 2026-11-12 04.0/Task 03 (PASS): 19 CI-safe headless widget tests (suites `GuiEntryBrowserHeadlessTests` 13, `GuiCopyAsHeadlessTests` 6; `smbios_gui_ci_test` now 25 cases) green on Linux, macOS and Windows in CI run 43074117927 (8/8). Clipper visibility is checked by a hit-testing oracle (mouse sweep + `HoveredId`), which proves which rows exist and where but not drawn content or pixels (M-07 stays manual); the duplicate-ID signal is hover-scoped; default-format case checks the remembered format between cases. Next: Task 04 (local-only tier + test-copy auto-exit; security requirements 12-20).
 - 2026-11-12 04.0/Task 04 (PASS, two independent reviews): shipped-source change is only the test-hook code inside `#if SMBIOS_GUI_TEST_HOOKS` plus a signature `#if/#else`; CI run 43083659559 (8/8) proved on all three OSes that the shipped smbios_gui has 0 hook strings and no local-tier test/file exists (macOS binary size unchanged, 3 649 016 B). Local-only tier: 10 CTest entries verified on macOS only (clipboard sentinel preserved; parity 26 = 26 registered, 6 GUI-only); Windows branches of the spawn helper and temp directory never compiled (UNVERIFIED). Follow-up: smoke cases should skip, not fail, when the table cannot be read (unprivileged Linux). Next: Task 05 (docs + exit gate).
+
+### Story 04.0 - GUI test tiers: CI-safe and local-only (✅ 2026-11-12)
+
+**Delivered**
+- **CI-safe tier `gui-ci`** (`tests/gui/ci/`, `smbios_gui_ci_test`, 25 cases): a headless Dear ImGui harness (every OS hook replaced and re-checked after every frame; null renderer for imgui 1.92.8's texture model), six spike cases S1-S6, and 19 widget tests (`GuiEntryBrowserHeadlessTests` 13, `GuiCopyAsHeadlessTests` 6). Runs in the CI `gui-build` job on Linux, macOS and Windows.
+- **Local-only tier `gui-local`** (`tests/gui/local/`, never configured on CI; 10 CTest entries, macOS-verified): hidden-window GL smoke over the live table, in-memory copy check for every node and format, clipboard round trip (4 real writes, compare-before-restore), live parity of registered nodes vs the CLI's JSON (26 = 26 on the maintainer's Mac, discrepancies-only output), twin launch, spawn-helper regression, two inertness checks.
+- **Gating:** `SMBIOS_GUI_LOCAL_TESTS` (default ON for a non-CI GUI build, forced OFF and fail-closed under `GITHUB_ACTIONS`/`CI`), private `SMBIOS_GUI_LOCAL_ONLY_TESTS` + `#error` guard, labels `gui-ci`/`gui-local`/`gui`.
+- **The one shipped-source change:** a test-only auto-exit hook behind `SMBIOS_GUI_TEST_HOOKS` in `smbios_gui/src/main.cpp` (exact `--exit-after-frames N`), compiled only into the local twin `smbios_gui_autoexit`; the shipped binary contains none of it (CI proof on 3 OSes, size unchanged).
+- **CI:** the `gui-build` job runs `ctest -L gui-ci`, checks the shipped binary for the hook strings and fails closed if any local-tier artifact exists; failure output stays bounded and fixture-free (negative proof performed).
+- Docs: `CLAUDE.md`, `docs/test/test-subsystem.md`, `docs/dev/cpp_coding_standard.md`, `docs/test/manual-testing.md`, threat model `docs/security/2026-11-11-gui-test-tiers.md` (with a post-implementation verification).
+
+**Tests / gate**
+- Fresh `macos-gui` tree: 32/32 pass, labels `gui-ci` 1 / `gui-local` 10; fresh default `macos` tree: 21/21, no GUI target; CI run 43083659559: 8/8 green incl. `gui-build` x3 (no hook strings, `gui-ci` passed, no `gui-local` tests). Maintainer bar "build and all tests pass locally and on CI" is met for macOS locally and for all three OSes on CI (CI tier); the local tier is macOS-only by design.
+- `/verify-task` on each task (Tasks 02 and 04 PARTIAL then fixed, 01 and 03 PASS); `/pr-review` of the whole story: feature LGTM, security PASS_WITH_FOLLOWUP (R-1..R-22 verified; none critical/high/medium).
+- **Not verified / owed:** the local tier on Linux and Windows (Windows branches of the spawn helper and temp directory never compiled); a real-window human check of `docs/test/manual-testing.md` (M-01 Escape/title-bar exit, M-05, M-07, M-11, M-12, M-13).
+
+**Reconciliation note**
+- Task 01 spec: *consumed*; skip regex *superseded* (`(^|\n)SKIP: `).
+- Task 02 spec: *consumed*; `grep` form of the string check and the fail-closed guard *superseded* by the threat model; the 'ctest wording' gate *amended* (ctest 3.x vs 4.x); negative proof performed with a failing assertion.
+- Task 03 spec: *consumed*; clipper cases *superseded* (hit-testing oracle instead of captured text); S4/S6 limits recorded.
+- Task 04 spec: *consumed* in the test-copy-define form; clipboard policy *refined* (4 real writes); parity via JSON; two Task 01 placeholders dropped; `LaunchAutoExitTwin` and `SpawnDoesNotInheritDescriptors` added.
+- Task 05 spec: *consumed*.
+
+**Follow-ups (not blocking)**
+- `permissions: contents: read` at the top of `ci.yml` (F-1); stale comment in `ci.yml` about the twin.
+- POSIX spawn helper: the exec-error pipe read happens before the 30 s deadline, so a child stalled between `fork` and `execv` is bounded only by the CTest TIMEOUT (F-2); Windows branch: kill the job on any non-`WAIT_OBJECT_0` wait result (F-3, unverified code).
+- `HiddenWindowSmoke`/`AutoExitTwinSmoke` should skip, not fail, when the table cannot be read (unprivileged Linux).
+- The configure-time guard cannot see imported targets or per-directory flags set later (backstopped by the local inertness tests and by CI's binary check).
 

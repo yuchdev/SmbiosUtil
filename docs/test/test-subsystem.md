@@ -25,7 +25,7 @@ milestone 0007), each its own top-level directory, all wired into
 | Category | Directory | Target / CTest name(s) | CTest labels | Needs root/admin? | Always expected green? |
 |----------|-----------|--------------------------|----------------|--------------------|--------------------------|
 | Unit (GUI, CI-safe) | `tests/gui/ci/` | `smbios_gui_ci_test` (one CTest entry) | `gui;gui-ci` | No (no window, GL or OS clipboard; synthetic tables only) | Yes - never skips; runs in CI's `gui-build` job on all three OSes |
-| Integration (GUI, local-only) | `tests/gui/local/` | `smbios_gui_local_test`, one CTest entry per case: `smbios_gui_local_test.<CaseName>`; plus the hook inertness checks `smbios_gui_autoexit.InertBinaries` / `.InertCompileLines` (`cmake -P tests/gui/support/hook_inertness_check.cmake`) | `gui;gui-local` | No - every case *skips* when run as root (`SKIP: <case>: local GUI tests do not run as root`) | Yes, or *Skipped* when a display/GL/clipboard/table is missing or when run as root - never on CI |
+| Integration (GUI, local-only) | `tests/gui/local/` | `smbios_gui_local_test`, one CTest entry per case: `smbios_gui_local_test.<CaseName>`; plus the hook inertness checks `smbios_gui_autoexit.InertBinaries` / `.InertCompileLines` (`cmake -P tests/gui/support/hook_inertness_check.cmake`) | `gui;gui-local` | No - every case *skips* when run as root (`SKIP: <case>: local GUI tests do not run as root`) | Yes, or *Skipped* when a display/GL/clipboard/table is missing or when run as root - never on CI. Verified on macOS only; the Windows branches of the spawn helper and temp directory are unverified (never compiled), the Linux run is pending |
 
 The local-only tier is controlled by `SMBIOS_GUI_LOCAL_TESTS` (default ON for a GUI build outside CI). When the `GITHUB_ACTIONS` or `CI` environment variable is set at configure time it is forced OFF with a warning, and `tests/gui/CMakeLists.txt` re-checks the CI environment where the targets are created, so under CI the tier is not configured, compiled or registered. CI's `gui-build` job proves it, failing closed: `ctest -N -L gui-local` and `ctest -N -R 'smbios_gui_local_test|smbios_gui_autoexit'` must both print `Total Tests: 0` (a missing line is a failure), and no `smbios_gui_local_test*`/`smbios_gui_autoexit*` file or directory may exist in the build tree. The same job checks that the shipped `smbios_gui` contains the test-hook string `--exit-after-frames` 0 times (`grep -a -c -F -e`). Every local-only source also fails to compile unless the target-private definition `SMBIOS_GUI_LOCAL_ONLY_TESTS` is set (`tests/gui/support/local_only_guard.hpp`). A missing resource makes a local case print one `SKIP: <CaseName>: <reason>` line (`skip_unless()`, `tests/gui/support/local_skip.hpp`), which the CTest property `SKIP_REGULAR_EXPRESSION "(^|\n)SKIP: "` reports as *Skipped*. (`"^SKIP: "` does not work: CMake anchors `^` to the start of the whole output, which begins with Boost.Test's `Running 1 test case...` line.)
 
@@ -43,6 +43,8 @@ throughout, matching the vcpkg-declared `boost-test` dependency. Run one
 suite directly for a focused check: `./smbios_unit_test
 --run_test=<SuiteName> --log_level=message`; run everything via `ctest
 --test-dir build/<preset> --output-on-failure`.
+
+**Known gap in the GUI local-only tier:** the intent is that a `gui-local` case SKIPs (one `SKIP:` line) when a resource is missing, but `HiddenWindowSmoke` and `AutoExitTwinSmoke` currently FAIL instead of skipping when the SMBIOS table cannot be read (relevant on an unprivileged Linux run, where the sysfs table is typically root-only). The tier has only been run on macOS. See `docs/dev/cpp_coding_standard.md` and Story 04.0 Task 04's follow-up.
 
 ## Keeping this registry current
 
@@ -148,6 +150,8 @@ between cases (a RAII restorer re-selects it through the combo, also on
 failure), and cases that click Copy select `json` first. Without the
 restorer, about one random order in three fails; with it, the suite passes
 with `--random=1`.
+
+Group-level totals: `smbios_gui_ci_test` has 25 cases in 3 suites (6 + 13 + 6); `smbios_gui_local_test` has 8 cases in the one suite `SmbiosGuiLocalTests`, which with the 2 `smbios_gui_autoexit.*` checks gives 10 local CTest entries. Pixels and visual layout, the root warning (M-12) and window behaviour (M-13) are not covered by any tier.
 
 | Suite | Covers | Guards against |
 |-------|--------|------------------|

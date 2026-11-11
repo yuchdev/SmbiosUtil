@@ -1,7 +1,7 @@
 # Story 04.0 - GUI Test Tiers: CI-Safe and Local-Only
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-12)
 **Depends on:** Story 02.0 (rendering code under test), Story 03.0 (the `gui-build` CI job and `<os>-gui` presets)
 
 > **Scope extension, maintainer-authorized 2026-11-11 (verbatim):** "GUI app should include two specific groups of tests: 1 - that is possible to run of GH Actions, 2 - that is possible to run locally only, unsupported by Github Actions. Use definitions and CMake conditions. Make sure build and all tests pass locally and on CI."
@@ -31,7 +31,7 @@ The ImGui-free view-model suites (`tests/unit/gui_*_test.cpp` in `smbios_unit_te
 | 02 | [Headless feasibility spike and `gui-ci` CI wiring](02-headless-spike-and-ci-wiring.md) | ✅ Complete | 03 |
 | 03 | [CI-safe tier: headless widget tests](03-ci-safe-headless-widget-tests.md) | ✅ Complete | 05 |
 | 04 | [Local-only tier and test-only auto-exit build](04-local-only-tier-and-auto-exit.md) | ✅ Complete | 05 |
-| 05 | [Tests, docs and exit gate](05-tests-docs-and-exit-gate.md) | ⬜ Not started | - |
+| 05 | [Tests, docs and exit gate](05-tests-docs-and-exit-gate.md) | ✅ Complete | - |
 
 The story has five tasks rather than four because the feasibility spike needs real CI runners on three OSes, which means the `ctest -L gui-ci` CI step has to exist first. So the minimal CI wiring moves forward into Task 02, next to the spike. Task 05 keeps the doc updates and the acceptance gate.
 
