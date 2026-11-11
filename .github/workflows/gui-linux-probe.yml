@@ -1,0 +1,59 @@
+# TEMPORARY probe (milestone 0011): why does the Linux `linux-gui` configure/build
+# fail on the runner? Linux only, runs only when this file changes, prints bounded
+# diagnostics (matched error lines, a tail, and the tails of vcpkg build-tree logs
+# named in the output). Delete once the Linux gui-build job is green.
+name: gui-linux-probe
+on:
+  push:
+    paths: ['.github/workflows/gui-linux-probe.yml']
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install GLFW system packages (same as ci.yml)
+        timeout-minutes: 10
+        run: |
+          set -eu
+          if ! getent hosts azure.archive.ubuntu.com >/dev/null; then
+            echo "azure.archive.ubuntu.com does not resolve; using the kernel.org Ubuntu mirror"
+            printf 'https://mirrors.edge.kernel.org/ubuntu/\tpriority:1\n' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+          fi
+          APT="sudo DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=120 -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20"
+          $APT update -qq
+          $APT install -y -qq --no-install-recommends \
+            libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config
+          echo "ok: GLFW system packages installed"
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11.6
+        with:
+          vcpkgDirectory: ${{ github.workspace }}/vcpkg
+
+      - name: Configure and build with diagnostics
+        shell: bash
+        timeout-minutes: 35
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+        run: |
+          set -u
+          diag() { # diag <label> <logfile>
+            echo "--- first matching lines ($1) ---"
+            grep -n -m 30 -E 'error:|CMake Error|FAILED:|fatal error|See logs|Could not|not found|Unable to|missing|requires' "$2" | cut -c1-240 || echo "(none)"
+            echo "--- last 40 lines ($1) ---"; tail -n 40 "$2" | cut -c1-240
+            for f in $(grep -o -E '/[^ ]*buildtrees/[^ ]*\.log' "$2" | sort -u | head -4); do
+              echo "=== vcpkg log $f (last 40 lines) ==="; tail -n 40 "$f" | cut -c1-240
+            done
+          }
+          L1=$(mktemp); rc=0
+          cmake --preset linux-gui > "$L1" 2>&1 || rc=$?
+          echo "configure exit: $rc"
+          if [ "$rc" -ne 0 ]; then diag configure "$L1"; exit "$rc"; fi
+          L2=$(mktemp); rc=0
+          cmake --build --preset linux-gui > "$L2" 2>&1 || rc=$?
+          echo "build exit: $rc"
+          if [ "$rc" -ne 0 ]; then diag build "$L2"; exit "$rc"; fi
+          find build/linux-gui -type f -path '*/smbios_gui/bin/*' -name smbios_gui | head -1 | xargs -r ls -l

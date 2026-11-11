@@ -404,8 +404,10 @@ jobs:
           run_quiet() {
             local label=$1; shift
             local log="$LOGDIR/$label.log"
-            "$@" > "$log" 2>&1
-            local rc=$?
+            # `|| rc=$?`, not a bare command: GitHub starts `shell: bash` with -e,
+            # which would exit here before any diagnostics were printed.
+            local rc=0
+            "$@" > "$log" 2>&1 || rc=$?
             if [ "$rc" -ne 0 ]; then
               echo "::error::$label failed (exit $rc) for preset ${{ matrix.preset }}"
               echo "--- first error lines ($label) ---"
@@ -417,7 +419,7 @@ jobs:
           }
           run_quiet configure cmake --preset ${{ matrix.preset }}
           run_quiet build cmake --build --preset ${{ matrix.preset }}
-          BIN=$(find build/${{ matrix.preset }} -type f -path '*/smbios_gui/bin/*' \( -name smbios_gui -o -name smbios_gui.exe \) | head -n1)
+          BIN=$(find build/${{ matrix.preset }} -type f -path '*/smbios_gui/bin/*' \( -name smbios_gui -o -name smbios_gui.exe \) | head -n1) || true
           if [ -z "$BIN" ]; then
             echo "::error::build succeeded but no smbios_gui binary found under build/${{ matrix.preset }}"
             exit 1
