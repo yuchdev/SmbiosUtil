@@ -461,8 +461,14 @@ jobs:
           # so the bounded failure output cannot carry it. --no-tests=error:
           # an empty gui-ci label is a failure, not a pass.
           run_quiet test ctest --test-dir build/${{ matrix.preset }} -C Debug -L gui-ci --timeout 60 --no-tests=error --output-on-failure
-          passed=$(tr -d '\r' < "$LOGDIR/test.log" | sed -n -E 's/^100% tests passed, 0 tests failed out of ([0-9]+)$/\1/p' | head -n1) || true
-          [ -n "$passed" ] || fail "ctest -L gui-ci exited 0 but printed no '100% tests passed' summary"
+          # ctest 3.31 prints "100% tests passed, 0 tests failed out of N"; ctest 4.x
+          # (the macOS and Windows runners) prints "100% tests passed out of N".
+          passed=$(tr -d '\r' < "$LOGDIR/test.log" | sed -n -E 's/^100% tests passed(, 0 tests failed)? out of ([0-9]+)$/\2/p' | head -n1) || true
+          if [ -z "$passed" ]; then
+            echo "--- last 15 lines of the ctest output (a passing run prints only test names and times) ---"
+            tail -n 15 "$LOGDIR/test.log" | cut -c1-200
+            fail "ctest -L gui-ci exited 0 but printed no '100% tests passed ... out of N' summary"
+          fi
           echo "ok: ctest -L gui-ci ($passed tests passed)"
           # The local-only tier must be absent (threat model R-8), and the
           # guard fails closed: a missing "Total Tests:" line is a failure.
