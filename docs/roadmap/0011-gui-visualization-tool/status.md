@@ -9,7 +9,7 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 | 01.0  | App shell: windowing, GPU backend and build target      | ✅ Complete | macOS build + unit suite; 4s launch smoke |
 | 02.0  | SMBIOS browsing UI: entry tree and field table           | ✅ Complete | 676 unit cases (40+2 new GUI), ASan/UBSan clean; parity 26 = 26 |
 | 03.0  | Cross-platform build integration                         | ✅ Complete | CI run 43052749581: 8/8 jobs green (gui-build on 3 OSes) |
-| 04.0  | GUI test tiers: CI-safe and local-only                   | ⬜ Not started | - |
+| 04.0  | GUI test tiers: CI-safe and local-only                   | 🔶 In progress (1/5 tasks) | - |
 
 **Legend:** ✅ Complete · 🔶 In progress / partial · ⬜ Not started
 
@@ -93,4 +93,5 @@ Tracks progress against [plan.md](plan.md). Updated as each story lands.
 - Task 03 spec: *consumed*.
 
 **Follow-ups (not blocking):** `permissions: contents: read` at the top of `ci.yml`; log `apt-cache policy` / comment the security-pocket gap on the next `ci.yml` change; the whole workflow is to be reworked by the planned CI-rework milestone. Four independent CI-environment causes were found and fixed (see Task 02's "CI debugging findings").
-
+- 2026-11-11 **Story 04.0 threat model:** `docs/security/2026-11-11-gui-test-tiers.md` (PASS_WITH_FOLLOWUP, no critical/high; 22 requirements keyed to Tasks 01-05) is a standing input to every 04.0 coder briefing and overrides the task specs where they conflict (see the note at the top of the Story 04.0 README). Two points differ from what was ruled earlier and are recorded as refinements, not reversals: (1) the clipboard test uses the real clipboard for only 4 writes on an entry with no identifiers and checks the rest in memory (the maintainer's save/restore ruling stands, with a compare-before-restore guard); (2) the auto-exit hook's frame count is a runtime argument (`--exit-after-frames N`) of the **test twin only**, never an environment variable or compile-time constant, and never in the shipped binary. Auditor-flagged things to verify during implementation: `SKIP_REGULAR_EXPRESSION "^SKIP: "` may never match (CMake anchors `^` to the start of the whole output, which begins with Boost.Test's `Running 1 test case...` line); on X11/Wayland the restored clipboard text disappears when the test process exits unless a clipboard manager keeps it.
+- 2026-11-11 04.0/Task 01 (PASS): tier scaffolding delivered (option `SMBIOS_GUI_LOCAL_TESTS`, fail-closed CI gating, `gui-ci`/`gui-local` labels, `#error` guard, placeholders). Spec fix: the skip regex must be `(^|\n)SKIP: `; the spec's `^SKIP: ` reports skipped cases as Passed. CI proof that the local tier is absent comes with Task 02's `ci.yml` wiring.

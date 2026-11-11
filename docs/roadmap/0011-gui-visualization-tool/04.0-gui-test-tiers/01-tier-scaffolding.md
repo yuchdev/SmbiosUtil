@@ -1,7 +1,7 @@
 # 01 - Tier scaffolding: option, definitions, labels
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-11; PASS; macOS-verified, CI proof of the 'local tier absent' guard is Task 02/05)
 
 ## Objective
 
@@ -68,3 +68,13 @@ The test bodies in this task are placeholders. Tasks 02-04 fill them in.
 - [ ] Under `CI=1` or `GITHUB_ACTIONS=true`, the local tier does not exist: there is no target, no binary and no CTest entry.
 - [ ] A skipped local case is reported by CTest as *Skipped*, with one `SKIP:` line.
 - [ ] The `smbios_gui` target is unchanged: its sources, definitions and link line show no diff.
+
+## As-built notes (2026-11-11)
+
+- **Delivered:** `SMBIOS_CI_ENVIRONMENT` (plain variable, recomputed every configure, cannot be overridden with `-D`), `option(SMBIOS_GUI_LOCAL_TESTS)` seeded ON only for a non-CI GUI build and forced OFF with the one-line warning under `GITHUB_ACTIONS`/`CI`, `tests/gui/` (`smbios_gui_ci_test` labelled `gui;gui-ci`; `smbios_gui_local_test` registered as one CTest entry per case, labelled `gui;gui-local`), `local_only_guard.hpp` (`#error` without `SMBIOS_GUI_LOCAL_ONLY_TESTS`, set only as a PRIVATE definition on the local target), `local_skip.hpp` (`skip_unless()`), placeholder cases, and registry rows in `docs/test/test-subsystem.md`. `smbios_gui/`, `CMakePresets.json` and `.github/` are untouched.
+- **Fail closed (threat-model req 2):** `tests/gui/CMakeLists.txt` returns before creating any local target unless `SMBIOS_BUILD_GUI AND SMBIOS_GUI_LOCAL_TESTS AND NOT SMBIOS_CI_ENVIRONMENT`, independent of the cache forcing; proven with a stale-cache reconfigure under `GITHUB_ACTIONS=true` (local tests/targets/binaries all 0). Task 04's `smbios_gui_autoexit` must go behind the same condition.
+- **Spec correction - skip regex:** the spec's `SKIP_REGULAR_EXPRESSION "^SKIP: "` does NOT work: CMake anchors `^` to the start of the whole output, which begins with Boost.Test's `Running 1 test case...` line, so the always-skipping case was reported Passed. Use `"(^|\n)SKIP: "` (CMake turns `\n` into a real newline; also matches Windows `\r\n` output); verified to report Skipped on macOS.
+- **Deviations:** two local placeholder cases (a passing sibling proves a skip is per-case); `support/headless_imgui.*`, `support/glfw_test_window.*` and `doc_sample_fixture.cpp` are added by Tasks 02-04 as needed.
+- **Known stale-tree caveat:** a build tree configured with the local tier ON and later reconfigured under CI keeps an empty `CMakeFiles/smbios_gui_local_test.dir/` directory; Task 02's fail-closed `find` (no `-type f`) would flag it, which is correct. Real CI always configures a fresh tree.
+- **Not run:** clang-tidy and sanitizer builds (build wiring and placeholders only). `build/macos` in this working tree still has `SMBIOS_BUILD_GUI=ON` cached from earlier work, so it reports GUI tests; a fresh default configure reports the original 21.
+

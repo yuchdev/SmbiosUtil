@@ -8,6 +8,8 @@
 >
 > Where this conflicts with earlier milestone text, this story wins. That covers `plan.md`'s Non-goal "only the data-fetch/view-model logic layer is unit-tested", the Story 01.0/02.0 testing-scope calls ("Dear ImGui rendering ... verified by manual run only"), and Story 03.0's "CI never runs anything GUI". The new position is that CI runs the **CI-safe GUI tier** (`gui-ci`). CI still never runs the **local-only tier** (`gui-local`), and never runs the `smbios_gui` binary itself against a display. Pixel or visual-regression testing is still a non-goal.
 
+> **Standing security input (2026-11-11):** [docs/security/2026-11-11-gui-test-tiers.md](/docs/security/2026-11-11-gui-test-tiers.md) (PASS_WITH_FOLLOWUP, requirements 1-22 keyed to Tasks 01-05) is a standing input to every coder briefing in this story and **overrides** the task specs where they conflict. Notable overrides: Task 02's local-tier-absent guard must **fail closed** and also cover `smbios_gui_autoexit*`; the shipped-binary string check must be `grep -a -c -F -e '--exit-after-frames'` (the spec's form reads the pattern as an option) and runs in the CI `gui-build` job on all three OSes; the auto-exit hook parses exactly `--exit-after-frames N` (1-6 digits, 1..100000, anything else prints a fixed usage line and exits 2); every subprocess goes through one spawn helper (no shell, no `popen`/`system`, absolute paths, 30 s deadline, capped output); assertions never print live or fixture data (boolean form, counts only); the clipboard test uses the **real clipboard for only 4 writes (one per format) on an entry with no identifiers**, everything else is checked in memory, with a restore guard that compares before restoring - this *refines* (does not reverse) the maintainer's "save and restore clipboard text" ruling; headless ImGui must replace every OS hook (clipboard, `OpenInShell`, IME) and null `IniFilename`/`LogFilename`. Code review blocks on: any shell-based spawn, any assertion printing live/captured data, a non-zero hook string count in the shipped binary on any OS, any local-tier file found on CI.
+
 ## Scope
 
 This story adds two automated test tiers for `smbios_gui`, separated by CMake conditions and compile definitions:
@@ -25,7 +27,7 @@ The ImGui-free view-model suites (`tests/unit/gui_*_test.cpp` in `smbios_unit_te
 
 | #  | Document | Status | Blocks |
 |----|----------|--------|--------|
-| 01 | [Tier scaffolding: option, definitions, labels](01-tier-scaffolding.md) | ⬜ Not started | 02, 04 |
+| 01 | [Tier scaffolding: option, definitions, labels](01-tier-scaffolding.md) | ✅ Complete | 02, 04 |
 | 02 | [Headless feasibility spike and `gui-ci` CI wiring](02-headless-spike-and-ci-wiring.md) | ⬜ Not started | 03 |
 | 03 | [CI-safe tier: headless widget tests](03-ci-safe-headless-widget-tests.md) | ⬜ Not started | 05 |
 | 04 | [Local-only tier and test-only auto-exit build](04-local-only-tier-and-auto-exit.md) | ⬜ Not started | 05 |
