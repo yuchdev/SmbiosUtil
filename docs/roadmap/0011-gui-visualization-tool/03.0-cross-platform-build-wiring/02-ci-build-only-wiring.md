@@ -68,7 +68,7 @@ None of this task's own; [Task 03](03-tests.md) is the story's exit gate.
 
 - [x] (reworded: the job found and reported the built binary - one `ok:` line; object files are deliberately not printed) A CI run on a real push shows `smbios_gui`'s object files/link step
       in the `Build` step's own log output, on all three OSes.
-- [ ] **NOT PERFORMED** - Deliberately breaking `smbios_gui/src/main.cpp` (e.g. a syntax
+- [x] (demonstrated with a failing test assertion on 2026-11-12, not a syntax error - see Story 04.0 Task 02) Deliberately breaking `smbios_gui/src/main.cpp` (e.g. a syntax
       error) in a throwaway branch/PR, pushed once during this task's own
       verification and then reverted, fails the `build` job on all three
       OSes - proving this is a genuine hard gate, not a step CI silently
@@ -80,7 +80,7 @@ None of this task's own; [Task 03](03-tests.md) is the story's exit gate.
 - **Delivered:** a dedicated build-only `gui-build` job appended to `.github/workflows/ci.yml` (91 added lines, no existing step or `ctest -R` filter changed): ubuntu/windows/macos matrix building `linux-gui`/`windows-gui`/`macos-gui`; Linux apt packages from the vcpkg glfw3 port's own message (`libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config`) installed before configure; same pinned action SHAs as the existing jobs; distinct cache key `vcpkg-binarycache-gui-...`; `timeout-minutes: 30`; `allow_build_failure: false`; no step runs `smbios_gui`. Root `CLAUDE.md` GUI bullet corrected.
 - **Bounded output (maintainer priority, preview of the CI-rework milestone):** full configure/build logs go to a temp file; success prints one line (`ok: <path> (<bytes> bytes)`); failure prints one `::error::` line, <=20 lines matching real diagnostic shapes (`error:`, `error C####`, `FAILED:`, `fatal error`, `CMake Error`, `undefined reference`, `linker command failed`, `LNK####`) and the last 40 lines, preserving the exit code. The orchestrator tightened the coder's bare-word `error|Error|FAILED|fatal` pattern because it matched benign file names (`memory_error_information_*.cpp`: 4 false matches on a real clean log -> 0).
 - **Criterion 1 reworded:** "smbios_gui object files/link step visible in the log" now reads "the job found and reported the built `smbios_gui` binary (one `ok:` line)" - object files are deliberately not printed.
-- **Verified on real runners (see "CI debugging findings" below):** the job, the Windows/Linux `-gui` presets and the apt behaviour - CI run 43052749581 completed `success` (8/8). **Not performed:** a deliberately broken `main.cpp` failing the job on all three OSes (the failure path was exercised only by environment failures, never by a compile error).
+- **Verified on real runners (see "CI debugging findings" below):** the job, the Windows/Linux `-gui` presets and the apt behaviour - CI run 43052749581 completed `success` (8/8). **Failure path demonstrated later (2026-11-12, Story 04.0 Task 02):** a throwaway always-failing `gui-ci` assertion made `gui-build` fail on all three OSes with bounded output (CI run 43067987979); a deliberately broken *compile* was not tried.
 
 ### CI debugging findings (2026-11-11) - what the first real Linux runs taught
 

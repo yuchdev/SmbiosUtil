@@ -28,7 +28,7 @@ The ImGui-free view-model suites (`tests/unit/gui_*_test.cpp` in `smbios_unit_te
 | #  | Document | Status | Blocks |
 |----|----------|--------|--------|
 | 01 | [Tier scaffolding: option, definitions, labels](01-tier-scaffolding.md) | ✅ Complete | 02, 04 |
-| 02 | [Headless feasibility spike and `gui-ci` CI wiring](02-headless-spike-and-ci-wiring.md) | ⬜ Not started | 03 |
+| 02 | [Headless feasibility spike and `gui-ci` CI wiring](02-headless-spike-and-ci-wiring.md) | ✅ Complete | 03 |
 | 03 | [CI-safe tier: headless widget tests](03-ci-safe-headless-widget-tests.md) | ⬜ Not started | 05 |
 | 04 | [Local-only tier and test-only auto-exit build](04-local-only-tier-and-auto-exit.md) | ⬜ Not started | 05 |
 | 05 | [Tests, docs and exit gate](05-tests-docs-and-exit-gate.md) | ⬜ Not started | - |

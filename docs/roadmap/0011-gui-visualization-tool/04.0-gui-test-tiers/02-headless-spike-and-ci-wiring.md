@@ -1,7 +1,7 @@
 # 02 - Headless feasibility spike and `gui-ci` CI wiring
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-12); verified on Linux, macOS and Windows runners
 
 ## Objective
 
@@ -59,3 +59,26 @@ Prove, on real GitHub-hosted runners for all three OSes, that the vendored Dear 
 - [ ] `gui-build` runs `ctest -L gui-ci` green on all three OSes, with output bounded as above.
 - [ ] CI proves that `gui-local` has 0 tests and no binary.
 - [ ] Task 03's case list is amended to match the spike outcome before Task 03 starts.
+
+## As-built notes and spike results (2026-11-12)
+
+**Spike results, per question (expected -> actual; macOS local + all three CI runners where noted)**
+
+| # | Question | Result |
+|---|----------|--------|
+| S1 | Headless frames with imgui 1.92.8's font/texture model | **PASS** - 1000 frames with `ImGuiBackendFlags_RendererHasTextures` and a null renderer that acknowledges every texture request (`WantCreate`/`WantUpdates`/`WantDestroy`); no pending requests, <= 2 tracked textures. The legacy `Fonts->Build()` path was not tried. |
+| S2 | No OS side effects | **PASS** - every OS hook replaced and re-checked after every frame (clipboard get/set in memory, `PlatformOpenInShellFn` records + returns false, IME hook null, `IniFilename`/`LogFilename` null); no `imgui.ini`/`imgui_log.txt` appears. |
+| S3 | ID/style stack-balance oracle | **PASS** - sizes compared directly (does not depend on `IM_ASSERT`); a negative control is detected. (On macOS `IM_ASSERT` is live because vcpkg's debug `libimguid.a` is linked; not established on Linux/Windows.) |
+| S4 | Text capture | **PARTIAL** - labels, rows and widget text are captured, but "clipped-away rows are absent" is **false**: while logging, ImGui turns clipping off, so all 200 rows of a 200-node table are captured. The text oracle cannot test visibility (Task 03 amended). `LogFinish()` clears the buffer, so the harness copies it first. |
+| S5 | Widget locator without pixel coordinates | **PASS** - node click, Hex toggle, Copy (clipboard bytes equal `render_entry_as()` in exactly one format) and the format combo opening, via `imgui_internal.h` (documented in the harness file comment; a vcpkg baseline bump must re-run the suite). |
+| S6 | Duplicate-ID signal | **PARTIAL** - `ImGuiContext::DebugDrawIdConflictsId` is hover-scoped (only the item under the mouse). A whole-frame check needs ImGui built with `IMGUI_DEBUG_HIGHLIGHT_ALL_ID_CONFLICTS`, which the vcpkg build does not offer. The case proves the signal fires for test-owned duplicate buttons and stays 0 for unique ones. |
+| S7 | Starts on a real runner (Linux no `DISPLAY`, Windows DLLs, MSVC/GCC) | **PASS on all three** - CI run 43065947037 (8/8 jobs green): `gui-build` ran `ctest -L gui-ci` successfully on `ubuntu-24.04` (GCC `-Werror`, no display), `macos-latest` and `windows-latest` (MSVC `/W4 /WX`, Debug subfolder, CRLF-safe parse). |
+
+**CI wiring (gui-build job only):** `ctest -L gui-ci --timeout 60 --no-tests=error --output-on-failure` inside the bounded-output `run_quiet`; a check that the shipped `smbios_gui` contains neither `--exit-after-frames` nor `usage: --exit-after-frames` (`grep -a -c -F -e`, fail closed); a fail-closed guard that no `gui-local` test, no `smbios_gui_local_test*`/`smbios_gui_autoexit*` name or file exists. Each prints one `ok:` line on success.
+
+**CI debugging finding (ctest wording):** the "100% tests passed" gate was first written against ctest 3.31 (`100% tests passed, 0 tests failed out of N`) and failed on the macOS and Windows runners, whose ctest 4.4.5 prints `100% tests passed out of N`. The gate now accepts both (CRLF-safe), still fails closed, and prints the last 15 lines of ctest's output when the summary is missing; found with a throwaway probe workflow (deleted).
+
+**Negative proof (success criterion, performed):** a throwaway commit added one always-failing `gui-ci` assertion with a fixed message; CI run 43067987979 showed `gui-build` FAIL on all three OSes with one `##[error]test failed (exit 8) for preset <os>-gui` line, the failing file:line and fixed message, ctest's short summary (~30 lines) and no fixture or captured text; the commit was then reverted. This also closes Story 03.0's "deliberately broken source fails the job" item.
+
+**Deviations:** the CI step was renamed ("Configure, build and run gui-ci tests"); `--no-tests=error` and the summary check were added; the placeholder CI case was removed; two string-pointer assertions were double-parenthesised so Boost never prints them (R-5).
+
