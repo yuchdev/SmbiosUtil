@@ -1,7 +1,7 @@
 # 01 - Entry tree and field view-model (GC1)
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-11; PASS, macOS build + live-table scratch check; tests in Task 04)
 
 ## Objective
 
@@ -114,3 +114,10 @@ per-node field content against direct `get_fields()` calls.
 - [ ] Every `FieldRow` in a node whose type has a registered entry class
       matches that class's own `get_fields()` call, field-for-field, in
       the same order.
+
+## As-built notes (2026-11-11)
+
+- **Amended by the 02.0 threat model** (`docs/security/2026-11-11-gui-browsing-ui.md`, reqs 1-3): added ImGui-free `display_text()` + `kDisplayTextMaxBytes` (4096, cap includes the truncation suffix; unsafe chars -> U+FFFD), `EntryNode::decode_failed`, and per-entry exception isolation (only `std::bad_alloc` rethrown).
+- **Spec corrections:** `std::distance(bios.begin(), bios.end())` does not compile (`SMBios::iterator` has no iterator traits) - count with a manual loop (Task 04 must too). (Correction 2026-11-11: an earlier note here claimed `SMBiosHandler` has 43 named values; the Task 04 label test shows it has 46, matching the original spec - no change needed.)
+- **Layout:** the view model is built as the always-built static library `libsmbios_gui_model` (no imgui/glfw dependency) so the unit suite can link it; `smbios_gui/CMakeLists.txt` returns early unless `SMBIOS_BUILD_GUI=ON`. Task 03's `render_entry_as()` must be added to that model source list if it has no ImGui dependency; Task 04's test target must link `libsmbios_gui_model`.
+- **Later change (review fix P-1):** `display_text()`'s `[N bytes truncated]` N now counts *input* bytes not shown (was output bytes after sanitising), so the work per call is bounded by ~4 KiB of input regardless of string size.

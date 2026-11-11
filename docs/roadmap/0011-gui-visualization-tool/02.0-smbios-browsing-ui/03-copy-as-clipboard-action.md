@@ -1,7 +1,7 @@
 # 03 - "Copy as..." clipboard action
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-11; PASS; manual clipboard-paste check vs `smbios --format json` still owed)
 
 ## Objective
 
@@ -110,3 +110,10 @@ JSON/XML/YAML/CSV writer of its own.
       add).
 - [ ] No field value appears in any log, console, or error message this
       task's code produces.
+
+## As-built notes (2026-11-11)
+
+- **Amended by the 02.0 threat model** (reqs 11-14): entries are never created per frame - `create_entry_for_node()` runs only in the Copy click handler (re-checks index/type/handle, then `create()`); default format `json`, non-json formats show a static note; clipboard is byte-exact `IOutputFormatter::render()` output; >1 MiB and embedded-NUL output are refused; no field values/`e.what()` logged; ImGui-free `render_entry_as(const AbstractSMBiosEntry&, std::string_view) -> std::optional<std::string>` lives in `libsmbios_gui_model` (`copy_as.{hpp,cpp}`).
+- **Spec corrections:** (1) the GUI dropdown lists 4 formats (`json`, `text`, `xml`, `yaml`), **not** `csv` - the csv formatter is compiled only into the `smbios` CLI target (`smbios/examples/csv_formatter.cpp`); the "exactly `registered_output_formatter_names()`" criterion holds. (2) Signature is `render_copy_as_action(SMBios&, const EntryNode&, size_t node_index) noexcept` (not `const AbstractSMBiosEntry*`), and `render_entry_browser` gained an `SMBios&` parameter. (3) `render_entry_as` does not catch exceptions; the GUI click handler does. Task 04's tests and any test target must whole-archive-link libsmbios so the formatters are registered.
+- **Still owed:** manual paste check - Copy with `json` must equal `smbios --format json` for that entry.
+

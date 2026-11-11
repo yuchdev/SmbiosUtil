@@ -1,7 +1,12 @@
 # 01 - Preset and root CMake confirmation
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete for macOS (2026-11-11); Windows/Linux preset builds are CI-only and unverified until Task 02's job runs on real runners
+
+> **Amended 2026-11-11 (maintainer ruling after /pr-review, see `status.md` Notes & decisions):** the GUI build is **opt-in**. The `<os>-gui` configure/build presets and the hidden `gui` mixin already
+exist in `CMakePresets.json` (added during Story 01.0's review fix). This
+task confirms those three presets on Windows/Linux/macOS (macOS already
+verified), and adds nothing speculative.
 
 ## Objective
 
@@ -55,3 +60,10 @@ None of this task's own; [Task 03](03-tests.md) is the story's exit gate.
 - [ ] The same for `linux` and `macos`.
 - [ ] Any change this task made is justified in `status.md` by the exact
       error it fixed, not by anticipation.
+
+## As-built notes (2026-11-11)
+
+- **macOS (verified):** `cmake --preset macos-gui -B <fresh dir>` + `cmake --build` from a clean directory: configure 0, build 0, `smbios_gui` produced, zero compiler warnings (only the pre-existing Boost.Test `ld: warning: direct access ... weak symbol` linker notices). No preset or root CMake change was needed beyond Story 01.0's own (including its review-fix presets).
+- **Windows/Linux (NOT verified):** no Windows/Linux host, Docker or `act` is available to the loop, so these two criteria stay open until a real push runs them on GitHub runners (Task 02 adds the job). No change was made speculatively ("confirm, don't guess").
+- **Linux system packages:** taken from the vcpkg `glfw3` port's own message (`ports/glfw3/portfile.cmake`): `libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config` (Ubuntu), used by Task 02. Wayland is an optional `glfw3` feature and is not enabled here.
+

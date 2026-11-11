@@ -1,7 +1,7 @@
 # 01 - vcpkg dependencies: Dear ImGui and GLFW
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-11; macOS configure verified, Windows/Linux deferred to Story 03.0 CI)
 
 ## Objective
 
@@ -37,6 +37,11 @@ no new dependency-resolution mechanism, per `plan.md`'s Key constraints.
   `vcpkg.json` under the resolved baseline) - confirm them against the
   actual port rather than assuming this task's names are final; record any
   correction in `status.md`.
+
+> **Amended 2026-11-11 (maintainer ruling after /pr-review, see `status.md` Notes & decisions):** the GUI build is **opt-in**. As built, `imgui` (features `glfw-binding`, `opengl3-binding`) and
+`glfw3` live under a non-default vcpkg manifest feature `"gui"` in
+`vcpkg.json`, not in the top-level `dependencies` array shown above. The
+baseline pin is unchanged.
 
 ## Functions and Classes
 

@@ -58,6 +58,8 @@ structures, in the same count, as `smbios`'s own `--format text` output for
 the same live table." Story 01.0 is that spike; Story 02.0's exit gate is
 that parity check.
 
+> **Amended 2026-11-11 (maintainer ruling, see `status.md`):** "same structures, in the same count" means the *registered-type* structures. The CLI's `render_document()` skips structure types with no registered entry class, while the GUI keeps them as `Unknown (0xNN)` nodes (GC1). The parity gate therefore compares registered-type nodes only (count and type order) against `smbios --format text`/`json`; unregistered structures are extra GUI-only nodes.
+
 ## Key constraints
 
 - **Links `libsmbios` whole-archive, exactly like `smbios` and `smbios_c`
@@ -217,7 +219,7 @@ can be developed and tested independently. "Copy as..." (Story 02.0, Task
 flowchart TD
     A["Story 01.0<br/>App shell: windowing, GPU backend, build target"] --> B["Story 02.0<br/>SMBIOS browsing UI"]
     A --> C["Story 03.0<br/>Cross-platform build integration"]
-    B --> M["Milestone exit<br/>(parity check: same structure count as `smbios --format text`,<br/>on all three CMake presets)"]
+    B --> M["Milestone exit<br/>(parity check: registered-type nodes match `smbios --format text` (amended 2026-11-11),<br/>on all three CMake presets)"]
     C --> M
 ```
 

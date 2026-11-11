@@ -4,6 +4,8 @@
 **Status:** ⬜ Not started
 **Depends on:** Story 01.0 (`smbios_gui` target existing); can proceed in parallel with Story 02.0
 
+> **Amended 2026-11-11 (maintainer ruling after Story 01.0's /pr-review; see `status.md` Notes & decisions).** The GUI build is **opt-in**: `option(SMBIOS_BUILD_GUI)` defaults OFF, `imgui`/`glfw3` live in the non-default vcpkg manifest feature `gui`, and `CMakePresets.json` already gained a hidden `gui` mixin plus `windows-gui`/`linux-gui`/`macos-gui` presets (so "no new preset" below no longer holds). The existing `build` job's default presets therefore do **not** build `smbios_gui`; this story must add a **dedicated GUI build job** (or matrix entries) that builds the `<os>-gui` presets on all three OSes, with the Linux X11/GL development packages installed before `Configure`. Still true: CI builds the GUI but never runs it; no installer/bundling. Keep the CI change minimal - `ci.yml` is planned to be replaced by a separate CI-rework milestone (see the cursor's `post_milestone_actions`). When the GUI job lands, also fix the root `CLAUDE.md` GUI bullet that says the GUI is "never built in CI". The unit tests for the GUI view model already run in the default CI build (`libsmbios_gui_model` is always built).
+
 ## Scope
 
 Confirm `smbios_gui` builds cleanly through the existing
@@ -18,8 +20,8 @@ this story's job is confirmation and CI wiring, not new infrastructure.
 
 | #  | Document                                                        | Status         | Blocks |
 |----|----------------------------------------------------------------------|----------------|--------|
-| 01 | [Preset and root CMake confirmation](01-preset-and-root-cmake-confirmation.md) | ⬜ Not started | 02     |
-| 02 | [CI build-only wiring](02-ci-build-only-wiring.md)                    | ⬜ Not started | 03     |
+| 01 | [Preset and root CMake confirmation](01-preset-and-root-cmake-confirmation.md) | ✅ Complete (macOS) | 02     |
+| 02 | [CI build-only wiring](02-ci-build-only-wiring.md)                    | ✅ Complete (CI run pending) | 03     |
 | 03 | [Tests](03-tests.md)                                                 | ⬜ Not started | -      |
 
 ## Key constraints

@@ -1,7 +1,7 @@
 # 02 - `smbios_gui` CMake target and window skeleton
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-11; macOS build + nm verified; runtime run and Windows/Linux unverified)
 
 ## Objective
 
@@ -19,7 +19,7 @@ have to also discover and fix a missing-whole-archive bug the way milestone
 - **Create** `smbios_gui/CMakeLists.txt`:
   ```cmake
   set(TARGET smbios_gui)
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "../bin")
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin")  # not "../bin": this file is one level shallower than smbios/src/
 
   find_package(imgui CONFIG REQUIRED)
   find_package(glfw3 CONFIG REQUIRED)
@@ -76,10 +76,13 @@ have to also discover and fix a missing-whole-archive bug the way milestone
   `ImGui::DestroyContext()`, `glfwDestroyWindow()`, `glfwTerminate()`).
 - **Modify** root `CMakeLists.txt`: add `add_subdirectory(smbios_gui)`
   alongside the existing `add_subdirectory(smbios)`/`add_subdirectory(smbios_c)`
-  lines - unconditional, built by default on every platform (unlike
-  `SMBIOS_BUILD_FUZZERS`/`SMBIOS_BUILD_EXAMPLES`, this target has no opt-out
-  flag of its own; Story 03.0 is where any platform-specific gating, if it
-  turns out to be needed, would be added).
+  lines. **As built (amended 2026-11-11):** *not* unconditional - the call
+  is guarded by `if(SMBIOS_BUILD_GUI)`, an `option()` defaulting to OFF
+  (same style as `SMBIOS_BUILD_FUZZERS`/`SMBIOS_BUILD_EXAMPLES`), because
+  unconditional GUI dependencies would force X11/GL dev packages onto every
+  Linux/CI build and CLI-only contributor. Enable with
+  `-DSMBIOS_BUILD_GUI=ON -DVCPKG_MANIFEST_FEATURES=gui` or the `<os>-gui`
+  presets in `CMakePresets.json`.
 
 ## Functions and Classes
 

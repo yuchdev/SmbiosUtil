@@ -1,7 +1,7 @@
 # Story 02.0 - SMBIOS Browsing UI: Entry Tree and Field Table
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-11)
 **Depends on:** Story 01.0 (`smbios_gui` target, window/frame loop, whole-archive link)
 
 ## Scope
@@ -17,10 +17,10 @@ ADR 0003's Decision.
 
 | #  | Document                                                              | Status         | Blocks |
 |----|----------------------------------------------------------------------------|----------------|--------|
-| 01 | [Entry tree and field view-model (GC1)](01-entry-tree-and-field-view-model.md) | ⬜ Not started | 02     |
-| 02 | [Tree and field-table rendering](02-tree-and-field-table-rendering.md)      | ⬜ Not started | 03     |
-| 03 | ["Copy as..." clipboard action](03-copy-as-clipboard-action.md)            | ⬜ Not started | 04     |
-| 04 | [Tests](04-tests.md)                                                       | ⬜ Not started | -      |
+| 01 | [Entry tree and field view-model (GC1)](01-entry-tree-and-field-view-model.md) | ✅ Complete | 02     |
+| 02 | [Tree and field-table rendering](02-tree-and-field-table-rendering.md)      | ✅ Complete | 03     |
+| 03 | ["Copy as..." clipboard action](03-copy-as-clipboard-action.md)            | ✅ Complete | 04     |
+| 04 | [Tests](04-tests.md)                                                       | ✅ Complete | -      |
 
 ## Key constraints
 

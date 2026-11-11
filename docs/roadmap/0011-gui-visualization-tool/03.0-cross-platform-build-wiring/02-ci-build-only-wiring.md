@@ -1,7 +1,19 @@
 # 02 - CI build-only wiring
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete as written (2026-11-11); behaviour on real runners UNVERIFIED until a push
+
+> **Amended 2026-11-11 (maintainer ruling after /pr-review, see `status.md` Notes & decisions):** the GUI build is **opt-in**. `smbios_gui` is no longer built by the existing `build` job's default
+presets. This task must instead **add a dedicated GUI build job** (or matrix
+entries) that configures/builds the `<os>-gui` presets (or passes
+`-DSMBIOS_BUILD_GUI=ON -DVCPKG_MANIFEST_FEATURES=gui`) on all three OSes, with
+the Linux X11/GL development packages (`libxinerama-dev`, `libxcursor-dev`,
+`xorg-dev`, `libglu1-mesa-dev`, `pkg-config` - confirm the real set by a
+reproduced configure failure) installed ahead of `Configure`. The "no other
+change to CI" bullet below and the "existing `Build` step already covers it"
+reasoning no longer hold; the build-only/no-run constraints and the
+`allow_build_failure: false` posture still apply to the new job. The vcpkg
+binary-cache key (`hashFiles('vcpkg.json')`) already covers the new feature.
 
 ## Objective
 
@@ -62,3 +74,11 @@ None of this task's own; [Task 03](03-tests.md) is the story's exit gate.
       OSes - proving this is a genuine hard gate, not a step CI silently
       skips.
 - [ ] No CI step attempts to execute `smbios_gui`.
+
+## As-built notes (2026-11-11)
+
+- **Delivered:** a dedicated build-only `gui-build` job appended to `.github/workflows/ci.yml` (91 added lines, no existing step or `ctest -R` filter changed): ubuntu/windows/macos matrix building `linux-gui`/`windows-gui`/`macos-gui`; Linux apt packages from the vcpkg glfw3 port's own message (`libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config`) installed before configure; same pinned action SHAs as the existing jobs; distinct cache key `vcpkg-binarycache-gui-...`; `timeout-minutes: 30`; `allow_build_failure: false`; no step runs `smbios_gui`. Root `CLAUDE.md` GUI bullet corrected.
+- **Bounded output (maintainer priority, preview of the CI-rework milestone):** full configure/build logs go to a temp file; success prints one line (`ok: <path> (<bytes> bytes)`); failure prints one `::error::` line, <=20 lines matching real diagnostic shapes (`error:`, `error C####`, `FAILED:`, `fatal error`, `CMake Error`, `undefined reference`, `linker command failed`, `LNK####`) and the last 40 lines, preserving the exit code. The orchestrator tightened the coder's bare-word `error|Error|FAILED|fatal` pattern because it matched benign file names (`memory_error_information_*.cpp`: 4 false matches on a real clean log -> 0).
+- **Criterion 1 reworded:** "smbios_gui object files/link step visible in the log" now reads "the job found and reported the built `smbios_gui` binary (one `ok:` line)" - object files are deliberately not printed.
+- **Unverified (needs a real push):** the job on GitHub runners; Windows/Linux `-gui` presets configuring; apt behaviour; a deliberately broken `main.cpp` failing all three OSes.
+

@@ -1,7 +1,7 @@
 # 02 - Tree and field-table rendering
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-11; PASS; manual parity + four-FieldValue-kinds live check still owed)
 
 ## Objective
 
@@ -107,3 +107,10 @@ the milestone's own exit-gate parity check, per `plan.md`).
       (e.g. a `std::string` field, a `uint64_t` field, a `bool` field from
       a bitmask property, and a `std::vector<uint8_t>` field such as a raw
       UUID) on the developer's own test machine or a synthetic fixture.
+
+## As-built notes (2026-11-11)
+
+- **Amended by the 02.0 threat model** (reqs 4-10): firmware text only via `TextUnformatted` after `display_text()`; every widget label/ID is a literal (`##node` etc.); `PushID(index)` never keyed on handle; `ImGuiListClipper` for the node list and field tables over 256 rows; empty view decided on `nodes.empty()` (supersedes the spec's `get_structures_count() == 0`) and drawn inside `render_entry_browser()`; `SMBios` built + tree built once before the frame loop in `try/catch(...)` (fixed stderr message, exit 1); POSIX root banner without sudo advice; no editable widgets.
+- **Extras:** ImGui-free `field_text.{hpp,cpp}` (`field_value_text()`, `entry_node_label()`, `kHexDumpMaxBytes=1024`) live in `libsmbios_gui_model` for Task 04; `render_entry_browser()` is `noexcept`; `decode_failed` nodes show an orange `[decode failed]` marker and a fixed explanation.
+- **Still owed (exit gate):** the manual parity check vs `smbios --format text`/`json` (node count and per-structure fields) and one live look at each of the four `FieldValue` kinds. Report any mismatch only as `expected -> actual` (user preference).
+

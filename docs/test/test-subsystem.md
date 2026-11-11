@@ -20,6 +20,8 @@ milestone 0007), each its own top-level directory, all wired into
 | Integration  | `tests/integration/`  | `smbios_integration_test`  | Yes (real hardware) | No - same as Perf |
 | C ABI        | `tests/c_abi/`         | `smbios_c_compile_as_c_test`, `smbios_c_example`, `smbios_c_open_close_test`, `smbios_c_entry_iteration_test`, `smbios_c_typed_getters_test` | No (reads real hardware, but no elevated privilege needed - same as the native sources `smbios_c` sits on top of) | Yes - each checks `smbios_open()`'s own return code and degrades gracefully rather than failing when no table is available |
 
+**GUI (`smbios_gui`, milestone 0011).** Its ImGui-free view-model layer (`libsmbios_gui_model`) is unit-tested in `tests/unit/gui_*_test.cpp`; the window, rendering and clipboard cannot be driven headlessly and are covered by the manual plan in [ManualTesting.md](ManualTesting.md).
+
 **No `e2e` category.** A hardware-inventory library/CLI has no user journey
 distinct from "construct an `SMBios`, read its structures" - that journey
 *is* the integration suite. Adding a separate `e2e` layer here would just

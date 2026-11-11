@@ -1,7 +1,7 @@
 # 03 - Tests
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-11; macOS build, unit suite, 4s launch smoke test; clean-exit and Win/Linux deferred)
 
 ## Objective
 

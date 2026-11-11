@@ -1,7 +1,7 @@
 # 04 - Tests
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-11; 40 new unit cases green incl. ASan/UBSan; scripted parity 26 = 26 on macOS; manual GUI look still owed)
 
 ## Objective
 
@@ -84,3 +84,11 @@ automated-test surface.
       decisions, so a future contributor does not re-raise "where are the
       UI tests?" as an open question.
 - [ ] Milestone 0011's `status.md` Story 02.0 row is updated to ✅.
+
+## As-built notes (2026-11-11)
+
+- **Delivered:** 40 new cases (suite 634 -> 674, all green): `GuiViewModelUnitTests` (17), `GuiFieldTextUnitTests` (13), `GuiCopyAsUnitTests` (10), covering threat-model reqs 15-20 (hostile strings, 5 malformed-table cases + 500 seeded random tables, duplicate handles, `render_entry_as` byte-exactness and 1 MiB cap, empty table, synthetic fixtures only). Run under the CI-style ASan/UBSan settings with no reports. `tests/unit/CMakeLists.txt` now links `libsmbios_gui_model` and carries the same three-way whole-archive link of `libsmbios` as the other consumers (previously entries/formatters were only registered by accident of other tests naming them).
+- **Parity gate amended (maintainer ruling 2026-11-11):** compares *registered-type* nodes only against `smbios --format text`/`json`; unregistered types are extra GUI-only `Unknown (0xNN)` nodes. Scripted result on macOS: 26 = 26 registered nodes, order and decode match; the GUI shows 32 nodes (6 Apple OEM types).
+- **Still owed:** a person confirming in the actual window that the node list shows these structures and that Copy-as `json` pastes what `smbios --format json` prints for the entry.
+- **Corrections:** `SMBiosHandler` has 46 values (an earlier "43" note was wrong); `std::distance` on `SMBios` iterators does not compile (manual loop used); the unit-test registry also contains the CLI's csv formatter and fixed-output fakes from other test files, so tests assert the four built-ins are present rather than an exact set.
+
