@@ -22,6 +22,20 @@
 /// Exit status: 0 on a normal close, 1 if reading the table or any
 /// initialization step fails (a fixed message naming the failing step goes
 /// to stderr; no firmware data or exception text is ever printed).
+///
+/// Test-only auto-exit hook (milestone 0011 Story 04.0 Task 04; threat model
+/// `docs/security/2026-11-11-gui-test-tiers.md`, T-4/T-5, R-12 to R-14):
+/// everything under `#if defined(SMBIOS_GUI_TEST_HOOKS)` exists only in the
+/// local-only test twin `smbios_gui_autoexit`, the one target that defines
+/// it (PRIVATE; never on CI, never installed). The shipped `smbios_gui`
+/// never defines it - `smbios_gui/CMakeLists.txt` fails the configure if the
+/// define could reach it - so its `int main()` and its behaviour are
+/// unchanged and the binary contains none of the hook's text. In the twin,
+/// `main` accepts exactly `--exit-after-frames N` (N: 1-6 ASCII digits,
+/// 1..100000); any other argv, including none, prints one fixed usage line
+/// to stderr (argv is never echoed) and exits 2. After N rendered frames it
+/// requests a close through glfwSetWindowShouldClose() and leaves through
+/// the normal teardown, so the exit status is 0.
 
 #include <cstdio>
 #include <memory>
@@ -39,6 +53,72 @@
 #include <libsmbios/smbios.hpp>
 #include <smbios/gui/entry_tree_view.hpp>
 #include <smbios/gui/view_model.hpp>
+
+#if defined(SMBIOS_GUI_TEST_HOOKS)
+// Test-only auto-exit hook, part 1 of 2: argument parsing. Compiled only
+// into the local-only test twin smbios_gui_autoexit (see the file comment).
+#include <charconv>
+#include <cstddef>
+#include <string_view>
+#include <system_error>
+
+namespace {
+
+/// The only flag the test twin accepts.
+constexpr std::string_view kExitAfterFramesFlag = "--exit-after-frames";
+
+/// Fixed usage line for any rejected argv. Never contains argv text.
+constexpr const char* kExitAfterFramesUsage =
+    "smbios_gui: usage: --exit-after-frames <1-100000>\n";
+
+/// Inclusive range of the accepted frame count.
+constexpr int kMinExitAfterFrames = 1;
+constexpr int kMaxExitAfterFrames = 100000;
+
+/// Longest accepted frame-count argument, in characters.
+constexpr std::size_t kMaxExitAfterFramesDigits = 6;
+
+/// @brief Parses the test twin's command line.
+///
+/// Accepts exactly `--exit-after-frames N`: argc == 3, the literal flag,
+/// and N as 1-6 ASCII digits (no sign, whitespace, prefix or suffix),
+/// converted with std::from_chars, which must consume every character, and
+/// in the range 1..100000.
+/// @param argc argument count from main().
+/// @param argv argument vector from main(); only read, never printed.
+/// @param[out] frames the parsed frame count; written only on success.
+/// @return true if argv has exactly the accepted shape.
+bool parse_exit_after_frames(int argc, char** argv, int& frames) {
+    if (argc != 3 || argv[1] == nullptr || argv[2] == nullptr) {
+        return false;
+    }
+    if (std::string_view(argv[1]) != kExitAfterFramesFlag) {
+        return false;
+    }
+    const std::string_view digits(argv[2]);
+    if (digits.empty() || digits.size() > kMaxExitAfterFramesDigits) {
+        return false;
+    }
+    for (const char c : digits) {
+        if (c < '0' || c > '9') {
+            return false;
+        }
+    }
+    int value = 0;
+    const char* const end = digits.data() + digits.size();
+    const auto [ptr, ec] = std::from_chars(digits.data(), end, value);
+    if (ec != std::errc() || ptr != end) {
+        return false;
+    }
+    if (value < kMinExitAfterFrames || value > kMaxExitAfterFrames) {
+        return false;
+    }
+    frames = value;
+    return true;
+}
+
+} // namespace
+#endif // SMBIOS_GUI_TEST_HOOKS
 
 namespace {
 
@@ -168,8 +248,23 @@ void render_main_window(smbios::SMBios& bios, const std::vector<smbios::gui::Ent
 
 /// @brief Initializes GLFW/OpenGL/Dear ImGui, runs the frame loop until the
 /// window should close, then tears everything down in reverse order.
-/// @return 0 on a normal close, 1 if any initialization step fails.
+///
+/// In the test twin only (SMBIOS_GUI_TEST_HOOKS), it first validates
+/// `--exit-after-frames N` and later closes the window after N rendered
+/// frames; see the file comment.
+/// @return 0 on a normal close, 1 if any initialization step fails; in the
+/// test twin also 2 for a rejected command line.
+#if defined(SMBIOS_GUI_TEST_HOOKS)
+int main(int argc, char** argv) {
+    int exit_after_frames = 0;
+    if (!parse_exit_after_frames(argc, argv, exit_after_frames)) {
+        std::fputs(kExitAfterFramesUsage, stderr);
+        return 2;
+    }
+    int rendered_frames = 0;
+#else
 int main() {
+#endif
     // Read the table and build the view model once, before any window and
     // outside the frame loop (G-3, G-6). `bios` outlives the frame loop so a
     // later "Copy as..." action can create entries from it (G-7); SMBios's
@@ -255,6 +350,15 @@ int main() {
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window.get());
+#if defined(SMBIOS_GUI_TEST_HOOKS)
+        // Test-only auto-exit hook, part 2 of 2: count only frames that got
+        // past the minimized check and were rendered; at N, request the
+        // normal close (never exit()/_exit()).
+        ++rendered_frames;
+        if (rendered_frames >= exit_after_frames) {
+            glfwSetWindowShouldClose(window.get(), GLFW_TRUE);
+        }
+#endif
     }
 
     // Guards are destroyed here in reverse declaration order:

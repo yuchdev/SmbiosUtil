@@ -134,19 +134,58 @@ endif()
 find_package(glfw3 CONFIG REQUIRED)
 find_package(OpenGL REQUIRED)
 
-# Every source here includes support/local_only_guard.hpp first. Task 04
-# adds support/glfw_test_window.{hpp,cpp} and the spawn/clipboard helpers.
+# The smbios_gui_autoexit test twin is defined in smbios_gui/CMakeLists.txt
+# behind this same three-part condition; fail closed if it is missing.
+if(NOT TARGET smbios_gui_autoexit)
+    message(FATAL_ERROR "tests/gui: the local GUI tier is enabled but the "
+        "smbios_gui_autoexit test twin target does not exist "
+        "(smbios_gui/CMakeLists.txt, Story 04.0 Task 04)")
+endif()
+
+# Every source here includes support/local_only_guard.hpp first.
+# support/process_spawn.* is the tier's only way to start a child process
+# (no shell, absolute paths, literal argv, only fds 0-2 inherited, 30 s
+# deadline; threat model R-16), support/scoped_temp_directory.* the twin's
+# private working directory (R-17), support/display_probe.* the display/GL
+# skip probe,
+# support/glfw_test_window.* the RAII hidden window (+ ImGui backends) of
+# HiddenWindowSmoke and ClipboardRoundTripMatchesCli, and
+# support/live_table_support.* the live-model/CLI comparison helpers (one
+# byte-comparison helper, CLI JSON splitting; R-18/R-20). The CI tier's
+# support/headless_imgui.* is compiled in only for its stack-balance
+# oracle (stack_sizes_equal(), Task 02's S3). entry_tree_view.cpp and
+# copy_as_action.cpp are compiled straight in, as for smbios_gui_ci_test
+# (never via libsmbios_gui_model - R-10, checked above).
 file(GLOB SMBIOS_GUI_LOCAL_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/local/*.cpp)
 list(APPEND SMBIOS_GUI_LOCAL_TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/support/local_only_guard.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/support/local_skip.hpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/local_skip.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/process_spawn.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/process_spawn.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/scoped_temp_directory.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/scoped_temp_directory.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/display_probe.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/display_probe.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/glfw_test_window.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/glfw_test_window.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/live_table_support.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/live_table_support.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/headless_imgui.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/headless_imgui.cpp
+    ${SMBIOS_GUI_CI_RENDERING_SOURCES})
 
 # One CTest entry per case, so a skipped case shows as Skipped without
 # hiding its passing siblings. Keep this list in sync with the
 # BOOST_AUTO_TEST_CASEs of suite SmbiosGuiLocalTests in local/*.cpp.
 set(SMBIOS_GUI_LOCAL_TEST_CASES
-    ScaffoldingPlaceholder
-    SkipHelperPlaceholder)
+    AutoExitTwinSmoke
+    AutoExitTwinRejectsBadArguments
+    HiddenWindowSmoke
+    CopyAsBytesMatchCliEveryNodeAndFormat
+    ClipboardRoundTripMatchesCli
+    LiveParityRegisteredNodesMatchCli
+    LaunchAutoExitTwin
+    SpawnDoesNotInheritDescriptors)
 
 add_executable(smbios_gui_local_test ${SMBIOS_GUI_LOCAL_TEST_SOURCES})
 set_target_properties(smbios_gui_local_test PROPERTIES
@@ -163,6 +202,17 @@ target_include_directories(smbios_gui_local_test PRIVATE
 # SMBIOS_COMPILE_OPTIONS or a preset (threat model R-3). Without it every
 # local source fails with local_only_guard.hpp's #error.
 target_compile_definitions(smbios_gui_local_test PRIVATE SMBIOS_GUI_LOCAL_ONLY_TESTS=1)
+# Absolute paths of the two programs the tier launches, as string literals
+# for spawn_and_capture()'s literal-only arguments (R-16).
+target_compile_definitions(smbios_gui_local_test PRIVATE
+    "SMBIOS_GUI_AUTOEXIT_PATH=\"$<TARGET_FILE:smbios_gui_autoexit>\""
+    "SMBIOS_CLI_PATH=\"$<TARGET_FILE:smbios>\"")
+# Build order only (no link, no definition on any of the three): building
+# the local test also (re)builds the twin and the CLI it launches and the
+# shipped smbios_gui that smbios_gui_autoexit.InertBinaries/
+# .InertCompileLines inspect, so every local CTest entry runs against
+# fresh binaries.
+add_dependencies(smbios_gui_local_test smbios_gui smbios_gui_autoexit smbios)
 # Same accepted OpenGL deprecation silencing as smbios_gui.
 if(APPLE)
     target_compile_definitions(smbios_gui_local_test PRIVATE GL_SILENCE_DEPRECATION)
@@ -184,7 +234,7 @@ target_link_libraries(smbios_gui_local_test PRIVATE
 # CMake's regex "^" anchors only to the start of that whole string, not of
 # each line. Boost.Test prints "Running 1 test case..." first, so the
 # task spec's "^SKIP: " never matches: verified on macOS (CMake 3.31), the
-# always-skipping SkipHelperPlaceholder case was reported Passed with it.
+# always-skipping Task 01 placeholder case was reported Passed with it.
 # "(^|\n)SKIP: " (the "\n" is a real newline after CMake's argument
 # parsing) anchors to the start of any line and is reported Skipped. Only
 # skip_unless()'s own line can match, because no local case prints live or
@@ -193,6 +243,42 @@ foreach(case_name IN LISTS SMBIOS_GUI_LOCAL_TEST_CASES)
     set(test_name smbios_gui_local_test.${case_name})
     add_test(NAME ${test_name}
         COMMAND smbios_gui_local_test --run_test=SmbiosGuiLocalTests/${case_name})
+    set_tests_properties(${test_name} PROPERTIES
+        LABELS "gui;gui-local"
+        TIMEOUT 120)
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
+        set_tests_properties(${test_name} PROPERTIES
+            SKIP_REGULAR_EXPRESSION "(^|\n)SKIP: ")
+    endif()
+endforeach()
+
+# ---------------------------------------------------------------------------
+# Hook inertness proof (Story 04.0 Task 04; threat model T-4, R-15).
+# ---------------------------------------------------------------------------
+# support/hook_inertness_check.cmake, run with cmake -P (no shell):
+# - InertBinaries: `grep -a -c -F -e` for '--exit-after-frames' and
+#   'usage: --exit-after-frames' counts 0 in the shipped smbios_gui and >= 1
+#   in the twin (CI's gui-build job repeats the shipped-binary half on all
+#   three OSes).
+# - InertCompileLines: 0 SMBIOS_GUI_TEST_HOOKS in `ninja -t commands
+#   smbios_gui` (and in smbios_gui's compile_commands.json entries, if that
+#   file exists), >= 1 in the twin's; skips (one SKIP: line) on a non-Ninja
+#   generator.
+# Both fail closed on a missing binary, grep or ninja. Named
+# smbios_gui_autoexit.* so CI's by-name local-tier guard covers them too.
+find_program(SMBIOS_GUI_GREP_EXECUTABLE grep)
+set(SMBIOS_GUI_HOOK_CHECK_ARGS
+    -DSHIPPED_BINARY=$<TARGET_FILE:smbios_gui>
+    -DTWIN_BINARY=$<TARGET_FILE:smbios_gui_autoexit>
+    -DGREP_EXECUTABLE=${SMBIOS_GUI_GREP_EXECUTABLE}
+    -DBUILD_DIR=${CMAKE_BINARY_DIR}
+    -DGENERATOR=${CMAKE_GENERATOR}
+    -DNINJA_EXECUTABLE=${CMAKE_MAKE_PROGRAM})
+foreach(check_mode IN ITEMS InertBinaries InertCompileLines)
+    set(test_name smbios_gui_autoexit.${check_mode})
+    add_test(NAME ${test_name}
+        COMMAND ${CMAKE_COMMAND} ${SMBIOS_GUI_HOOK_CHECK_ARGS} -DMODE=${check_mode}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/support/hook_inertness_check.cmake)
     set_tests_properties(${test_name} PROPERTIES
         LABELS "gui;gui-local"
         TIMEOUT 120)

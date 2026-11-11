@@ -7,6 +7,10 @@
 
 #include <boost/test/unit_test.hpp>
 
+#if !defined(_WIN32)
+#include <unistd.h>
+#endif
+
 /// @file local_skip.hpp
 /// @brief Skip helper for the local-only GUI test tier (milestone 0011,
 /// Story 04.0). Local-only: guarded by local_only_guard.hpp.
@@ -50,6 +54,34 @@ inline boost::test_tools::assertion_result skip_unless(bool available,
     boost::test_tools::assertion_result result(false);
     result.message() << reason;
     return result;
+}
+
+/// Fixed reason of the running-as-root skip (threat model
+/// `docs/security/2026-11-11-gui-test-tiers.md`, R-19). It deliberately
+/// suggests no privilege change of any kind (G-8, M-12).
+inline constexpr std::string_view kRunningAsRootSkipReason = "local GUI tests do not run as root";
+
+/// @brief Reports whether the test process runs with root's effective
+/// user ID.
+/// @return true iff `geteuid() == 0` on POSIX; always false on Windows.
+inline bool running_as_root() noexcept
+{
+#if !defined(_WIN32)
+    return ::geteuid() == 0;
+#else
+    return false;
+#endif
+}
+
+/// @brief Precondition that skips a local-only case when the process runs
+/// as root (R-19): prints `SKIP: <case_name>: local GUI tests do not run as
+/// root` through skip_unless(). Every local case that touches a display, a
+/// child process, the clipboard or the live table checks this first.
+/// @param case_name the case's own name (a literal).
+/// @return true when not running as root; otherwise the skip result.
+inline boost::test_tools::assertion_result skip_if_root(std::string_view case_name)
+{
+    return skip_unless(!running_as_root(), case_name, kRunningAsRootSkipReason);
 }
 
 } // namespace smbios::test::gui
