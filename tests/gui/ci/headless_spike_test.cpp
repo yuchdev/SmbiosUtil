@@ -158,7 +158,6 @@ BOOST_AUTO_TEST_CASE(S1HeadlessFrameLoopRuns1000Frames)
                                         << ctx.pending_texture_requests());
     }
     BOOST_TEST(ctx.frames_run() == kFrames);
-    BOOST_TEST(false, "THROWAWAY: deliberate failure to prove the gui-ci gate fails (revert follows)");
     // The font atlas texture is created once (at least one request), and
     // the tracked set does not grow with the frame count.
     BOOST_TEST(ctx.texture_requests_handled() >= 1);
