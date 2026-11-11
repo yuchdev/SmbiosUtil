@@ -25,11 +25,12 @@ jobs:
             dpkg -s "$p" >/dev/null 2>&1 || missing="$missing $p"
           done
           echo "missing:${missing:- none}"
-      - name: Install with the mirror switched to archive.ubuntu.com
+      - name: Install via the kernel.org Ubuntu mirror
         timeout-minutes: 8
         run: |
           set -eu
-          sudo sed -i 's#azure\.archive\.ubuntu\.com#archive.ubuntu.com#g' /etc/apt/apt-mirrors.txt
+          printf 'https://mirrors.edge.kernel.org/ubuntu/\tpriority:1\n' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+          curl -fsS -m 20 -o /dev/null -w "kernel.org mirror noble Release: HTTP %{http_code}\n" https://mirrors.edge.kernel.org/ubuntu/dists/noble/InRelease || echo "kernel.org mirror fetch FAILED"
           APT="sudo DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=60 -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20"
           start=$(date +%s)
           $APT update -qq
