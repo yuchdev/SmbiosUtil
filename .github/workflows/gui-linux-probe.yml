@@ -25,7 +25,8 @@ jobs:
           APT="sudo DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=120 -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20"
           $APT update -qq
           $APT install -y -qq --no-install-recommends \
-            libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config
+            libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config \
+            autoconf autoconf-archive automake libtool
           echo "ok: GLFW system packages installed"
 
       - name: Setup vcpkg

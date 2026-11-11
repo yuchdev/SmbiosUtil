@@ -360,6 +360,10 @@ jobs:
       # they resolve, otherwise the kernel.org Ubuntu mirror (verified: update
       # 6 s, install 39 s). Also non-interactive, short fetch timeouts, one
       # retry, and a step-level timeout so any stall fails in minutes.
+      # The last line of packages is not in the glfw3 port's own message: on
+      # Linux glfw3 depends on libx11, which vcpkg builds from source with
+      # vcpkg_make (see ports/vcpkg-make/vcpkg_make.cmake), and that needs
+      # autoconf, autoconf-archive, automake and libtool from the system.
       - name: Install GLFW system packages (Linux)
         if: runner.os == 'Linux'
         timeout-minutes: 10
@@ -372,7 +376,8 @@ jobs:
           APT="sudo DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=120 -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20"
           $APT update -qq
           $APT install -y -qq --no-install-recommends \
-            libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config
+            libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config \
+            autoconf autoconf-archive automake libtool
           echo "ok: GLFW system packages installed"
 
       - name: Setup vcpkg
