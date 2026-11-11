@@ -46,15 +46,46 @@ endfunction()
 # entry_tree_view.cpp/copy_as_action.cpp are compiled straight in (the
 # csv_formatter.cpp precedent in tests/unit/CMakeLists.txt), so the
 # smbios_gui target itself is untouched. They must never also be in
-# libsmbios_gui_model (threat model T-10). support/headless_imgui.* is
-# the CI tier's headless harness (Task 02): no window, no GL, no OS hooks.
+# libsmbios_gui_model (threat model T-10/R-10): the configure-time check
+# below fails the configure if either appears in that library's source list
+# (the SMBIOS_GUI_MODEL_SOURCES variable of smbios_gui/CMakeLists.txt, and
+# the target's own SOURCES property, in case it is extended elsewhere).
+# support/headless_imgui.* is the CI tier's headless harness (Task 02): no
+# window, no GL, no OS hooks; support/browser_fixture.* is the shared
+# render_entry_browser() fixture of the Task 03 widget suites, and
+# doc_sample_fixture.cpp is the unit suite's synthetic doc-sample table.
+set(SMBIOS_GUI_CI_RENDERING_SOURCES
+    ${CMAKE_SOURCE_DIR}/smbios_gui/src/entry_tree_view.cpp
+    ${CMAKE_SOURCE_DIR}/smbios_gui/src/copy_as_action.cpp)
+
+get_directory_property(SMBIOS_GUI_MODEL_SOURCES_CHECK
+    DIRECTORY ${CMAKE_SOURCE_DIR}/smbios_gui
+    DEFINITION SMBIOS_GUI_MODEL_SOURCES)
+get_target_property(SMBIOS_GUI_MODEL_TARGET_SOURCES libsmbios_gui_model SOURCES)
+if(NOT SMBIOS_GUI_MODEL_SOURCES_CHECK OR NOT SMBIOS_GUI_MODEL_TARGET_SOURCES)
+    message(FATAL_ERROR "tests/gui: cannot read libsmbios_gui_model's source list "
+        "(threat model R-10 check would be vacuous)")
+endif()
+foreach(rendering_source IN LISTS SMBIOS_GUI_CI_RENDERING_SOURCES)
+    get_filename_component(rendering_name "${rendering_source}" NAME)
+    foreach(model_source IN LISTS SMBIOS_GUI_MODEL_SOURCES_CHECK SMBIOS_GUI_MODEL_TARGET_SOURCES)
+        get_filename_component(model_name "${model_source}" NAME)
+        if(model_name STREQUAL rendering_name)
+            message(FATAL_ERROR "tests/gui: ${rendering_name} is in libsmbios_gui_model's sources; "
+                "it must only be compiled into smbios_gui and smbios_gui_ci_test (threat model R-10)")
+        endif()
+    endforeach()
+endforeach()
+
 file(GLOB SMBIOS_GUI_CI_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/ci/*.cpp)
 list(APPEND SMBIOS_GUI_CI_TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/support/headless_imgui.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/support/headless_imgui.cpp
-    ${CMAKE_SOURCE_DIR}/smbios_gui/src/entry_tree_view.cpp
-    ${CMAKE_SOURCE_DIR}/smbios_gui/src/copy_as_action.cpp
-    ${CMAKE_SOURCE_DIR}/tests/unit/synthetic_table_builder.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/browser_fixture.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/browser_fixture.cpp
+    ${SMBIOS_GUI_CI_RENDERING_SOURCES}
+    ${CMAKE_SOURCE_DIR}/tests/unit/synthetic_table_builder.cpp
+    ${CMAKE_SOURCE_DIR}/tests/unit/doc_sample_fixture.cpp)
 
 add_executable(smbios_gui_ci_test ${SMBIOS_GUI_CI_TEST_SOURCES})
 set_target_properties(smbios_gui_ci_test PROPERTIES

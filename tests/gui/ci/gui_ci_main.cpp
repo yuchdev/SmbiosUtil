@@ -7,8 +7,10 @@
 //
 // This file only defines the Boost.Test module. The cases live in the
 // other ci/*.cpp files: headless_spike_test.cpp (Task 02, spike items
-// S1-S6, on the support/headless_imgui.hpp harness); Task 03 adds the
-// widget cases.
+// S1-S6, on the support/headless_imgui.hpp harness), and Task 03's widget
+// suites entry_browser_headless_test.cpp (GuiEntryBrowserHeadlessTests) and
+// copy_as_headless_test.cpp (GuiCopyAsHeadlessTests), which share
+// support/browser_fixture.hpp.
 
 #define BOOST_TEST_MODULE SmbiosGuiCiTests
 #include <boost/test/unit_test.hpp>

@@ -20,7 +20,7 @@ milestone 0007), each its own top-level directory, all wired into
 | Integration  | `tests/integration/`  | `smbios_integration_test`  | Yes (real hardware) | No - same as Perf |
 | C ABI        | `tests/c_abi/`         | `smbios_c_compile_as_c_test`, `smbios_c_example`, `smbios_c_open_close_test`, `smbios_c_entry_iteration_test`, `smbios_c_typed_getters_test` | No (reads real hardware, but no elevated privilege needed - same as the native sources `smbios_c` sits on top of) | Yes - each checks `smbios_open()`'s own return code and degrades gracefully rather than failing when no table is available |
 
-**GUI (`smbios_gui`, milestone 0011).** Its ImGui-free view-model layer (`libsmbios_gui_model`) is unit-tested in `tests/unit/gui_*_test.cpp`; the window, rendering and clipboard are covered by the manual plan in [manual-testing.md](manual-testing.md). Story 04.0 adds two GUI test tiers under `tests/gui/`, both only configured when `SMBIOS_BUILD_GUI=ON` (a non-GUI build adds no target and no test). Run them with `ctest -L gui-ci`, `ctest -L gui-local` or `ctest -L gui`:
+**GUI (`smbios_gui`, milestone 0011).** Its ImGui-free view-model layer (`libsmbios_gui_model`) is unit-tested in `tests/unit/gui_*_test.cpp`; the rendering code (`render_entry_browser()`, `render_copy_as_action()`) is also exercised headlessly by the CI-safe tier below; the window, the OS clipboard and visual layout are covered by the manual plan in [manual-testing.md](manual-testing.md). Story 04.0 adds two GUI test tiers under `tests/gui/`, both only configured when `SMBIOS_BUILD_GUI=ON` (a non-GUI build adds no target and no test). Run them with `ctest -L gui-ci`, `ctest -L gui-local` or `ctest -L gui`:
 
 | Category | Directory | Target / CTest name(s) | CTest labels | Needs root/admin? | Always expected green? |
 |----------|-----------|--------------------------|----------------|--------------------|--------------------------|
@@ -80,8 +80,8 @@ and every regression fix lands first.
 
 ### GUI tiers - `tests/gui/` (`smbios_gui_ci_test`, `smbios_gui_local_test`)
 
-**CI-safe tier: headless spike (Story 04.0, Task 02); local tier: Task 01
-placeholders.** `smbios_gui_ci_test` runs Dear ImGui frames with no window,
+**CI-safe tier: headless spike (Story 04.0, Task 02) and widget tests
+(Task 03); local tier: Task 01 placeholders.** `smbios_gui_ci_test` runs Dear ImGui frames with no window,
 no GL and no OS hooks on the harness `tests/gui/support/headless_imgui.{hpp,cpp}`
 (`HeadlessImGuiContext`: in-memory clipboard, refusing `OpenInShell`, no IME
 hook, no `imgui.ini`/log file, a null renderer that acknowledges 1.92 texture
@@ -95,9 +95,34 @@ counts-only form - captured or fixture text is never printed (threat model
 must re-run it. The local tier is still the Task 01 placeholders; Task 04
 replaces them.
 
+The Task 03 suites compile the real `smbios_gui/src/entry_tree_view.cpp` and
+`copy_as_action.cpp` into `smbios_gui_ci_test`; a configure-time check in
+`tests/gui/CMakeLists.txt` fails the configure if either is ever added to
+`libsmbios_gui_model`'s sources (threat model R-10). Their shared fixture
+`tests/gui/support/browser_fixture.{hpp,cpp}` (`BrowserFixture`,
+`render_browser()`) wraps *every* `render_entry_browser()` call in the S3
+stack-balance check. Two spike limits shape them: **S4** - captured text
+holds every row (logging turns clipping off), so text is only used for
+things that must be *present*; the two clipper cases instead hit-test in
+normal frames (move the mouse down the pane, read Dear ImGui's `HoveredId`
+and map it back to a row index), which proves which rows are really
+submitted where, but not pixels - visual layout stays manual (M-07).
+**S6** - the duplicate-ID signal is hover-scoped, so
+`DuplicateHandlesNoIdConflict` reads it while each duplicate row is hovered
+(both must be hovered for the check to count); a whole-frame check would
+need imgui built with `IMGUI_DEBUG_HIGHLIGHT_ALL_ID_CONFLICTS`.
+`copy_as_action.cpp`'s function-local `static CopyAsState` outlives each
+case: `GuiCopyAsHeadlessTests` keeps the remembered format at `json`
+between cases (a RAII restorer re-selects it through the combo, also on
+failure), and cases that click Copy select `json` first. Without the
+restorer, about one random order in three fails; with it, the suite passes
+with `--random=1`.
+
 | Suite | Covers | Guards against |
 |-------|--------|------------------|
 | `GuiHeadlessSpikeTests` (`ci/headless_spike_test.cpp`, 6 cases: `S1HeadlessFrameLoopRuns1000Frames`, `S2NoOsSideEffects`, `S3BalancedStacksAroundRenderEntryBrowser`, `S4TextCaptureSeesRenderedText`, `S5LocatorActivatesWidgetsWithoutPixels`, `S6IdConflictSignalIsHoverScoped`) | S1: 1000 frames on the null renderer, no pending texture request, at most 2 tracked textures. S2: every OS hook replaced and unchanged after every frame, the clipboard kept in memory, `OpenInShell` refused, no `imgui.ini`/`imgui_log.txt` in the CTest working directory after 6.7 s of simulated frames. S3: equal `ErrorRecoveryStoreState()` snapshots around the real `render_entry_browser()` for every node and the empty table, plus a negative control. S4: `LogToBuffer()` captures labels, field rows and widget text; logging disables clipping, so all 200 rows of a 200-node table are captured. S5: `ActivateItemByID()` with IDs computed from the widget's ID path (no pixel coordinates): a node click, the Hex toggle, Copy into the in-memory clipboard (byte-equal to `render_entry_as()` in exactly one format), opening the format combo. S6: the only duplicate-ID signal (`ImGuiContext::DebugDrawIdConflictsId`) is hover-scoped | The CI tier touching the runner's clipboard, shell, IME or disk; texture requests piling up with no renderer; `render_entry_browser()` leaving an ID/style/window stack unbalanced; the text, locator or ID-conflict oracles that Task 03 builds on silently stopping working (for example after an imgui version bump) |
+| `GuiEntryBrowserHeadlessTests` (`ci/entry_browser_headless_test.cpp`, 13 cases: `EmptyNodesShowsNoTableText`, `SelectionIndexClampedEveryOutOfRangeValue`, `RegisteredAndUnknownNodesRender`, `FieldRowsMatchFieldValueText`, `DecodeFailedNodeShowsMarker`, `HostileStringsRenderAsPlainText`, `DuplicateHandlesNoIdConflict`, `IdAndStyleStacksBalancedEveryPath`, `NodeListClipperShowsContiguousTail`, `FieldTableClipperAboveThreshold`, `HexToggleSwitchesNumericRendering`, `NodeClickChangesSelection`, `ThousandFramesStable`) | The real `render_entry_browser()`: the empty-table text only (no Copy/Hex/panes); selection clamping for -1, `INT_MIN`, size, size+1 and `INT_MAX`; every node's label and `Unknown (0xC8)` listed, and an unregistered node showing no table or Copy; every field row of the doc-sample fixture captured as `\| name \| field_value_text \|` in order, covering all four `FieldValue` alternatives; the decode-failed marker and explanation; hostile labels, field names and values (`%n`, `##x`, `###id`, C0/bidi controls, Actions `::` commands, 10 000 bytes) shown as `display_text()` verbatim, with `##`/`###` visible and selection by index unaffected; duplicate handles as two distinct, separately selectable IDs with the S6 signal 0 while each is hovered; balanced stacks on every path; 10 000 nodes and 5000-/200-row field tables reserving every row's height and hit-testing to one contiguous run from row 0 at the top and to the last row after `SetScrollY()` to the bottom, bounded by the pane height; Hex on/off switching uint64 rows between decimal and `field_value_text(v, true)`; node clicks changing the selection and the field pane; 1000 frames with constant captured length | A firmware string used as an ImGui label, ID or format string (G-1/G-2); handle-keyed IDs (fails 5 cases when tried); a clipper showing blank, wrong or missing rows (G-3; a skipped row or a row showing its neighbour's data fails the clipper cases); an out-of-range selection crashing; Copy offered for a node with no entry; the Hex toggle not applying; unbalanced ImGui stacks; per-frame accumulation |
+| `GuiCopyAsHeadlessTests` (`ci/copy_as_headless_test.cpp`, 6 cases: `DefaultFormatIsJsonNoUnsafeNote`, `NonJsonFormatShowsUnsafeNote`, `ComboListsExactlyRegisteredNames`, `CopyClickPutsRenderEntryAsBytesOnClipboard`, `CopyRefusesOversizedOutput`, `NoCopyControlsForEmptyFieldNode`) | The real `render_copy_as_action()` inside the browser: the combo preview `json` with no unsafe-format note; `yaml` chosen through the combo shows the note, `json` again removes it; the open combo lists exactly `registered_output_formatter_names()` (sorted, no extras); Copy on every registered node puts exactly `render_entry_as(..., "json")` on the in-memory clipboard (one write per click) with `Copied to clipboard.`; output over `kCopyAsMaxBytes` (two 600 KiB OEM strings) is refused with no clipboard write and `Entry too large to copy`; unregistered and decode-failed nodes have no Copy text, no openable combo and no clipboard write | The clipboard diverging from the CLI's formatter output (a dropped first byte fails it); the cap weakened or bypassed; a terminal-unsafe format without its warning; the dropdown drifting from the formatter registry; Copy-as state leaking between cases or selections |
 | `SmbiosGuiLocalTests` (`local/gui_local_main.cpp`, 2 cases: `ScaffoldingPlaceholder`, `SkipHelperPlaceholder`) | Placeholder: the local tier builds and runs; `SkipHelperPlaceholder` always skips through `skip_unless()` so CTest reports it *Skipped* while its passing sibling stays *Passed* | A missing-resource skip being reported as Passed or Failed (the `^SKIP: ` regex bug) |
 
 ### Mock - `tests/mock/` (`smbios_mock_test`)
