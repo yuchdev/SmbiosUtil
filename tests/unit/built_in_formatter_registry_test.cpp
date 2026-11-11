@@ -20,10 +20,11 @@ using namespace smbios;
 // class, and the name enumeration lists them.
 // Boundaries: "at least" - test-local fakes from other TUs may also be
 // registered, so the enumeration is checked for containment, never for an
-// exact list. smbios_unit_test does not force-load libsmbios, so this TU
-// constructs each built-in once (registered_built_ins_are_linked) to pull
-// its object file - and with it the REGISTER_OUTPUT_FORMATTER
-// registration - into the binary.
+// exact list. smbios_unit_test force-loads libsmbios since milestone 0011
+// (tests/unit/CMakeLists.txt); this TU still constructs each built-in once
+// (registered_built_ins_are_linked) so it keeps pulling each object file -
+// and with it the REGISTER_OUTPUT_FORMATTER registration - into the binary
+// even without that whole-archive link.
 // On failure first check: that json/text/xml/yaml_formatter.cpp still invoke
 // REGISTER_OUTPUT_FORMATTER at namespace scope, and that their members stay
 // out of line (so naming the class links the registration).

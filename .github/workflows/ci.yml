@@ -314,3 +314,94 @@ jobs:
           ASAN_OPTIONS: ${{ matrix.os == 'macos-latest' && 'detect_leaks=0:detect_container_overflow=0' || 'detect_container_overflow=0' }}
         run: ctest --output-on-failure --timeout 60 -R 'smbios_integration_test|smbios_perf_test|smbios_cli_format_csv' || echo "::warning::sanitizer run of smbios_integration_test/smbios_perf_test failed or needs elevated privileges to read this runner's real SMBIOS table - same known limitation as the build job's functional-test step; making this reliable without root is milestone 0006's job."
         continue-on-error: true
+
+  # Milestone 0011, Story 03.0, Task 02: smbios_gui is opt-in
+  # (SMBIOS_BUILD_GUI=OFF by default, imgui/glfw3 in the non-default vcpkg
+  # manifest feature `gui`), so the `build` job above never compiles it.
+  # This job builds ONLY the <os>-gui presets. Build-only: no step runs
+  # smbios_gui (no display/GPU on hosted runners - see the story README).
+  # Output stays short: configure/build logs go to a file; on success one
+  # summary line is printed, on failure only the first matching error
+  # lines plus a short tail.
+  gui-build:
+    name: gui-build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    # Same ceiling as the `build` job (GitHub's default is 360 min).
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            preset: linux-gui
+            allow_build_failure: false
+            vcpkg_cache_path: ~/.cache/vcpkg/archives
+          - os: windows-latest
+            preset: windows-gui
+            allow_build_failure: false
+            vcpkg_cache_path: ~\AppData\Local\vcpkg\archives
+          - os: macos-latest
+            preset: macos-gui
+            allow_build_failure: false
+            vcpkg_cache_path: ~/.cache/vcpkg/archives
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Package list from the vcpkg glfw3 port's own message
+      # (ports/glfw3/portfile.cmake); Wayland is not enabled.
+      - name: Install GLFW system packages (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends \
+            libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config > /dev/null
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11.6
+        with:
+          vcpkgDirectory: ${{ github.workspace }}/vcpkg
+
+      - name: Cache vcpkg binary cache (built package archives)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ matrix.vcpkg_cache_path }}
+          key: vcpkg-binarycache-gui-${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}
+
+      # Windows: no --config, same as the `build` job (multi-config VS
+      # generator defaults to Debug).
+      - name: Configure and build (${{ matrix.preset }} preset, build only)
+        id: build
+        shell: bash
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+        continue-on-error: ${{ matrix.allow_build_failure }}
+        run: |
+          set -uo pipefail
+          LOGDIR=$(mktemp -d)
+          # (The pattern matches diagnostic shapes, not the bare word 'error':
+          # sources such as memory_error_information_*.cpp would fill the quota.)
+          # run_quiet <label> <cmd...>: full output to a file; on failure
+          # print at most 20 error lines + the last 40 lines, then exit.
+          run_quiet() {
+            local label=$1; shift
+            local log="$LOGDIR/$label.log"
+            "$@" > "$log" 2>&1
+            local rc=$?
+            if [ "$rc" -ne 0 ]; then
+              echo "::error::$label failed (exit $rc) for preset ${{ matrix.preset }}"
+              echo "--- first error lines ($label) ---"
+              grep -n -m 20 -E 'error:|error C[0-9]+|FAILED:|fatal error|CMake Error|undefined reference|linker command failed|LNK[0-9]+' "$log" || echo "(no matching lines)"
+              echo "--- last 40 lines ($label) ---"
+              tail -n 40 "$log"
+              exit "$rc"
+            fi
+          }
+          run_quiet configure cmake --preset ${{ matrix.preset }}
+          run_quiet build cmake --build --preset ${{ matrix.preset }}
+          BIN=$(find build/${{ matrix.preset }} -type f -path '*/smbios_gui/bin/*' \( -name smbios_gui -o -name smbios_gui.exe \) | head -n1)
+          if [ -z "$BIN" ]; then
+            echo "::error::build succeeded but no smbios_gui binary found under build/${{ matrix.preset }}"
+            exit 1
+          fi
+          echo "ok: $BIN ($(wc -c < "$BIN" | tr -d ' ') bytes)"

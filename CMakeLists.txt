@@ -22,6 +22,15 @@ option("SMBIOS_BUILD_FUZZERS" SMBIOS_BUILD_FUZZERS OFF)
 # runs them and they cannot rot.
 option("SMBIOS_BUILD_EXAMPLES" SMBIOS_BUILD_EXAMPLES ON)
 
+# Milestone 0011, Story 01.0: the smbios_gui visualization tool (ADR 0003).
+# OFF by default because its imgui/glfw3 dependencies pull in X11/OpenGL
+# development packages on Linux that CI and plain CLI/library builds do not
+# need. Its dependencies live in vcpkg.json's "gui" manifest feature, so
+# enable both together: -DSMBIOS_BUILD_GUI=ON -DVCPKG_MANIFEST_FEATURES=gui
+# (or use the <os>-gui presets in CMakePresets.json). Gates only the
+# smbios_gui executable; its GUI-free view-model library is always built.
+option("SMBIOS_BUILD_GUI" SMBIOS_BUILD_GUI OFF)
+
 if(SMBIOS_BUILD_FUZZERS AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     message(FATAL_ERROR
         "SMBIOS_BUILD_FUZZERS=ON requires Clang or AppleClang (libFuzzer is "
@@ -171,6 +180,11 @@ if(SMBIOS_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 add_subdirectory(smbios_c)
+# Always added: smbios_gui/CMakeLists.txt always defines the GUI-free
+# libsmbios_gui_model view-model library (so the unit suite can link it in
+# every build), and only defines the smbios_gui executable - and only looks
+# for imgui/glfw3 - when SMBIOS_BUILD_GUI=ON. Must precede tests/.
+add_subdirectory(smbios_gui)
 add_subdirectory(tests)
 
 # Milestone 0006, Story 02.0, Task 02: the fuzz harness target itself, built

@@ -9,13 +9,27 @@
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
       }
     },
+    {
+      "name": "gui",
+      "hidden": true,
+      "cacheVariables": {
+        "SMBIOS_BUILD_GUI": "ON",
+        "VCPKG_MANIFEST_FEATURES": "gui"
+      }
+    },
     { "name": "windows", "inherits": "default" },
     { "name": "linux",   "inherits": "default", "generator": "Ninja" },
-    { "name": "macos",   "inherits": "default", "generator": "Ninja" }
+    { "name": "macos",   "inherits": "default", "generator": "Ninja" },
+    { "name": "windows-gui", "inherits": ["windows", "gui"] },
+    { "name": "linux-gui",   "inherits": ["linux", "gui"] },
+    { "name": "macos-gui",   "inherits": ["macos", "gui"] }
   ],
   "buildPresets": [
     { "name": "windows", "configurePreset": "windows" },
     { "name": "linux",   "configurePreset": "linux" },
-    { "name": "macos",   "configurePreset": "macos" }
+    { "name": "macos",   "configurePreset": "macos" },
+    { "name": "windows-gui", "configurePreset": "windows-gui" },
+    { "name": "linux-gui",   "configurePreset": "linux-gui" },
+    { "name": "macos-gui",   "configurePreset": "macos-gui" }
   ]
 }
