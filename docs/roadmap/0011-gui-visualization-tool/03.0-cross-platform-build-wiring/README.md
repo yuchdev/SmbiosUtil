@@ -1,7 +1,7 @@
 # Story 03.0 - Cross-Platform Build Integration
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-11)
 **Depends on:** Story 01.0 (`smbios_gui` target existing); can proceed in parallel with Story 02.0
 
 > **Amended 2026-11-11 (maintainer ruling after Story 01.0's /pr-review; see `status.md` Notes & decisions).** The GUI build is **opt-in**: `option(SMBIOS_BUILD_GUI)` defaults OFF, `imgui`/`glfw3` live in the non-default vcpkg manifest feature `gui`, and `CMakePresets.json` already gained a hidden `gui` mixin plus `windows-gui`/`linux-gui`/`macos-gui` presets (so "no new preset" below no longer holds). The existing `build` job's default presets therefore do **not** build `smbios_gui`; this story must add a **dedicated GUI build job** (or matrix entries) that builds the `<os>-gui` presets on all three OSes, with the Linux X11/GL development packages installed before `Configure`. Still true: CI builds the GUI but never runs it; no installer/bundling. Keep the CI change minimal - `ci.yml` is planned to be replaced by a separate CI-rework milestone (see the cursor's `post_milestone_actions`). When the GUI job lands, also fix the root `CLAUDE.md` GUI bullet that says the GUI is "never built in CI". The unit tests for the GUI view model already run in the default CI build (`libsmbios_gui_model` is always built).
@@ -21,12 +21,12 @@ this story's job is confirmation and CI wiring, not new infrastructure.
 | #  | Document                                                        | Status         | Blocks |
 |----|----------------------------------------------------------------------|----------------|--------|
 | 01 | [Preset and root CMake confirmation](01-preset-and-root-cmake-confirmation.md) | ✅ Complete (macOS) | 02     |
-| 02 | [CI build-only wiring](02-ci-build-only-wiring.md)                    | ✅ Complete (CI run pending) | 03     |
-| 03 | [Tests](03-tests.md)                                                 | ⬜ Not started | -      |
+| 02 | [CI build-only wiring](02-ci-build-only-wiring.md)                    | ✅ Complete (CI run 43052749581) | 03     |
+| 03 | [Tests](03-tests.md)                                                 | ✅ Complete | -      |
 
 ## Key constraints
 
-- **No new preset, no new build mode.** `smbios_gui` builds through the
+- **(Superseded by the 2026-11-11 amendment at the top: the `<os>-gui` presets exist.) No new preset, no new build mode.** `smbios_gui` builds through the
   exact same `windows`/`linux`/`macos` presets every other target already
   uses (`CMakePresets.json` is not modified by this story) - Story 01.0's
   own `add_subdirectory(smbios_gui)` line is the only wiring needed for
@@ -35,7 +35,7 @@ this story's job is confirmation and CI wiring, not new infrastructure.
   GLFW needs on a fresh Linux CI image - X11/Wayland development headers,
   which vcpkg's own `glfw3` port declares as its own dependencies and
   installs, but confirm this rather than assume it).
-- **CI builds it; CI does not run it.** A GUI needs a real display and a
+- **CI builds it; CI does not run it.** (Amended: through the dedicated `gui-build` job, not the existing `build` job's step.) A GUI needs a real display and a
   GPU-capable context. GitHub-hosted runners are not guaranteed to provide
   either reliably (`ubuntu-latest`/`windows-latest`/`macos-latest` have no
   attached display by default, and software OpenGL fallbacks like Mesa's

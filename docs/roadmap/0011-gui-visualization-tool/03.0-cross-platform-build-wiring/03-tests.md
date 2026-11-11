@@ -1,7 +1,7 @@
 # 03 - Tests
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-11)
 
 ## Objective
 
@@ -43,3 +43,12 @@ No new test source.
 - [ ] Milestone 0011's `status.md` Story 03.0 row, and the milestone's own
       exit summary, are updated to ✅, cross-referencing Story 02.0, Task
       04's parity-check result.
+
+## As-built notes (2026-11-11)
+
+- **CI-green criterion met:** CI run `43052749581` on branch `milestone-0011` completed `success` with all 8 jobs green: `build` and `sanitizers` (which run the 42 new GUI unit cases, ASan/UBSan clean on Linux/macOS) on Linux, macOS and Windows as before, plus the new build-only `gui-build` on `ubuntu-24.04` (`linux-gui`), `macos-latest` (`macos-gui`) and `windows-latest` (`windows-gui`), each configuring and building `smbios_gui` and reporting the binary. No CI step runs the GUI.
+- **Docs criterion met:** `CLAUDE.md` ("Building the GUI" bullet) and `docs/cli-usage.md` each mention `smbios_gui`, with a pointer to the manual test plan (`docs/test/manual-testing.md`); `scripts/check_doc_links.py docs/` is clean (254 files).
+- **Status/exit record:** this milestone's parity gate result (26 = 26 registered nodes on the maintainer's Mac) is recorded under Story 02.0, Task 04.
+- **Cost of getting there:** the first four `gui-build (ubuntu)` runs failed for CI-environment reasons (Ubuntu mirror DNS, a `-e` bug in the failure-output script, missing autotools for vcpkg's X11 build, no step timeouts) - see Task 02's "CI debugging findings".
+- **Still not automated / owed:** the real-window checks in `docs/test/manual-testing.md` (maintainer), and Story 04.0's headless and local-only test tiers.
+
