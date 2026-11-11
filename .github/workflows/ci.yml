@@ -332,8 +332,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Pinned, not ubuntu-latest: the 26.04 ('resolute') image's apt mirrors
-          # did not resolve in the first runs (see the apt step below).
+          # Pinned (not ubuntu-latest) to the image the apt fallback below was
+          # verified on.
           - os: ubuntu-24.04
             preset: linux-gui
             allow_build_failure: false
@@ -352,17 +352,23 @@ jobs:
 
       # Package list from the vcpkg glfw3 port's own message
       # (ports/glfw3/portfile.cmake); Wayland is not enabled.
-      # Two earlier runs on ubuntu-latest (26.04, 'resolute') stalled here: apt
-      # update printed "Temporary failure resolving" for every mirror and the
-      # install then hung until the timeout. Now: pinned image (see matrix),
-      # non-interactive, short fetch timeouts and a single retry so a network
-      # problem fails in about a minute with its message visible, plus a
-      # step-level timeout as the backstop.
+      # On the runners, DNS for Ubuntu's own mirror hosts (azure.archive /
+      # archive / security.ubuntu.com) failed in the first runs while other
+      # hosts resolved (diagnosed with a probe, on the 24.04 and 26.04 images
+      # alike): `apt-get update` "succeeded" with nothing fetched and the
+      # install then stalled until the timeout. So: use the default mirrors if
+      # they resolve, otherwise the kernel.org Ubuntu mirror (verified: update
+      # 6 s, install 39 s). Also non-interactive, short fetch timeouts, one
+      # retry, and a step-level timeout so any stall fails in minutes.
       - name: Install GLFW system packages (Linux)
         if: runner.os == 'Linux'
         timeout-minutes: 10
         run: |
           set -eu
+          if ! getent hosts azure.archive.ubuntu.com >/dev/null; then
+            echo "azure.archive.ubuntu.com does not resolve; using the kernel.org Ubuntu mirror"
+            printf 'https://mirrors.edge.kernel.org/ubuntu/\tpriority:1\n' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+          fi
           APT="sudo DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=120 -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20"
           $APT update -qq
           $APT install -y -qq --no-install-recommends \
