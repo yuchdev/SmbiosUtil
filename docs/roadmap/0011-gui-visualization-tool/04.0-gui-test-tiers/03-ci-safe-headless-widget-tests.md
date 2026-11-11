@@ -1,7 +1,7 @@
 # 03 - CI-safe tier: headless widget tests
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started (case list subject to Task 02's spike outcome)
+**Status:** ✅ Complete (2026-11-12); verified on Linux, macOS and Windows runners (CI run 43074117927, 8/8 green) (case list subject to Task 02's spike outcome)
 
 ## Objective
 
@@ -70,3 +70,14 @@ This task's cases are the tests. Run them locally with `ctest --test-dir build/m
 - [ ] Each dropped case is listed in `status.md` with the spike item that failed, and with where its coverage now lives (local tier or manual).
 - [ ] The diffs for `smbios_gui/src/` and `smbios_gui/include/` are empty for this task.
 - [ ] Optional, local only: the suite is ASan/UBSan clean under the CI sanitizer flags on macOS. Record it if run.
+
+## As-built notes (2026-11-12)
+
+- **Delivered:** 19 cases in two suites (`GuiEntryBrowserHeadlessTests` 13, `GuiCopyAsHeadlessTests` 6), plus `tests/gui/support/browser_fixture.{hpp,cpp}` (wraps every `render_entry_browser()` call in the stack-balance check) and the configure-time R-10 check in `tests/gui/CMakeLists.txt` (fails if `entry_tree_view.cpp`/`copy_as_action.cpp` appears in the model library's sources or the target's own sources, and fails if it cannot read the lists). With the 6 spike cases, `smbios_gui_ci_test` has 25 cases. `smbios_gui/` and `.github/` are untouched. Assertions print only fixed text and counts (independent grep by the verifier: no `BOOST_CHECK*`/`cout`/`printf`; string/byte comparisons parenthesised so Boost cannot print operands).
+- **S4 handled with a hit-testing oracle, not text capture or vertex counts:** the two clipper cases render normal (clipping-on) frames, move the mouse down the pane in half-row steps and map ImGui's `HoveredId` to row indices; they assert the content height reserves every row, that before scrolling the hovered rows form one contiguous run starting at row 0, after `SetScrollY` to the bottom one contiguous run ending at the last row, and that the run length is bounded both ways (measured on macOS: 41 of 10 000 list rows; 27-28 table rows of 5000 and 200). The spec's suggested draw-data vertex counts were rejected because ImGui culls off-screen text even without a clipper, so counts cannot tell a correct clipper from a broken one. **Limits, stated honestly:** this proves which rows exist and are hit-testable and where; it does **not** prove a row's drawn text matches its data (hover IDs are index-scoped; row content is covered by `FieldRowsMatchFieldValueText` with logging) and not pixels - visual layout stays manual (`docs/test/manual-testing.md` M-07). The field-table clipper cases use hand-built bool rows (their disabled `##value` checkbox is the only per-row item with an ID).
+- **S6:** the duplicate-ID signal is hover-scoped, so `DuplicateHandlesNoIdConflict` reads it while each duplicate row is hovered (both must be hovered for the check to count) and documents the limit.
+- **Order independence (R-10):** a fresh `HeadlessImGuiContext` per case and an RAII json-format restorer for the function-local Copy state; 55 of 55 `--random=1` runs on macOS, ASan/UBSan clean.
+- **Deviations:** `DefaultFormatIsJsonNoUnsafeNote` cannot observe the true first-ever default under random order, so it checks that the remembered format is `json` between cases and that `default_copy_format_index(names)` names `json`; extra hostile inputs (Actions `::` commands) and a size+1 clamp case were added; the Task 02 harness cascade (an ImGui assert aborting one case makes later cases fail with "a Dear ImGui context is already current") was left unchanged - it only makes diagnosis noisier after a first failure.
+- **Evidence:** CI run 43074117927 (8/8 jobs green): `gui-build` on `ubuntu-24.04`, `macos-latest` and `windows-latest` each printed `ok: ctest -L gui-ci (1 tests passed)` (one CTest entry for the whole binary), `ok: no test hook strings in the shipped smbios_gui` and `ok: no gui-local tests configured`.
+- **Negative proofs (macOS, the shipped GUI code temporarily edited then restored; coder-reported):** a skipped tail row fails both clipper cases; dropping the first clipboard byte fails the Copy-click case for every node; keying node IDs by handle fails 5 cases and fires the S6 signal; disabling the format restorer fails 4 of 12 random orders; adding `copy_as_action.cpp` to the model library fails configure. (A reported "wrong row data in the clipped table fails the clipper cases" is not supported by the oracle's design and is not relied on.)
+
