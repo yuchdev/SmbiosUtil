@@ -1,0 +1,39 @@
+# TEMPORARY probe (milestone 0011): why does `apt-get` stall in the Linux GUI
+# CI job? Runs only when this file changes, takes a couple of minutes, prints a
+# few short lines. Delete once the gui-build apt step is fixed.
+name: apt-probe
+on:
+  push:
+    paths: ['.github/workflows/apt-probe.yml']
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: DNS and mirror configuration
+        timeout-minutes: 2
+        run: |
+          echo "--- /etc/apt/apt-mirrors.txt"; cat /etc/apt/apt-mirrors.txt 2>/dev/null | head -5 || true
+          for h in azure.archive.ubuntu.com archive.ubuntu.com security.ubuntu.com mirrors.edge.kernel.org; do
+            if getent hosts "$h" >/dev/null; then echo "dns ok:   $h"; else echo "dns FAIL: $h"; fi
+          done
+      - name: Which GLFW packages are already installed
+        timeout-minutes: 2
+        run: |
+          missing=""
+          for p in libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev; do
+            dpkg -s "$p" >/dev/null 2>&1 || missing="$missing $p"
+          done
+          echo "missing:${missing:- none}"
+      - name: Install with the mirror switched to archive.ubuntu.com
+        timeout-minutes: 8
+        run: |
+          set -eu
+          sudo sed -i 's#azure\.archive\.ubuntu\.com#archive.ubuntu.com#g' /etc/apt/apt-mirrors.txt
+          APT="sudo DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=60 -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20"
+          start=$(date +%s)
+          $APT update -qq
+          echo "update took $(( $(date +%s) - start ))s"
+          $APT install -y -qq --no-install-recommends \
+            libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config
+          echo "ok: installed in $(( $(date +%s) - start ))s"
