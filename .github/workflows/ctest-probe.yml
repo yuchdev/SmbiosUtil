@@ -1,0 +1,40 @@
+# TEMPORARY probe (milestone 0011): what does `ctest -L gui-ci --no-tests=error -C Debug`
+# print on each runner? The gui-build job's "100% tests passed" gate passed on Linux and
+# failed on macOS and Windows. Seconds per OS (a trivial CMake project, no vcpkg).
+# Runs only when this file changes. Delete once the gate is fixed.
+name: ctest-probe
+on:
+  push:
+    paths: ['.github/workflows/ctest-probe.yml']
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - name: ctest output shape
+        shell: bash
+        run: |
+          set -u
+          cmake --version | head -1
+          ctest --version | head -1
+          d=$(mktemp -d); cd "$d"
+          mkdir src; cat > src/CMakeLists.txt <<'EOF'
+          cmake_minimum_required(VERSION 3.20)
+          project(probe NONE)
+          enable_testing()
+          add_test(NAME smbios_gui_ci_test COMMAND ${CMAKE_COMMAND} -E true)
+          set_tests_properties(smbios_gui_ci_test PROPERTIES LABELS "gui;gui-ci" TIMEOUT 60)
+          EOF
+          cmake -S src -B bld > cfg.log 2>&1 || { echo "configure failed"; tail -5 cfg.log; exit 1; }
+          rc=0
+          ctest --test-dir bld -C Debug -L gui-ci --timeout 60 --no-tests=error --output-on-failure > test.log 2>&1 || rc=$?
+          echo "ctest exit: $rc"
+          echo "--- raw tail (cat -A shows CR/tabs/trailing blanks)"
+          tail -n 12 test.log | cat -A | cut -c1-150
+          echo "--- the gate's own sed on this output:"
+          p=$(tr -d '\r' < test.log | sed -n -E 's/^100% tests passed, 0 tests failed out of ([0-9]+)$/\1/p' | head -n1) || true
+          echo "parsed='${p}'"

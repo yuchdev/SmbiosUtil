@@ -19,6 +19,8 @@ The oracle names below refer to Task 02's spike items. A case whose oracle faile
 
 **`GuiEntryBrowserHeadlessTests`**
 
+> **Amended after the Task 02 spike (2026-11-11, finding S4):** while ImGui logs (`LogToBuffer`), it turns clipping off, so the captured text contains **every** row, including rows a real frame would clip away (a 200-row table captured all 200). The text oracle therefore **cannot** prove visibility. Consequences for the cases below: `NodeListClipperShowsContiguousTail` and `FieldTableClipperAboveThreshold` must not assert "a contiguous visible range / bounded visible-row count" from captured text. Use another oracle - e.g. the draw data of a **non-logging** frame (clipped rows emit no draw commands/vertices, so compare vertex/command counts for a short versus a long list; and scroll range from the child window's content size and max scroll) - and if no reliable oracle exists, say so, keep only the balanced-stack and no-crash assertions in `gui-ci`, and leave the visibility check to the manual plan (M-07). Cases that only need text to be *present* (`HostileStringsRenderAsPlainText`, `RegisteredAndUnknownNodesRender`, `FieldRowsMatchFieldValueText`, ...) are unaffected. Also (finding S5, requirement R-10): `copy_as_action.cpp` keeps a function-local `static CopyAsState`, which S5's Copy click leaves at "Copied" for node 0; every `GuiCopyAsHeadlessTests` case must reset it or not depend on its initial value, and the suite must pass with `--random=1`.
+
 | Case | Asserts | Oracle |
 |------|---------|--------|
 | `EmptyNodesShowsNoTableText` | `nodes = {}`: the captured text contains `kNoTableText`, and contains no `Copy` and no `Hex`. `selected_index` ends at 0. Stacks are balanced. | S3, S4 |

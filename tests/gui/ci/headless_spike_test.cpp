@@ -181,8 +181,8 @@ BOOST_AUTO_TEST_CASE(S2NoOsSideEffects)
     {
         HeadlessImGuiContext ctx;
         BOOST_TEST(ctx.hooks_intact());
-        BOOST_TEST(ImGui::GetIO().IniFilename == nullptr);
-        BOOST_TEST(ImGui::GetIO().LogFilename == nullptr);
+        BOOST_TEST((ImGui::GetIO().IniFilename == nullptr));
+        BOOST_TEST((ImGui::GetIO().LogFilename == nullptr));
         BOOST_TEST((ImGui::GetPlatformIO().Platform_SetImeDataFn == nullptr));
 
         // A test-defined literal through the public clipboard API.
