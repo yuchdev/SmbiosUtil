@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -150,6 +151,68 @@ BOOST_AUTO_TEST_CASE(CreateReturnsManagementDeviceComponentEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<ManagementDeviceComponentEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009 Story 01.0 Task 05)
+//
+// Type: unit - deterministic, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description(); the two
+// handles are uint64_t, Threshold Handle stays the printed string because
+// it can print the "None" sentinel.
+// Boundaries: real vs 0xFFFF Threshold Handle, header-only structure. No bitmask.
+// On failure first check: ManagementDeviceComponentEntry::get_fields() against
+// ManagementDeviceComponentEntry::render_to_description() in libsmbios/src/management_device_component_entry.cpp.
+
+/// Normal case: real Threshold Handle prints as a decimal string.
+BOOST_AUTO_TEST_CASE(ManagementDeviceComponentEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area = build_formatted_area(0x0010, 0x0020, 0x0030);
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::ManagementDeviceComponent, formatted_area, {"CPU Fan"});
+    std::vector<uint8_t> buffer = builder.build();
+    ManagementDeviceComponentEntry entry(make_header(buffer), SMBiosVersion{2, 3}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Description", str("CPU Fan")},
+        {"Management Device Handle", num(0x0010)},
+        {"Component Handle", num(0x0020)},
+        {"Threshold Handle", str("48")},
+    });
+}
+
+/// Boundary cases: the 0xFFFF sentinel prints "None"; a header-only
+/// structure defaults the handles to 0 and Threshold Handle to "None".
+BOOST_AUTO_TEST_CASE(ManagementDeviceComponentEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        std::vector<uint8_t> formatted_area = build_formatted_area(0x0010, 0x0020, ManagementDeviceComponentEntry::NoThresholdHandle);
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::ManagementDeviceComponent, formatted_area, {"CPU Fan"});
+        std::vector<uint8_t> buffer = builder.build();
+        ManagementDeviceComponentEntry entry(make_header(buffer), SMBiosVersion{2, 3}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Description", str("CPU Fan")},
+            {"Management Device Handle", num(0x0010)},
+            {"Component Handle", num(0x0020)},
+            {"Threshold Handle", str("None")},
+        });
+    }
+    {
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::ManagementDeviceComponent, std::vector<uint8_t>{});
+        std::vector<uint8_t> buffer = builder.build();
+        ManagementDeviceComponentEntry entry(make_header(buffer), SMBiosVersion{2, 3}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Description", str("")},
+            {"Management Device Handle", num(0)},
+            {"Component Handle", num(0)},
+            {"Threshold Handle", str("None")},
+        });
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

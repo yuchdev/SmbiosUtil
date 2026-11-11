@@ -39,3 +39,9 @@ std::string BootIntegrityServicesEntry::render_to_description() const
 
     return description.str();
 }
+
+std::vector<NamedField> BootIntegrityServicesEntry::get_fields() const
+{
+    // Deliberately empty: the text output has no data fields (see header).
+    return {};
+}

@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <map>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // Port Connection Entry
@@ -121,6 +122,12 @@ public:
 
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order. The two
+    /// raw connector type codes are uint64_t (the text prints them as plain
+    /// decimals); the connection and port type names stay strings.
+    std::vector<NamedField> get_fields() const override;
 
     //////////////////////////////////////////////////////////////////////////
     // Byte values

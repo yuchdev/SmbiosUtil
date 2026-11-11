@@ -220,3 +220,26 @@ std::string PortableBatteryEntry::get_sbds_version_string() const
     if (get_entry_size() < kSbdsVersionIndexMinLength) return std::string();
     return AbstractSMBiosEntry::dmi_string(read_u8(raw_data(), kSbdsVersionIndexOffset));
 }
+
+std::vector<NamedField> PortableBatteryEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Location", get_location_string()});
+    fields.push_back({"Manufacturer", get_manufacturer_string()});
+    fields.push_back({"Manufacture Date", uses_sbds_manufacture_date() ? std::string("See SBDS Manufacture Date")
+                                                                       : get_manufacture_date_string()});
+    fields.push_back({"Serial Number", uses_sbds_serial_number() ? std::string("See SBDS Serial Number")
+                                                                 : get_serial_number_string()});
+    fields.push_back({"Device Name", get_device_name_string()});
+    fields.push_back({"Device Chemistry", get_device_chemistry_string()});
+    fields.push_back({"Design Capacity", is_design_capacity_known() ? std::to_string(get_design_capacity()) + " mWh"
+                                                                    : std::string("Unknown")});
+    fields.push_back({"Design Voltage", is_design_voltage_known() ? std::to_string(get_design_voltage()) + " mV"
+                                                                  : std::string("Unknown")});
+    fields.push_back({"SBDS Version Number", get_sbds_version_string()});
+    fields.push_back({"Maximum Error in Battery Data",
+                      is_maximum_error_known()
+                          ? std::to_string(static_cast<unsigned>(get_maximum_error_percent())) + "%"
+                          : std::string("Unknown")});
+    return fields;
+}

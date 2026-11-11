@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <map>
 #include <string>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 #include <libsmbios/smbios.hpp>
 
@@ -113,6 +114,15 @@ public:
 
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order and under
+    /// the same 2.1+ / length >= 0x17 guard. Plain decimals are uint64_t;
+    /// the one-line "Log Status: Valid = ..., Full = ..." becomes the two
+    /// bool fields "Log Status Valid" / "Log Status Full". Descriptors keep
+    /// the text's own 0-based "Descriptor <i>" numbering and its "0x" +
+    /// unpadded lowercase hex string.
+    std::vector<NamedField> get_fields() const override;
 
     //////////////////////////////////////////////////////////////////////////
     // Byte/word/dword values

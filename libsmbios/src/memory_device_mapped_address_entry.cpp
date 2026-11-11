@@ -224,3 +224,15 @@ std::string MemoryDeviceMappedAddressEntry::get_interleave_position_string() con
     }
     return std::to_string(static_cast<unsigned>(position));
 }
+
+std::vector<NamedField> MemoryDeviceMappedAddressEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Starting Address", get_starting_address_string()});
+    fields.push_back({"Ending Address", get_ending_address_string()});
+    fields.push_back({"Memory Device Handle", get_memory_device_handle_string()});
+    fields.push_back({"Memory Array Mapped Address Handle", get_memory_array_mapped_address_handle_string()});
+    fields.push_back({"Partition Row Position", get_partition_row_position_string()});
+    fields.push_back({"Interleave Position", get_interleave_position_string()});
+    return fields;
+}

@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -249,6 +250,87 @@ BOOST_AUTO_TEST_CASE(CreateReturnsAdditionalInformationEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<AdditionalInformationEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 02)
+//
+// Type: unit - deterministic, synthetic buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description(): the entry count,
+// then for each walked record N (1-based) "Entry Length N" (uint64_t),
+// "Referenced Handle N"/"Referenced Offset N" (the text's "0x" hex strings),
+// "String N" and "Value N" (raw bytes from get_value_bytes_at()).
+// Boundaries: zero records; a malformed record the walk rejects (omitted,
+// exactly as in the text).
+// On failure first check: AdditionalInformationEntry::get_fields() in
+// libsmbios/src/additional_information_entry.cpp.
+
+/// Normal case: two records of differing lengths, uniquely suffixed.
+BOOST_AUTO_TEST_CASE(AdditionalInformationEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area = make_formatted_area({
+        {0x0020, 0x06, 1, {0x01}},
+        {0x01AB, 0x1F, 2, {0xAA, 0xBB, 0xCC}},
+    });
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::AdditionalInformation, formatted_area, {"String one", "String two"});
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    AdditionalInformationEntry entry(header, SMBiosVersion{3, 2}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Number of Additional Information entries", num(2)},
+        {"Entry Length 1", num(6)},
+        {"Referenced Handle 1", str("0x20")},
+        {"Referenced Offset 1", str("0x6")},
+        {"String 1", str("String one")},
+        {"Value 1", std::vector<uint8_t>{0x01}},
+        {"Entry Length 2", num(8)},
+        {"Referenced Handle 2", str("0x1ab")},
+        {"Referenced Offset 2", str("0x1f")},
+        {"String 2", str("String two")},
+        {"Value 2", std::vector<uint8_t>{0xAA, 0xBB, 0xCC}},
+    });
+}
+
+/// Boundary cases: zero records -> only the count; a record whose Entry
+/// Length overruns the structure is not walked, so (like the text) it
+/// contributes no fields although the count byte still says 2.
+BOOST_AUTO_TEST_CASE(AdditionalInformationEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        smbios::test::SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::AdditionalInformation, make_formatted_area({}));
+        std::vector<uint8_t> buffer = builder.build();
+        DMIHeader header = make_header(buffer);
+        AdditionalInformationEntry entry(header, SMBiosVersion{3, 2}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Number of Additional Information entries", num(0)},
+        });
+    }
+    {
+        std::vector<uint8_t> formatted_area = make_formatted_area({
+            {0x0030, 0x04, 1, {0x01}},
+            {0x0031, 0x05, 2, {0x02}},
+        });
+        formatted_area[7] = 0xFF; // second record's Entry Length overruns the buffer
+        smbios::test::SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::AdditionalInformation, formatted_area, {"String one", "String two"});
+        std::vector<uint8_t> buffer = builder.build();
+        DMIHeader header = make_header(buffer);
+        AdditionalInformationEntry entry(header, SMBiosVersion{3, 2}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Number of Additional Information entries", num(2)},
+            {"Entry Length 1", num(6)},
+            {"Referenced Handle 1", str("0x30")},
+            {"Referenced Offset 1", str("0x4")},
+            {"String 1", str("String one")},
+            {"Value 1", std::vector<uint8_t>{0x01}},
+        });
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

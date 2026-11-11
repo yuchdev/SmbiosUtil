@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <map>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // System Enclosure (a.k.a. Chassis Information) entry
@@ -117,6 +118,11 @@ public:
 
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order;
+    /// "Lock" is a bool (chassis lock present).
+    std::vector<NamedField> get_fields() const override;
 
     //////////////////////////////////////////////////////////////////////////
     // Byte values

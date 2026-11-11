@@ -77,4 +77,23 @@ BOOST_AUTO_TEST_CASE(WrongTypeThrowsTestCase)
     BOOST_CHECK_THROW(InactiveEntry(header, SMBiosVersion{3, 5}, buffer.data() + buffer.size()), std::runtime_error);
 }
 
+/// get_fields() (milestone 0009, Story 01.0, Task 02). Type: unit.
+/// Scenario: InactiveEntry's text carries no data fields, so get_fields()
+/// deliberately returns an empty vector (its own override of the pure-virtual
+/// base). Boundary: header-only, the only shape this
+/// structure takes. On failure first check: InactiveEntry::get_fields() in
+/// libsmbios/src/inactive_entry.cpp.
+BOOST_AUTO_TEST_CASE(InactiveEntryGetFieldsIsDeliberatelyEmptyTestCase)
+{
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::Inactive, std::vector<uint8_t>{});
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    InactiveEntry entry(header, SMBiosVersion{3, 5}, buffer.data() + buffer.size());
+
+    BOOST_CHECK(entry.get_fields().empty());
+    // ...even though the text output itself is non-empty.
+    BOOST_CHECK(!entry.render_to_description().empty());
+}
+
 BOOST_AUTO_TEST_SUITE_END()

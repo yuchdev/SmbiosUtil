@@ -1,8 +1,11 @@
 #include <cstdint>
+#include <memory>
 #include <utility>
 #include <vector>
 
 #include <libsmbios/smbios.hpp>
+#include <libsmbios/smbios_entry_factory.hpp>
+#include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "../unit/synthetic_table_builder.hpp"
 
@@ -34,12 +37,34 @@
 // once, harmlessly) and every subsequent call only overwrites its internal
 // buffer/state via parse_synthetic_table() before re-invoking the private
 // table walk - no new production API surface on SMBios itself.
+//
+// After the walk, every walked header is decoded exactly the way the CLI
+// (smbios/src/main.cpp) and smbios_c do it - SMBiosEntryFactory::create(),
+// then render_to_description() and get_fields() - so every registered
+// entry decoder's offset/length math is fuzzed too (security finding
+// MEDIUM-2, docs/security/2026-11-10-structured-field-model.md). The
+// version is fixed at a recent spec revision rather than the host's real
+// one (which this static instance's constructor picked up), so every
+// version-gated field is reachable and runs reproduce across machines.
+// Entry constructors only throw on a type mismatch, which the factory
+// never produces, so any escaping exception is a real finding and is
+// deliberately not caught.
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     std::vector<uint8_t> buffer(data, data + size);
 
     static smbios::SMBios instance;
     smbios::SmbiosTableWalkTestAccess::parse_synthetic_table(instance, std::move(buffer));
+
+    static smbios::SMBiosEntryFactory factory; // stateless; create() is non-const
+    const smbios::SMBiosVersion version{3, 9};
+    const uint8_t* table_end = instance.get_table_base() + instance.get_table_size();
+    for (const smbios::DMIHeader& header : instance) {
+        std::unique_ptr<smbios::AbstractSMBiosEntry> entry = factory.create(header, version, table_end);
+        if (!entry) continue; // unregistered structure type
+        (void)entry->render_to_description();
+        (void)entry->get_fields();
+    }
 
     return 0;
 }

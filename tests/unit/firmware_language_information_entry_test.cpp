@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -181,6 +182,75 @@ BOOST_AUTO_TEST_CASE(CreateReturnsFirmwareLanguageInformationEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<FirmwareLanguageInformationEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 02)
+//
+// Type: unit - deterministic, synthetic buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description(): count, the
+// "Abbreviated Format" flag as a bool, the current language, then each
+// language under the text's own 0-based "Language N" label.
+// Boundaries: pre-2.1 version (flag forced false), header-only structure
+// (count 0, current language "Not Specified").
+// On failure first check: FirmwareLanguageInformationEntry::get_fields() in
+// libsmbios/src/firmware_language_information_entry.cpp.
+
+/// Normal case: 7.14's Example 2 (abbreviated format) at SMBIOS 2.1.
+BOOST_AUTO_TEST_CASE(FirmwareLanguageInformationEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area = make_formatted_area(3, FirmwareLanguageInformationEntry::AbbreviatedFormat, 2);
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::FirmwareLanguageInformation, formatted_area,
+                          std::vector<std::string>{"enUS", "frCA", "jaJP"});
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    FirmwareLanguageInformationEntry entry(header, SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Installable Languages", num(3)},
+        {"Abbreviated Format", true},
+        {"Current Language", str("frCA")},
+        {"Language 0", str("enUS")},
+        {"Language 1", str("frCA")},
+        {"Language 2", str("jaJP")},
+    });
+}
+
+/// Boundary cases: a pre-2.1 table reports the flag as false (the text
+/// prints "No"), and a header-only structure defaults every field.
+BOOST_AUTO_TEST_CASE(FirmwareLanguageInformationEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        std::vector<uint8_t> formatted_area = make_formatted_area(1, FirmwareLanguageInformationEntry::AbbreviatedFormat, 1);
+        smbios::test::SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::FirmwareLanguageInformation, formatted_area,
+                              std::vector<std::string>{"enUS"});
+        std::vector<uint8_t> buffer = builder.build();
+        DMIHeader header = make_header(buffer);
+        FirmwareLanguageInformationEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Installable Languages", num(1)},
+            {"Abbreviated Format", false},
+            {"Current Language", str("enUS")},
+            {"Language 0", str("enUS")},
+        });
+    }
+    {
+        smbios::test::SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::FirmwareLanguageInformation, std::vector<uint8_t>{});
+        std::vector<uint8_t> buffer = builder.build();
+        DMIHeader header = make_header(buffer);
+        FirmwareLanguageInformationEntry entry(header, SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Installable Languages", num(0)},
+            {"Abbreviated Format", false},
+            {"Current Language", str("Not Specified")},
+        });
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -5,6 +5,7 @@
 
 #include <sstream>
 #include <cassert>
+#include <utility>
 
 using namespace smbios;
 
@@ -315,7 +316,7 @@ std::string CacheInformationEntry::get_supported_sram_type_string() const
 {
     assert(!sram_type_map_.empty());
     const uint16_t types = get_supported_sram_type();
-    if ((types & 0x007F) == 0) {
+    if (sram_types_are_none(types)) {
         return "\tNone\n";
     }
     return AbstractSMBiosEntry::bitset_to_properties<uint16_t>(types, sram_type_map_);
@@ -325,7 +326,7 @@ std::string CacheInformationEntry::get_installed_sram_type_string() const
 {
     assert(!sram_type_map_.empty());
     const uint16_t types = get_installed_sram_type();
-    if ((types & 0x007F) == 0) {
+    if (sram_types_are_none(types)) {
         return "\tNone\n";
     }
     return AbstractSMBiosEntry::bitset_to_properties<uint16_t>(types, sram_type_map_);
@@ -356,4 +357,46 @@ std::string CacheInformationEntry::get_associativity_string() const
 {
     assert(!associativity_map_.empty());
     return (*associativity_map_.find(get_associativity())).second;
+}
+
+bool CacheInformationEntry::sram_types_are_none(uint16_t types)
+{
+    return (types & 0x007F) == 0;
+}
+
+std::vector<NamedField> CacheInformationEntry::get_fields() const
+{
+    // Mirrors get_supported/installed_sram_type_string(): the "None"
+    // sentinel exactly when the text prints it, otherwise one true field per
+    // set bit, qualified by group so the shared bit labels stay unique (C1).
+    auto append_sram_types = [this](uint16_t types, const char* label, const char* qualifier,
+                                    std::vector<NamedField>& out) {
+        if (sram_types_are_none(types)) {
+            out.push_back({label, std::string("None")});
+            return;
+        }
+        std::vector<NamedField> bits;
+        bitset_to_fields<uint16_t>(types, sram_type_map_, bits);
+        for (auto& bit : bits) {
+            bit.name += std::string(" (") + qualifier + ")";
+            out.push_back(std::move(bit));
+        }
+    };
+
+    std::vector<NamedField> fields;
+    fields.push_back({"Socket Designation", get_socket_designation_string()});
+    fields.push_back({"Enabled", get_enabled()});
+    fields.push_back({"Socketed", get_socketed()});
+    fields.push_back({"Cache Level", static_cast<uint64_t>(get_cache_level())});
+    fields.push_back({"Operational Mode", get_operational_mode_string()});
+    fields.push_back({"Location", get_location_string()});
+    fields.push_back({"Maximum Size", get_max_cache_size_string()});
+    fields.push_back({"Installed Size", get_installed_cache_size_string()});
+    append_sram_types(get_supported_sram_type(), "Supported SRAM Types", "Supported", fields);
+    append_sram_types(get_installed_sram_type(), "Installed SRAM Type", "Installed", fields);
+    fields.push_back({"Speed", get_cache_speed_string()});
+    fields.push_back({"Error Correction Type", get_error_correction_type_string()});
+    fields.push_back({"System Type", get_system_cache_type_string()});
+    fields.push_back({"Associativity", get_associativity_string()});
+    return fields;
 }

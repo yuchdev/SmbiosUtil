@@ -191,3 +191,14 @@ std::string PortConnectionEntry::get_port_string() const
 {
     return (*port_type_map_.find(get_port_type())).second;
 }
+
+std::vector<NamedField> PortConnectionEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Internal Connector Type", static_cast<uint64_t>(get_internal_connection_type())});
+    fields.push_back({"Internal Connection Type", get_internal_connection_string()});
+    fields.push_back({"External Connector Type", static_cast<uint64_t>(get_external_connection_type())});
+    fields.push_back({"External Connection Type", get_external_connection_string()});
+    fields.push_back({"Port Type", get_port_string()});
+    return fields;
+}

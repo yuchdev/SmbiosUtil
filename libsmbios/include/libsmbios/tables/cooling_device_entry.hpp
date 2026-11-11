@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <map>
 #include <string>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // Cooling Device entry
@@ -97,6 +98,13 @@ public:
 
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order. The
+    /// handle stays the printed "0x..." string; Cooling Unit Group and
+    /// Nominal Speed stay the printed decorated strings. Nominal Speed and
+    /// Description appear exactly when the text prints them.
+    std::vector<NamedField> get_fields() const override;
 
     //////////////////////////////////////////////////////////////////////////
     // Byte/word/dword values

@@ -160,3 +160,27 @@ std::vector<uint8_t> AdditionalInformationEntry::get_value_bytes_at(size_t index
     }
     return value;
 }
+
+std::vector<NamedField> AdditionalInformationEntry::get_fields() const
+{
+    // Same "0x" + lowercase unpadded hex rendering the text output uses.
+    auto to_hex = [](unsigned value) {
+        std::stringstream hex_stream;
+        hex_stream << "0x" << std::hex << value;
+        return hex_stream.str();
+    };
+
+    std::vector<NamedField> fields;
+    fields.push_back({"Number of Additional Information entries", static_cast<uint64_t>(get_entry_count())});
+
+    const size_t count = get_entry_offsets_count();
+    for (size_t index = 0; index < count; ++index) {
+        const std::string suffix = " " + std::to_string(index + 1);
+        fields.push_back({"Entry Length" + suffix, static_cast<uint64_t>(get_entry_length_at(index))});
+        fields.push_back({"Referenced Handle" + suffix, to_hex(get_referenced_handle_at(index))});
+        fields.push_back({"Referenced Offset" + suffix, to_hex(get_referenced_offset_at(index))});
+        fields.push_back({"String" + suffix, get_string_at(index)});
+        fields.push_back({"Value" + suffix, get_value_bytes_at(index)});
+    }
+    return fields;
+}

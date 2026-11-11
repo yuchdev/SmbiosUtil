@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <libsmbios/smbios.hpp>
@@ -8,6 +9,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -394,6 +396,123 @@ BOOST_AUTO_TEST_CASE(CreateReturnsCacheInformationEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<CacheInformationEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 03)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// Enabled/Socketed are bool, Cache Level a uint64_t, sizes and speed the
+// printed unit-decorated strings, and each set SRAM type bit one
+// {"<label> (Supported|Installed)", true} field (the two bitmasks share one
+// label table, so the group qualifier keeps names unique), or a single
+// "None" field where the text prints one.
+// Boundaries: the same bit ("Synchronous") set in both bitmasks, an empty
+// installed bitmask, an unlabelled set bit (7), a tier-2 (0x0F) structure.
+// On failure first check: CacheInformationEntry::get_fields() and
+// sram_types_are_none() in libsmbios/src/cache_information_entry.cpp.
+
+namespace {
+
+/// @brief Re-emit build_buffer()'s formatted area as a well-formed structure
+/// carrying one socket-designation DMI string.
+std::vector<uint8_t> with_strings(const std::vector<uint8_t>& buffer)
+{
+    const std::vector<uint8_t> formatted_area(buffer.begin() + 4, buffer.begin() + buffer[1]);
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::CacheInformation, formatted_area, std::vector<std::string>{"L3 Cache"});
+    return builder.build();
+}
+
+} // namespace
+
+/// Normal case: every text label becomes a field, in text order; the shared
+/// "Synchronous" bit appears once per bitmask under distinct names.
+BOOST_AUTO_TEST_CASE(CacheInformationEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = with_strings(build_buffer(0x1B));
+    DMIHeader header = make_header(buffer);
+    CacheInformationEntry entry(header, SMBiosVersion{3, 1}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Socket Designation", str("L3 Cache")},
+        {"Enabled", true},
+        {"Socketed", false},
+        {"Cache Level", num(3)},
+        {"Operational Mode", str("Write Through")},
+        {"Location", str("Internal")},
+        {"Maximum Size", str("32 kB")},
+        {"Installed Size", str("16 kB")},
+        {"Burst (Supported)", true},
+        {"Synchronous (Supported)", true},
+        {"Synchronous (Installed)", true},
+        {"Speed", str("10 ns")},
+        {"Error Correction Type", str("Single-bit ECC")},
+        {"System Type", str("Unified")},
+        {"Associativity", str("8-way Set-associative")},
+    });
+}
+
+/// Edge case: one true field per set, labelled supported-SRAM bit (the
+/// unlabelled bit 7 is skipped), and an empty installed bitmask becomes the
+/// text's single "None" field; nothing is a joined string.
+BOOST_AUTO_TEST_CASE(CacheInformationEntryGetFieldsExpandsBitmaskTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = with_strings(build_buffer(0x1B));
+    const uint16_t supported = CacheInformationEntry::SRAMTypeOther | CacheInformationEntry::SRAMTypeUnknown
+                             | CacheInformationEntry::NonBurst | CacheInformationEntry::PipelineBurst
+                             | CacheInformationEntry::Asynchronous | 0x0080;
+    buffer[0x0B] = static_cast<uint8_t>(supported & 0xFF);
+    buffer[0x0C] = static_cast<uint8_t>(supported >> 8);
+    buffer[0x0D] = 0x00; // installed_sram_type = 0 -> "None"
+    buffer[0x0E] = 0x00;
+    DMIHeader header = make_header(buffer);
+    CacheInformationEntry entry(header, SMBiosVersion{3, 1}, buffer.data() + buffer.size());
+
+    const std::vector<NamedField> fields = entry.get_fields();
+    BOOST_REQUIRE_EQUAL(fields.size(), static_cast<size_t>(12 + 5 + 1));
+    const std::vector<NamedField> sram(fields.begin() + 8, fields.end() - 4);
+    check_fields_equal(sram, {
+        {"Other (Supported)", true},
+        {"Unknown (Supported)", true},
+        {"Non-burst (Supported)", true},
+        {"Pipeline Burst (Supported)", true},
+        {"Asynchronous (Supported)", true},
+        {"Installed SRAM Type", str("None")},
+    });
+    check_unique_field_names(fields);
+    check_no_joined_string_fields(fields);
+}
+
+/// Boundary case: a tier-2 (0x0F) structure. The text prints every line
+/// unconditionally, so every field is present; sizes come from the legacy
+/// fields and speed/ECC/system type/associativity use the getters' defaults.
+BOOST_AUTO_TEST_CASE(CacheInformationEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = with_strings(build_buffer(0x0F));
+    DMIHeader header = make_header(buffer);
+    CacheInformationEntry entry(header, SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Socket Designation", str("L3 Cache")},
+        {"Enabled", true},
+        {"Socketed", false},
+        {"Cache Level", num(3)},
+        {"Operational Mode", str("Write Through")},
+        {"Location", str("Internal")},
+        {"Maximum Size", str("16 kB")},
+        {"Installed Size", str("8 kB")},
+        {"Burst (Supported)", true},
+        {"Synchronous (Supported)", true},
+        {"Synchronous (Installed)", true},
+        {"Speed", str("Unknown")},
+        {"Error Correction Type", str("OutOfSpec")},
+        {"System Type", str("OutOfSpec")},
+        {"Associativity", str("OutOfSpec")},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

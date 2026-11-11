@@ -46,6 +46,14 @@ public:
         return _to_file;
     }
 
+    /// @brief The requested output format name (`--format`/`-f`).
+    /// @return the name exactly as given on the command line, or `"text"`
+    /// when the option is absent. Not validated here: the caller resolves it
+    /// with smbios::get_output_formatter() and rejects an unknown name.
+    const std::string& format() const {
+        return _format;
+    }
+
 
 private:
 
@@ -63,6 +71,9 @@ private:
 
     /// Dump SMBios to that file
     std::string _to_file;
+
+    /// Output format name, a key of the output-formatter registry
+    std::string _format;
 
     /// Command-line params description
     boost::program_options::options_description cmd_options_description;

@@ -1,10 +1,12 @@
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include <libsmbios/smbios.hpp>
 #include <libsmbios/tables/port_connection_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -156,6 +158,65 @@ BOOST_AUTO_TEST_CASE(PortConnectionEntryNoneConnectorRendersNumericNotNulTestCas
     BOOST_CHECK_EQUAL(description.find('\0'), std::string::npos);
     BOOST_CHECK_NE(description.find("Internal Connector Type: 0\n"), std::string::npos);
     BOOST_CHECK_NE(description.find("External Connector Type: 0\n"), std::string::npos);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 04)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// the raw connector type codes are uint64_t (printed as plain decimals),
+// the connection/port type names stay strings. No bitmask in this type.
+// Boundaries: a 0x08 structure (port type defaults), a bare 0x04 header
+// (every field defaults, but every text line - so every field - remains).
+// On failure first check: PortConnectionEntry::get_fields() in
+// libsmbios/src/port_connection_entry.cpp.
+
+/// Normal case: every text label becomes a field, in text order.
+BOOST_AUTO_TEST_CASE(PortConnectionEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = build_buffer(0x09);
+    PortConnectionEntry entry(make_header(buffer), SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Internal Connector Type", num(PortConnectionEntry::PS2)},
+        {"Internal Connection Type", str("PS/2")},
+        {"External Connector Type", num(PortConnectionEntry::RJ45)},
+        {"External Connection Type", str("RJ-45")},
+        {"Port Type", str("Keyboard Port")},
+    });
+}
+
+/// Boundary cases: the text prints every line unconditionally, so a short
+/// structure keeps every field, with the getters' defaults for the absent
+/// bytes.
+BOOST_AUTO_TEST_CASE(PortConnectionEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        std::vector<uint8_t> buffer = build_buffer(0x08);
+        PortConnectionEntry entry(make_header(buffer), SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Internal Connector Type", num(PortConnectionEntry::PS2)},
+            {"Internal Connection Type", str("PS/2")},
+            {"External Connector Type", num(PortConnectionEntry::RJ45)},
+            {"External Connection Type", str("RJ-45")},
+            {"Port Type", str("None")},
+        });
+    }
+    {
+        std::vector<uint8_t> buffer = build_buffer(0x04);
+        PortConnectionEntry entry(make_header(buffer), SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Internal Connector Type", num(0)},
+            {"Internal Connection Type", str("None")},
+            {"External Connector Type", num(0)},
+            {"External Connection Type", str("None")},
+            {"Port Type", str("None")},
+        });
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

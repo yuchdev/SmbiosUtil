@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // Memory Array Mapped Address entry
@@ -53,6 +54,12 @@ public:
 
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order; the
+    /// addresses and handle stay the printed (hex/"Unknown") string, and the
+    /// plain-decimal Partition Width is a uint64_t.
+    std::vector<NamedField> get_fields() const override;
 
     //////////////////////////////////////////////////////////////////////////
     // Byte/word/dword/qword values

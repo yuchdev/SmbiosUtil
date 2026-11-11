@@ -1,0 +1,3 @@
+# Golden doc samples are compared byte-for-byte (tests/unit/doc_samples_test.cpp,
+# scripts/check_doc_samples.py): never convert their line endings.
+tests/data/output_formats/** -text

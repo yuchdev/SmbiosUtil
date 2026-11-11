@@ -258,3 +258,30 @@ uint16_t FirmwareInventoryInformationEntry::get_associated_component_handle_at(s
     if (get_entry_size() < min_length) return 0;
     return read_u16(raw_data(), offset);
 }
+
+std::vector<NamedField> FirmwareInventoryInformationEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Component Name", get_component_name_string()});
+    // The text decorates these two with their format in parentheses; keep the
+    // exact same string (contract: decorated values stay the printed string).
+    fields.push_back({"Version", get_version_string() + " (" + get_version_format_string() + ")"});
+    fields.push_back({"Firmware ID", get_firmware_id_string() + " (" + get_firmware_id_format_string() + ")"});
+    fields.push_back({"Release Date", get_release_date_string()});
+    fields.push_back({"Manufacturer", get_manufacturer_string()});
+    fields.push_back({"Lowest Supported Version", get_lowest_supported_version_string()});
+    fields.push_back({"Image Size", is_image_size_known()
+                                        ? std::to_string(get_image_size()) + " bytes"
+                                        : std::string("Unknown")});
+    bitset_to_fields<uint16_t>(get_characteristics(), characteristics_map_, fields);
+    fields.push_back({"State", get_state_string()});
+
+    const uint8_t count = get_associated_component_count();
+    fields.push_back({"Associated Component Count", static_cast<uint64_t>(count)});
+    for (size_t index = 0; index < count; ++index) {
+        std::stringstream handle;
+        handle << "0x" << std::hex << get_associated_component_handle_at(index);
+        fields.push_back({"Handle " + std::to_string(index + 1), handle.str()});
+    }
+    return fields;
+}

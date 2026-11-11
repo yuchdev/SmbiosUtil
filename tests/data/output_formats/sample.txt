@@ -1,0 +1,20 @@
+Header type: BIOS Information
+Vendor: Example "Firmware" & Co.
+Version: Example 1.0
+Address: 0xf000
+Runtime size: 64 kB
+Release Date: Example 01/01/2026
+ROM Size: 128 kB
+BIOS properties: 
+	PCI is supported
+	BIOS is upgradeable
+BIOS properties extend1: 
+BIOS properties extend2: 
+BIOS Revision: 1.0
+Firmware Revision: 2.0
+Header type: OEM Strings
+String Count: 1
+String 1: =EXAMPLE()
+Header type: System Boot Information
+Status: No errors detected
+Status Data: 01 23 ab cd

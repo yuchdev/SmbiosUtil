@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <map>
 #include <string>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // IPMI Device Information entry
@@ -59,6 +60,13 @@ public:
 
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order.
+    /// Specification Revision and I2C Target Address are uint64_t (plain
+    /// decimals in the text); NV Storage Device Address, Base Address and
+    /// Interrupt Number stay the printed decorated strings.
+    std::vector<NamedField> get_fields() const override;
 
     //////////////////////////////////////////////////////////////////////////
     // Byte/qword values

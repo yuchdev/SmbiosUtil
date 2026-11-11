@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <string>
 #include <memory>
 #include <vector>
 
@@ -8,6 +9,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -214,6 +216,66 @@ BOOST_AUTO_TEST_CASE(CreateReturnsPointingDeviceEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<PointingDeviceEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 04)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// Device Type/Interface stay strings, Number of Buttons is a uint64_t. No
+// bitmask in this type.
+// Boundaries: a bare 0x04 header (every field defaults but stays present),
+// a structure truncated before the button count.
+// On failure first check: PointingDeviceEntry::get_fields() in
+// libsmbios/src/pointing_device_entry.cpp.
+
+/// Normal case: every text label becomes a field, in text order.
+BOOST_AUTO_TEST_CASE(PointingDeviceEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::PointingDevice, std::vector<uint8_t>{
+        PointingDeviceEntry::TouchPad, PointingDeviceEntry::PS2, 0x02});
+    std::vector<uint8_t> buffer = builder.build();
+    PointingDeviceEntry entry(make_header(buffer), SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Device Type", str("Touch Pad")},
+        {"Interface", str("PS/2")},
+        {"Number of Buttons", num(2)},
+    });
+}
+
+/// Boundary cases: the text prints every line unconditionally, so short
+/// structures keep every field with the getters' defaults.
+BOOST_AUTO_TEST_CASE(PointingDeviceEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::PointingDevice, std::vector<uint8_t>{
+            PointingDeviceEntry::Mouse, PointingDeviceEntry::USB});
+        std::vector<uint8_t> buffer = builder.build();
+        PointingDeviceEntry entry(make_header(buffer), SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Device Type", str("Mouse")},
+            {"Interface", str("USB")},
+            {"Number of Buttons", num(0)},
+        });
+    }
+    {
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::PointingDevice, std::vector<uint8_t>{});
+        std::vector<uint8_t> buffer = builder.build();
+        PointingDeviceEntry entry(make_header(buffer), SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Device Type", str("OutOfSpec")},
+            {"Interface", str("OutOfSpec")},
+            {"Number of Buttons", num(0)},
+        });
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

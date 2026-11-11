@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <string>
 #include <memory>
 #include <vector>
 
@@ -8,6 +9,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -259,6 +261,117 @@ BOOST_AUTO_TEST_CASE(CreateReturnsTpmDeviceEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<TpmDeviceEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 04)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// Spec Version stays the printed "major.minor" string, firmware versions
+// and OEM-defined are uint64_t (printed as plain decimals), and each set,
+// labelled Characteristics bit becomes one {label, true} field. With no such
+// bit the text prints no line under "Characteristics:", so no field appears.
+// Boundaries: every labelled bit plus unlabelled bits, zero
+// characteristics, a structure truncated after the spec version.
+// On failure first check: TpmDeviceEntry::get_fields() in
+// libsmbios/src/tpm_device_entry.cpp.
+
+/// Normal case: every text label becomes a field, in text order.
+BOOST_AUTO_TEST_CASE(TpmDeviceEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    const uint8_t vendor_id[4] = { 'N', 'T', 'C', 0x00 };
+    std::vector<uint8_t> formatted_area = make_formatted_area(
+        vendor_id, 0x02, 0x00, 0x00070002, 0x0000000A, 0x01,
+        TpmDeviceEntry::FamilyConfigurableViaFirmwareUpdate, 0xDEADBEEF);
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::TpmDevice, formatted_area, {"TPM 2.0 Device"});
+    std::vector<uint8_t> buffer = builder.build();
+    TpmDeviceEntry entry(make_header(buffer), SMBiosVersion{3, 1}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Vendor ID", str("NTC")},
+        {"Spec Version", str("2.0")},
+        {"Firmware Version 1", num(0x00070002)},
+        {"Firmware Version 2", num(0x0000000A)},
+        {"Description", str("TPM 2.0 Device")},
+        {"Family configurable via firmware update", true},
+        {"OEM-defined", num(0xDEADBEEF)},
+    });
+}
+
+/// Edge case: every labelled bit expands to its own true field in bit
+/// order; unlabelled set bits (0, 1, 6, 63) are skipped; nothing is a
+/// joined string.
+BOOST_AUTO_TEST_CASE(TpmDeviceEntryGetFieldsExpandsBitmaskTestCase)
+{
+    using namespace smbios::test;
+    const uint8_t vendor_id[4] = { 'I', 'F', 'X', 0x00 };
+    const uint64_t characteristics = 0x8000000000000043ULL
+        | TpmDeviceEntry::CharacteristicsNotSupported
+        | TpmDeviceEntry::FamilyConfigurableViaFirmwareUpdate
+        | TpmDeviceEntry::FamilyConfigurableViaPlatformSoftware
+        | TpmDeviceEntry::FamilyConfigurableViaOemProprietaryMechanism;
+    std::vector<uint8_t> formatted_area = make_formatted_area(
+        vendor_id, 0x01, 0x02, 0, 0, 0x00, characteristics, 0);
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::TpmDevice, formatted_area);
+    std::vector<uint8_t> buffer = builder.build();
+    TpmDeviceEntry entry(make_header(buffer), SMBiosVersion{3, 1}, buffer.data() + buffer.size());
+
+    const std::vector<NamedField> fields = entry.get_fields();
+    BOOST_REQUIRE_EQUAL(fields.size(), static_cast<size_t>(5 + 4 + 1));
+    const std::vector<NamedField> bits(fields.begin() + 5, fields.end() - 1);
+    check_fields_equal(bits, {
+        {"TPM Device Characteristics are not supported", true},
+        {"Family configurable via firmware update", true},
+        {"Family configurable via platform software support", true},
+        {"Family configurable via OEM proprietary mechanism", true},
+    });
+    check_unique_field_names(fields);
+    check_no_joined_string_fields(fields);
+}
+
+/// Boundary cases: zero characteristics yields no characteristic field (the
+/// text prints the group label with no lines under it); a structure
+/// truncated after the spec version keeps every other field with defaults.
+BOOST_AUTO_TEST_CASE(TpmDeviceEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        const uint8_t vendor_id[4] = { 'I', 'F', 'X', 0x00 };
+        std::vector<uint8_t> formatted_area = make_formatted_area(
+            vendor_id, 0x01, 0x02, 0x01010000, 0, 0x01, 0, 0);
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::TpmDevice, formatted_area, {"TPM 1.2 Device"});
+        std::vector<uint8_t> buffer = builder.build();
+        TpmDeviceEntry entry(make_header(buffer), SMBiosVersion{3, 1}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Vendor ID", str("IFX")},
+            {"Spec Version", str("1.2")},
+            {"Firmware Version 1", num(0x01010000)},
+            {"Firmware Version 2", num(0)},
+            {"Description", str("TPM 1.2 Device")},
+            {"OEM-defined", num(0)},
+        });
+    }
+    {
+        std::vector<uint8_t> formatted_area = { 'A', 'B', 'C', 0x00, 0x01, 0x02 };
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::TpmDevice, formatted_area);
+        std::vector<uint8_t> buffer = builder.build();
+        TpmDeviceEntry entry(make_header(buffer), SMBiosVersion{3, 1}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Vendor ID", str("ABC")},
+            {"Spec Version", str("1.2")},
+            {"Firmware Version 1", num(0)},
+            {"Firmware Version 2", num(0)},
+            {"Description", str("Not Specified")},
+            {"OEM-defined", num(0)},
+        });
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

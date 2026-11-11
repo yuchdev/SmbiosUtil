@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <map>
 #include <string>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // System Slots entry
@@ -143,6 +144,15 @@ public:
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
 
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order; every
+    /// enumerated value, the Slot ID ("low" or "low/high") and the Bus
+    /// Address (empty when absent or all-FF) stay the printed string.
+    /// Characteristics is a single {"Characteristics", "Unknown"|"None"}
+    /// field exactly when the text prints that sentinel, otherwise one
+    /// {label, true} field per set bit of characteristics 1 then 2.
+    std::vector<NamedField> get_fields() const override;
+
     //////////////////////////////////////////////////////////////////////////
     // Byte/word values
 
@@ -245,6 +255,12 @@ public:
     std::string get_bus_address_string() const;
 
 private:
+
+    /// The single-word Characteristics sentinel the text prints instead of a
+    /// bit list - "Unknown" (bit 0 of characteristics1 set) or "None" (no
+    /// other bit set in either byte) - or an empty string when the set bits
+    /// are listed; shared by get_characteristics_string() and get_fields()
+    std::string characteristics_sentinel() const;
 
     /// Map flags/codes data to string values
     void init_string_values();

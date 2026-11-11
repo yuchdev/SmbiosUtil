@@ -16,6 +16,12 @@ option("GIT_TAG" GIT_TAG OFF)
 # silently skipped or silently miscompiled.
 option("SMBIOS_BUILD_FUZZERS" SMBIOS_BUILD_FUZZERS OFF)
 
+# Milestone 0009, Story 03.0, Task 03: the standalone library-consumer
+# examples under examples/ and their smbios_example_* CTest smoke tests.
+# Unlike SMBIOS_BUILD_FUZZERS this is ON by default, so CI always builds and
+# runs them and they cannot rot.
+option("SMBIOS_BUILD_EXAMPLES" SMBIOS_BUILD_EXAMPLES ON)
+
 if(SMBIOS_BUILD_FUZZERS AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     message(FATAL_ERROR
         "SMBIOS_BUILD_FUZZERS=ON requires Clang or AppleClang (libFuzzer is "
@@ -161,6 +167,9 @@ endif()
 
 add_subdirectory(libsmbios)
 add_subdirectory(smbios)
+if(SMBIOS_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
 add_subdirectory(smbios_c)
 add_subdirectory(tests)
 
@@ -250,7 +259,34 @@ if(SMBIOS_BUILD_FUZZERS)
             -fsanitize=fuzzer,address,undefined)
     endif()
 
+    # The harness decodes every walked header through SMBiosEntryFactory
+    # (security finding MEDIUM-2) but names no concrete entry class, so -
+    # exactly as for the smbios CLI (smbios/src/CMakeLists.txt) - libsmbios
+    # must be linked as a whole archive, or no REGISTER_SMBIOS_ENTRY static
+    # initializer would run and create() would return nullptr for every type.
+    if(APPLE)
+        target_link_options(${SMBIOS_FUZZER_TARGET} PRIVATE "LINKER:-force_load,$<TARGET_FILE:libsmbios>")
+    else()
+        target_link_options(${SMBIOS_FUZZER_TARGET} PRIVATE
+            "LINKER:--whole-archive,$<TARGET_FILE:libsmbios>,--no-whole-archive")
+    endif()
+
     target_link_libraries(${SMBIOS_FUZZER_TARGET} PRIVATE libsmbios)
+
+    # Instrument libsmbios itself (coverage + ASan/UBSan), not just the
+    # harness translation unit: the decoders under test live there, so
+    # without this libFuzzer gets no coverage feedback from them and ASan
+    # cannot see their memory accesses. It is also required for correctness:
+    # libc++'s ASan container annotations abort ("CHECK failed:
+    # asan_poisoning.cpp") when a std::vector grown by uninstrumented
+    # libsmbios code is cleared by the instrumented harness (the
+    # parse_synthetic_table() seam). The INTERFACE link option lets every
+    # other consumer of libsmbios in this fuzz-only build link the
+    # sanitizer runtimes too.
+    target_compile_options(libsmbios PRIVATE
+        -fsanitize=fuzzer-no-link,address,undefined
+        -g)
+    target_link_options(libsmbios INTERFACE -fsanitize=address,undefined)
 
     set_target_properties(${SMBIOS_FUZZER_TARGET} PROPERTIES FOLDER "Tests")
 endif()

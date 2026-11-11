@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <map>
 #include <string>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // Group Associations entry
@@ -63,6 +64,13 @@ public:
 
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order. The text's
+    /// unnumbered per-item "Item Type: T, Item Handle: H" lines become
+    /// 1-based "Item <i> Type" (string) / "Item <i> Handle" (uint64_t, the
+    /// text prints it as a plain decimal) fields; Items is a uint64_t.
+    std::vector<NamedField> get_fields() const override;
 
     //////////////////////////////////////////////////////////////////////////
     // Byte/word values

@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -243,6 +244,126 @@ BOOST_AUTO_TEST_CASE(CreateReturnsBaseboardInformationEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<BaseboardInformationEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 02)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// set Feature Flags bits become {label, true} fields, and the text's
+// "Not Present"/"None" sentinels become a single "Features" string field.
+// Boundaries: minimum length 0x08 (feature flags "Not Present"), flags
+// byte zero with a non-zero handle count ("None"), all five flags set.
+// On failure first check: BaseboardInformationEntry::get_fields() and
+// feature_flags_present() in libsmbios/src/baseboard_information_entry.cpp.
+
+namespace {
+
+/// @brief Length 0x13 structure (two contained handles) with six real DMI
+/// strings and the given feature-flags byte.
+std::vector<uint8_t> build_fields_buffer(uint8_t feature_flags)
+{
+    std::vector<uint8_t> formatted_area{
+        0x01, 0x02, 0x03, 0x04, 0x05, // 0x04-0x08 string indices
+        feature_flags,                // 0x09 feature_flags
+        0x06,                         // 0x0A location_in_chassis_index
+        0x34, 0x12,                   // 0x0B-0x0C chassis_handle = 0x1234
+        static_cast<uint8_t>(BaseboardInformationEntry::Motherboard), // 0x0D board_type
+        0x02,                         // 0x0E contained_object_handle_count = 2
+        0xAD, 0xDE, 0xEF, 0xBE,       // 0x0F-0x12 handles
+    };
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::BaseboardInformation, formatted_area,
+                          std::vector<std::string>{"Acme", "Model X", "1.0", "SN123", "AT-9", "Slot A"});
+    return builder.build();
+}
+
+} // namespace
+
+/// Normal case: every text label becomes a field, in text order; the two
+/// set feature bits become true fields; handles/counts are uint64_t.
+BOOST_AUTO_TEST_CASE(BaseboardInformationEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = build_fields_buffer(static_cast<uint8_t>(
+        BaseboardInformationEntry::HostingBoard | BaseboardInformationEntry::Replaceable));
+    DMIHeader header = make_header(buffer);
+    BaseboardInformationEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Manufacturer", str("Acme")},
+        {"Product Name", str("Model X")},
+        {"Version", str("1.0")},
+        {"Serial Number", str("SN123")},
+        {"Asset Tag", str("AT-9")},
+        {"Board is a hosting board", true},
+        {"Board is replaceable", true},
+        {"Location In Chassis", str("Slot A")},
+        {"Chassis Handle", num(0x1234)},
+        {"Type", str("Motherboard (includes processor, memory, and I/O)")},
+        {"Contained Object Handles", num(2)},
+    });
+}
+
+/// Edge case: all five flags set -> five true fields, no joined string;
+/// a zero flags byte (with handles present) -> the text's "None" sentinel.
+BOOST_AUTO_TEST_CASE(BaseboardInformationEntryGetFieldsExpandsBitmaskTestCase)
+{
+    using namespace smbios::test;
+    {
+        std::vector<uint8_t> buffer = build_fields_buffer(0x1F);
+        DMIHeader header = make_header(buffer);
+        BaseboardInformationEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+        const std::vector<NamedField> fields = entry.get_fields();
+        BOOST_REQUIRE_EQUAL(fields.size(), static_cast<size_t>(9 + 5));
+        check_fields_equal(std::vector<NamedField>(fields.begin() + 5, fields.begin() + 10), {
+            {"Board is a hosting board", true},
+            {"Board requires at least one daughter board", true},
+            {"Board is removable", true},
+            {"Board is replaceable", true},
+            {"Board is hot swappable", true},
+        });
+        check_unique_field_names(fields);
+        check_no_joined_string_fields(fields);
+    }
+    {
+        std::vector<uint8_t> buffer = build_fields_buffer(0x00);
+        DMIHeader header = make_header(buffer);
+        BaseboardInformationEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+        const std::vector<NamedField> fields = entry.get_fields();
+        BOOST_REQUIRE_EQUAL(fields.size(), static_cast<size_t>(10));
+        check_fields_equal(std::vector<NamedField>(fields.begin() + 5, fields.begin() + 6), {
+            {"Features", str("None")},
+        });
+    }
+}
+
+/// Boundary case: minimum length 0x08 - the text still prints every line,
+/// with "Not Present" for the features, so get_fields() does too.
+BOOST_AUTO_TEST_CASE(BaseboardInformationEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::BaseboardInformation, std::vector<uint8_t>{0x01, 0x02, 0x03, 0x04},
+                          std::vector<std::string>{"Acme", "Model X", "1.0", "SN123"});
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    BaseboardInformationEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Manufacturer", str("Acme")},
+        {"Product Name", str("Model X")},
+        {"Version", str("1.0")},
+        {"Serial Number", str("SN123")},
+        {"Asset Tag", str("Not Specified")},
+        {"Features", str("Not Present")},
+        {"Location In Chassis", str("Not Specified")},
+        {"Chassis Handle", num(0)},
+        {"Type", str("OutOfSpec")},
+        {"Contained Object Handles", num(0)},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

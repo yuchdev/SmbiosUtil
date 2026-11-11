@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -175,6 +176,74 @@ BOOST_AUTO_TEST_CASE(CreateReturnsSystemInformationEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<SystemInformationEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 02)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field
+// (same labels, order and printed strings, UUID as its formatted string).
+// Boundaries: length 0x08 (UUID/wake-up/SKU/family default but are still
+// printed, so still present).
+// On failure first check: SystemInformationEntry::get_fields() in
+// libsmbios/src/system_information_entry.cpp.
+
+namespace {
+
+/// @brief build_buffer()'s layout truncated to `length`, plus six real DMI
+/// strings so every string index resolves.
+std::vector<uint8_t> build_fields_buffer(uint8_t length)
+{
+    std::vector<uint8_t> source = build_buffer(0x1B);
+    std::vector<uint8_t> formatted_area(source.begin() + 4, source.begin() + length);
+
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemInformation, formatted_area,
+                          std::vector<std::string>{"Acme", "Box 9000", "v2", "SN42", "SKU-7", "Servers"});
+    return builder.build();
+}
+
+} // namespace
+
+/// Normal case: full-length structure, every field decoded, in text order.
+BOOST_AUTO_TEST_CASE(SystemInformationEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = build_fields_buffer(0x1B);
+    DMIHeader header = make_header(buffer);
+    SystemInformationEntry entry(header, SMBiosVersion{2, 6}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Manufacturer", str("Acme")},
+        {"Product Name", str("Box 9000")},
+        {"Version", str("v2")},
+        {"Serial Number", str("SN42")},
+        {"UUID", str("13121110-1514-1716-1819-1a1b1c1d1e1f")},
+        {"Wake-up Type", str("Power Switch")},
+        {"SKU Number", str("SKU-7")},
+        {"Family", str("Servers")},
+    });
+}
+
+/// Boundary case: length 0x08 - the text still prints every line (with
+/// defaulted values), so every field stays present with those defaults.
+BOOST_AUTO_TEST_CASE(SystemInformationEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = build_fields_buffer(0x08);
+    DMIHeader header = make_header(buffer);
+    SystemInformationEntry entry(header, SMBiosVersion{2, 6}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Manufacturer", str("Acme")},
+        {"Product Name", str("Box 9000")},
+        {"Version", str("v2")},
+        {"Serial Number", str("SN42")},
+        {"UUID", str("Not Specified")},
+        {"Wake-up Type", str("Reserved")},
+        {"SKU Number", str("Not Specified")},
+        {"Family", str("Not Specified")},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

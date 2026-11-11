@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -203,6 +204,50 @@ BOOST_AUTO_TEST_CASE(CreateReturnsMemoryArrayMappedAddressEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<MemoryArrayMappedAddressEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 03)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// addresses and the handle stay the printed hex/"Unknown" strings and the
+// plain-decimal Partition Width is a uint64_t.
+// Boundaries: a header-only structure (addresses "Unknown", defaulted
+// handle/width). No bitmask in this type.
+// On failure first check: MemoryArrayMappedAddressEntry::get_fields() in
+// libsmbios/src/memory_array_mapped_address_entry.cpp.
+
+/// Normal case: every text label becomes a field, in text order.
+BOOST_AUTO_TEST_CASE(MemoryArrayMappedAddressEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = build_buffer(0x1F);
+    DMIHeader header = make_header(buffer);
+    MemoryArrayMappedAddressEntry entry(header, SMBiosVersion{2, 7}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Starting Address", str("0x00001000 kB")},
+        {"Ending Address", str("0x00002000 kB")},
+        {"Physical Array Handle", str("0x0005")},
+        {"Partition Width", num(8)},
+    });
+}
+
+/// Boundary case: a header-only structure. The text prints every line
+/// unconditionally, so every field is present with its getter's default.
+BOOST_AUTO_TEST_CASE(MemoryArrayMappedAddressEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = build_buffer(0x04);
+    DMIHeader header = make_header(buffer);
+    MemoryArrayMappedAddressEntry entry(header, SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Starting Address", str("Unknown")},
+        {"Ending Address", str("Unknown")},
+        {"Physical Array Handle", str("0xffff")},
+        {"Partition Width", num(0)},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

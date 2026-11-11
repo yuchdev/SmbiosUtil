@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <map>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // BIOS Information entry
@@ -95,6 +96,13 @@ public:
 
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order; each
+    /// set BIOS Characteristics / Extension Byte 1 / Extension Byte 2 bit becomes
+    /// one {label, true} field. Duplicate bit labels (the two "Reserved" bits)
+    /// carry a 1-based index suffix so names stay unique.
+    std::vector<NamedField> get_fields() const override;
 
     //////////////////////////////////////////////////////////////////////////
     // Byte values

@@ -366,3 +366,24 @@ std::string SystemEnclosureEntry::get_sku_number_string() const
 {
     return AbstractSMBiosEntry::dmi_string(get_sku_number_index());
 }
+
+std::vector<NamedField> SystemEnclosureEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Manufacturer", get_manufacturer_string()});
+    fields.push_back({"Type", get_enclosure_type_string()});
+    fields.push_back({"Lock", get_lock_present()});
+    fields.push_back({"Version", get_version_string()});
+    fields.push_back({"Serial Number", get_serial_number_string()});
+    fields.push_back({"Asset Tag", get_asset_tag_string()});
+    fields.push_back({"Boot-up State", get_boot_up_state_string()});
+    fields.push_back({"Power Supply State", get_power_supply_state_string()});
+    fields.push_back({"Thermal State", get_thermal_state_string()});
+    fields.push_back({"Security Status", get_security_status_string()});
+    fields.push_back({"OEM Information", get_oem_defined_string()});
+    fields.push_back({"Height", get_height_string()});
+    fields.push_back({"Number Of Power Cords", get_number_of_power_cords_string()});
+    fields.push_back({"Contained Elements", static_cast<uint64_t>(get_contained_element_count())});
+    fields.push_back({"SKU Number", get_sku_number_string()});
+    return fields;
+}

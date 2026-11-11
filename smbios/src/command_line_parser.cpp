@@ -5,10 +5,32 @@
 #include <iostream>
 #include <algorithm>
 #include <libsmbios/smbios.hpp>
+#include <libsmbios/output_formatter.hpp>
 
 using namespace smbios;
 namespace po = boost::program_options;
 using std::string;
+
+namespace {
+
+/// @brief The `--format` help text, listing every registered format name.
+/// Built at parse time from the registry (fully populated during static
+/// initialisation, before main() runs), never hard-coded.
+string format_option_help()
+{
+    string help = "Output format, one of: ";
+    bool first = true;
+    for (const string& name : registered_output_formatter_names()) {
+        if (!first) {
+            help += ", ";
+        }
+        help += name;
+        first = false;
+    }
+    return help;
+}
+
+} // namespace
 
 CommandLineParams::CommandLineParams() : cmd_options_description("SMBios utility console has the following options:")
 {}
@@ -21,6 +43,7 @@ void CommandLineParams::read_params(int argc, char* argv[])
         ("memory-scan,m", "Fallback to memory scan without trying EFI or SysFS (Linux only)")
         ("read-file,r", po::value<string>(&_from_file), "Read SMBIOS table dump from this file")
         ("dump-file,d", po::value<string>(&_to_file), "Dump existing SMBIOS table to this file")
+        ("format,f", po::value<string>(&_format)->default_value("text"), format_option_help().c_str())
         ;
 
     // command line params processing

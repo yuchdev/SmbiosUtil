@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -190,6 +191,51 @@ BOOST_AUTO_TEST_CASE(CreateReturnsManagementDeviceEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<ManagementDeviceEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009 Story 01.0 Task 05)
+//
+// Type: unit - deterministic, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description(); Address is
+// uint64_t (plain decimal in the text), the enums stay their strings.
+// Boundaries: full (0x0B) vs header-only (0x04) structure. No bitmask.
+// On failure first check: ManagementDeviceEntry::get_fields() against
+// ManagementDeviceEntry::render_to_description() in libsmbios/src/management_device_entry.cpp.
+
+/// Normal case: full-length structure.
+BOOST_AUTO_TEST_CASE(ManagementDeviceEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area = build_formatted_area(ManagementDeviceEntry::DeviceTypeNationalSemiconductorLm75, 0x12345678, ManagementDeviceEntry::AddressTypeSmBus);
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::ManagementDevice, formatted_area, {"Fan Controller"});
+    std::vector<uint8_t> buffer = builder.build();
+    ManagementDeviceEntry entry(make_header(buffer), SMBiosVersion{2, 3}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Description", str("Fan Controller")},
+        {"Device Type", str("National Semiconductor LM75")},
+        {"Address", num(0x12345678)},
+        {"Address Type", str("SM Bus")},
+    });
+}
+
+/// Boundary case: a header-only structure keeps all four always-printed
+/// fields with their defaults.
+BOOST_AUTO_TEST_CASE(ManagementDeviceEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::ManagementDevice, std::vector<uint8_t>{});
+    std::vector<uint8_t> buffer = builder.build();
+    ManagementDeviceEntry entry(make_header(buffer), SMBiosVersion{2, 3}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Description", str("")},
+        {"Device Type", str("Reserved")},
+        {"Address", num(0)},
+        {"Address Type", str("Reserved")},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

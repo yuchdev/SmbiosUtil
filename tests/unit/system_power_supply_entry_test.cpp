@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <string>
 #include <memory>
 #include <vector>
 
@@ -8,6 +9,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -249,6 +251,87 @@ BOOST_AUTO_TEST_CASE(CreateReturnsSystemPowerSupplyEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<SystemPowerSupplyEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 04)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// Unplugged/Present/Hot-replaceable are bool, Power Unit Group and Max
+// Power Capacity stay the printed decorated strings, and each optional
+// "0x" + hex handle field is present exactly when the text prints it. No
+// bitmask list in this type (Characteristics is three enumerations plus
+// three individually printed flags).
+// Boundaries: one handle at the 0xFFFF absent sentinel, a minimum-length
+// (0x10) structure with no handle bytes, the 0x8000 unknown capacity.
+// On failure first check: SystemPowerSupplyEntry::get_fields() in
+// libsmbios/src/system_power_supply_entry.cpp.
+
+/// Normal case: every text label becomes a field, in text order; the
+/// sentinel current-probe handle is omitted exactly as in the text.
+BOOST_AUTO_TEST_CASE(SystemPowerSupplyEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    // characteristics = Switching | OK | Auto-switch | unplugged | hot-replaceable
+    std::vector<uint8_t> formatted_area = make_full_formatted_area(
+        0x05, 750, 0x11A5, 0x0021, 0x00AB, SystemPowerSupplyEntry::HandleAbsent);
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemPowerSupply, formatted_area,
+                          {"Left Supply Bay", "DR-36", "Acme", "SN123", "AT001", "PN456", "2.30"});
+    std::vector<uint8_t> buffer = builder.build();
+    SystemPowerSupplyEntry entry(make_header(buffer), SMBiosVersion{2, 3}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Location", str("Left Supply Bay")},
+        {"Device Name", str("DR-36")},
+        {"Manufacturer", str("Acme")},
+        {"Serial Number", str("SN123")},
+        {"Asset Tag", str("AT001")},
+        {"Model Part Number", str("PN456")},
+        {"Revision Level", str("2.30")},
+        {"Power Unit Group", str("5 (redundant)")},
+        {"Max Power Capacity", str("750 W")},
+        {"Power Supply Type", str("Switching")},
+        {"Status", str("OK")},
+        {"Input Voltage Range Switching", str("Auto-switch")},
+        {"Unplugged", true},
+        {"Present", false},
+        {"Hot-replaceable", true},
+        {"Input Voltage Probe Handle", str("0x21")},
+        {"Cooling Device Handle", str("0xab")},
+    });
+}
+
+/// Boundary case: a minimum-length (0x10) structure carries no handle
+/// bytes, so no handle field appears; an unknown capacity prints "Unknown".
+BOOST_AUTO_TEST_CASE(SystemPowerSupplyEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area = make_minimum_formatted_area(
+        0x00, SystemPowerSupplyEntry::MaxPowerCapacityUnknown, 0x11A3);
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::SystemPowerSupply, formatted_area,
+                          {"Left Supply Bay", "DR-36", "Acme", "SN123", "AT001", "PN456", "2.30"});
+    std::vector<uint8_t> buffer = builder.build();
+    SystemPowerSupplyEntry entry(make_header(buffer), SMBiosVersion{2, 3}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Location", str("Left Supply Bay")},
+        {"Device Name", str("DR-36")},
+        {"Manufacturer", str("Acme")},
+        {"Serial Number", str("SN123")},
+        {"Asset Tag", str("AT001")},
+        {"Model Part Number", str("PN456")},
+        {"Revision Level", str("2.30")},
+        {"Power Unit Group", str("0 (not redundant)")},
+        {"Max Power Capacity", str("Unknown")},
+        {"Power Supply Type", str("Switching")},
+        {"Status", str("OK")},
+        {"Input Voltage Range Switching", str("Auto-switch")},
+        {"Unplugged", false},
+        {"Present", true},
+        {"Hot-replaceable", true},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

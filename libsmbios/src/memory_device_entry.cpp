@@ -533,3 +533,25 @@ std::string MemoryDeviceEntry::get_device_rank_string() const
     }
     return std::to_string(static_cast<unsigned>(get_device_rank()));
 }
+
+std::vector<NamedField> MemoryDeviceEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Array Handle", get_array_handle_string()});
+    fields.push_back({"Error Handle", get_error_handle_string()});
+    fields.push_back({"Total width", get_total_width_string()});
+    fields.push_back({"Data width", get_data_width_string()});
+    fields.push_back({"Device size", get_device_size_string()});
+    fields.push_back({"Form factor", get_form_factor_string()});
+    fields.push_back({"Device set", get_device_set_string()});
+    fields.push_back({"Device locator", get_device_locator_string()});
+    fields.push_back({"Bank locator", get_bank_locator_string()});
+    fields.push_back({"Device type", get_device_type_string()});
+    bitset_to_fields<uint16_t>(get_device_detail(), device_properties_map_, fields);
+    fields.push_back({"Device speed", get_device_speed_string()});
+    fields.push_back({"Manufacturer", get_manufacturer_string()});
+    fields.push_back({"Serial Number", get_serial_number_string()});
+    fields.push_back({"Asset Tag", get_asset_tag_string()});
+    fields.push_back({"Part Number", get_part_number_string()});
+    return fields;
+}

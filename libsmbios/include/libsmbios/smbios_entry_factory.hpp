@@ -3,6 +3,8 @@
 #include <functional>
 #include <memory>
 
+#include <libsmbios/registration_name.hpp>
+
 namespace smbios {
 
 class AbstractSMBiosEntry;
@@ -57,10 +59,12 @@ public:
 /// .cpp file (not its header - a header-placed invocation would register
 /// once per translation unit that includes it, tripping the duplicate-
 /// registration guard the first time two TUs in the same binary both
-/// `#include` that header).
+/// `#include` that header). `class_name` may be namespace-qualified (e.g.
+/// `vendor::OemEntry`): the registration variable's name comes from
+/// SMBIOS_DETAIL_UNIQUE_NAME, not from pasting `class_name`.
 #define REGISTER_SMBIOS_ENTRY(handler_value, class_name)                                   \
     namespace {                                                                            \
-    const bool class_name##_registered = [] {                                              \
+    const bool SMBIOS_DETAIL_UNIQUE_NAME(smbios_entry_registered_) = [] {                  \
         smbios::register_smbios_entry(static_cast<uint8_t>(handler_value),                 \
             [](const smbios::DMIHeader& h, const smbios::SMBiosVersion& v,                 \
                const uint8_t* table_end) {                                                 \

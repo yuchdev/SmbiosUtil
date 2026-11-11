@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -179,6 +180,52 @@ BOOST_AUTO_TEST_CASE(CreateReturnsStringPropertyEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<StringPropertyEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 02)
+//
+// Type: unit - deterministic, synthetic buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description(): "Property ID"
+// (the text's "0x<id> (<description>)" string), "Value", "Parent Handle"
+// (the text's "0x" hex string).
+// Boundaries: header-only structure (every getter defaults).
+// On failure first check: StringPropertyEntry::get_fields() in
+// libsmbios/src/string_property_entry.cpp.
+
+/// Normal case: UEFI device path property.
+BOOST_AUTO_TEST_CASE(StringPropertyEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area = make_formatted_area(StringPropertyEntry::UefiDevicePath, 1, 0x00AB);
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::StringProperty, formatted_area, {"PciRoot(0x0)/Pci(0x1,0x0)"});
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    StringPropertyEntry entry(header, SMBiosVersion{3, 5}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Property ID", str("0x1 (UEFI device path)")},
+        {"Value", str("PciRoot(0x0)/Pci(0x1,0x0)")},
+        {"Parent Handle", str("0xab")},
+    });
+}
+
+/// Boundary case: header-only structure - the text still prints all three
+/// lines with defaulted values, so all three fields stay present.
+BOOST_AUTO_TEST_CASE(StringPropertyEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::StringProperty, std::vector<uint8_t>{});
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    StringPropertyEntry entry(header, SMBiosVersion{3, 5}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Property ID", str("0x0 (Reserved)")},
+        {"Value", str("Not Specified")},
+        {"Parent Handle", str("0x0")},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

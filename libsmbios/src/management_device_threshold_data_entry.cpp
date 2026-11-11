@@ -147,3 +147,20 @@ bool ManagementDeviceThresholdDataEntry::is_upper_threshold_non_recoverable_know
 {
     return !is_word_value_unknown(get_upper_threshold_non_recoverable());
 }
+
+std::vector<NamedField> ManagementDeviceThresholdDataEntry::get_fields() const
+{
+    // Same decimal or "Unknown" string the text prints.
+    auto decorated = [](bool known, uint16_t value) {
+        return known ? std::to_string(value) : std::string("Unknown");
+    };
+
+    std::vector<NamedField> fields;
+    fields.push_back({"Lower Threshold - Non-critical", decorated(is_lower_threshold_non_critical_known(), get_lower_threshold_non_critical())});
+    fields.push_back({"Upper Threshold - Non-critical", decorated(is_upper_threshold_non_critical_known(), get_upper_threshold_non_critical())});
+    fields.push_back({"Lower Threshold - Critical", decorated(is_lower_threshold_critical_known(), get_lower_threshold_critical())});
+    fields.push_back({"Upper Threshold - Critical", decorated(is_upper_threshold_critical_known(), get_upper_threshold_critical())});
+    fields.push_back({"Lower Threshold - Non-recoverable", decorated(is_lower_threshold_non_recoverable_known(), get_lower_threshold_non_recoverable())});
+    fields.push_back({"Upper Threshold - Non-recoverable", decorated(is_upper_threshold_non_recoverable_known(), get_upper_threshold_non_recoverable())});
+    return fields;
+}

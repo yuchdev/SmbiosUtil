@@ -226,3 +226,17 @@ std::string SystemInformationEntry::format_uuid(const uint8_t* uuid, const SMBio
 
     return formatted.str();
 }
+
+std::vector<NamedField> SystemInformationEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Manufacturer", get_manufacturer_string()});
+    fields.push_back({"Product Name", get_product_name_string()});
+    fields.push_back({"Version", get_version_string()});
+    fields.push_back({"Serial Number", get_serial_number_string()});
+    fields.push_back({"UUID", get_uuid_string()});
+    fields.push_back({"Wake-up Type", get_wake_up_type_string()});
+    fields.push_back({"SKU Number", get_sku_number_string()});
+    fields.push_back({"Family", get_family_string()});
+    return fields;
+}

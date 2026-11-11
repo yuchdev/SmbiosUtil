@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -74,6 +75,30 @@ BOOST_AUTO_TEST_CASE(WrongTypeThrowsTestCase)
 
     DMIHeader header = make_header(buffer);
     BOOST_CHECK_THROW(BootIntegrityServicesEntry(header, SMBiosVersion{2, 3}, buffer.data() + buffer.size()), std::runtime_error);
+}
+
+// get_fields() (milestone 0009 Story 01.0 Task 05)
+//
+// Type: unit - deterministic, no hardware/privileges.
+// Scenario: get_fields() is deliberately empty, like InactiveEntry: the
+// text prints only the header type and a fixed sentence.
+// Boundaries: the header-only shape and a structure with trailing bytes
+// (still nothing decoded). No bitmask and no length tiers.
+// On failure first check: BootIntegrityServicesEntry::get_fields() against
+// BootIntegrityServicesEntry::render_to_description() in libsmbios/src/boot_integrity_services_entry.cpp.
+
+/// Normal case: no DSP0134-defined fields, so no structured fields - even
+/// when the structure carries trailing bytes.
+BOOST_AUTO_TEST_CASE(BootIntegrityServicesEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    for (const std::vector<uint8_t>& formatted_area : {std::vector<uint8_t>{}, std::vector<uint8_t>{0x01, 0x02, 0x03}}) {
+        smbios::test::SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::BootIntegrityServices, formatted_area);
+        std::vector<uint8_t> buffer = builder.build();
+        BootIntegrityServicesEntry entry(make_header(buffer), SMBiosVersion{2, 3}, buffer.data() + buffer.size());
+
+        BOOST_CHECK(entry.get_fields().empty());
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

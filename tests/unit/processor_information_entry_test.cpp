@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <libsmbios/smbios.hpp>
@@ -8,6 +9,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -541,6 +543,157 @@ BOOST_AUTO_TEST_CASE(CreateReturnsProcessorInformationEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<ProcessorInformationEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 03)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field
+// (same labels, same order, same printed strings for decorated values -
+// MHz speeds, hex cache handles, "Unknown" counts, the hex Processor ID
+// string), with each set Characteristics bit expanded into its own
+// {label, true} field, or a single "None" field where the text prints one.
+// Boundaries: tier-2 (0x1A) structure under SMBIOS 2.0 (absent handles render
+// "No Cache", every later field defaulted), characteristics with only bits
+// 8-9 set (text still prints "None"), unlabelled set bits (0, 15).
+// On failure first check: ProcessorInformationEntry::get_fields() and
+// characteristics_are_none() in libsmbios/src/processor_information_entry.cpp.
+
+namespace {
+
+/// @brief Re-emit build_buffer()'s formatted area as a well-formed structure
+/// carrying the given DMI strings (build_buffer() itself attaches none).
+std::vector<uint8_t> with_strings(const std::vector<uint8_t>& buffer, const std::vector<std::string>& strings)
+{
+    const std::vector<uint8_t> formatted_area(buffer.begin() + 4, buffer.begin() + buffer[1]);
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::ProcessorInformation, formatted_area, strings);
+    return builder.build();
+}
+
+const std::vector<std::string> kProcessorStrings{"CPU0", "Acme", "Acme CPU 9000", "SN123", "AT456", "PN789"};
+
+/// @brief Overwrite the characteristics word (offset 0x26, little-endian).
+void set_characteristics(std::vector<uint8_t>& buffer, uint16_t characteristics)
+{
+    buffer[0x26] = static_cast<uint8_t>(characteristics & 0xFF);
+    buffer[0x27] = static_cast<uint8_t>(characteristics >> 8);
+}
+
+} // namespace
+
+/// Normal case: every text label becomes a field, in text order, with the
+/// text's own decorated strings; set characteristics bits become true fields.
+BOOST_AUTO_TEST_CASE(ProcessorInformationEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = with_strings(build_buffer(0x32, 0x0B, 0x05, 0x04, 0x08, /*voltage*/0x8C),
+                                               kProcessorStrings);
+    DMIHeader header = make_header(buffer);
+    ProcessorInformationEntry entry(header, SMBiosVersion{3, 0}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Socket Designation", str("CPU0")},
+        {"Type", str("Central Processor")},
+        {"Family", str("Pentium")},
+        {"Manufacturer", str("Acme")},
+        {"ID", str("1122334455667788")},
+        {"Version", str("Acme CPU 9000")},
+        {"Voltage", str("1.2 V")},
+        {"External Clock", str("100 MHz")},
+        {"Max Speed", str("3000 MHz")},
+        {"Current Speed", str("2500 MHz")},
+        {"Status", str("Populated, Enabled")},
+        {"Upgrade", str("Socket AM4")},
+        {"L1 Cache Handle", str("0x0001")},
+        {"L2 Cache Handle", str("0x0002")},
+        {"L3 Cache Handle", str("Not Provided")},
+        {"Serial Number", str("SN123")},
+        {"Asset Tag", str("AT456")},
+        {"Part Number", str("PN789")},
+        {"Core Count", str("5")},
+        {"Core Enabled", str("4")},
+        {"Thread Count", str("8")},
+        {"64-bit capable", true},
+        {"Multi-Core", true},
+        {"Thread Enabled", str("80")},
+    });
+}
+
+/// Edge case: one true field per set, labelled characteristics bit
+/// (unlabelled bits 0 and 15 skipped), nothing joined; and the text's "None"
+/// sentinel (bits 2-7 clear, even with bits 8-9 set) becomes one
+/// {"Characteristics", "None"} field with no bit fields.
+BOOST_AUTO_TEST_CASE(ProcessorInformationEntryGetFieldsExpandsBitmaskTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = with_strings(build_buffer(0x32), kProcessorStrings);
+    set_characteristics(buffer, 0x0001 | ProcessorInformationEntry::ProcessorCharacteristicsUnknown
+                                | ProcessorInformationEntry::HardwareThread
+                                | ProcessorInformationEntry::ExecuteProtection
+                                | ProcessorInformationEntry::Capable128Bit
+                                | ProcessorInformationEntry::Arm64SoCID | 0x8000);
+    DMIHeader header = make_header(buffer);
+    ProcessorInformationEntry entry(header, SMBiosVersion{3, 0}, buffer.data() + buffer.size());
+
+    const std::vector<NamedField> fields = entry.get_fields();
+    BOOST_REQUIRE_EQUAL(fields.size(), static_cast<size_t>(22 + 5));
+    const std::vector<NamedField> bits(fields.begin() + 21, fields.end() - 1);
+    check_fields_equal(bits, {
+        {"Unknown", true},
+        {"Hardware Thread", true},
+        {"Execute Protection", true},
+        {"128-bit Capable", true},
+        {"Arm64 SoC ID", true},
+    });
+    check_unique_field_names(fields);
+    check_no_joined_string_fields(fields);
+
+    set_characteristics(buffer, ProcessorInformationEntry::Capable128Bit | ProcessorInformationEntry::Arm64SoCID);
+    ProcessorInformationEntry none_entry(make_header(buffer), SMBiosVersion{3, 0}, buffer.data() + buffer.size());
+    const std::vector<NamedField> none_fields = none_entry.get_fields();
+    BOOST_REQUIRE_EQUAL(none_fields.size(), static_cast<size_t>(23));
+    check_fields_equal({none_fields[21]}, {{"Characteristics", str("None")}});
+    check_unique_field_names(none_fields);
+    check_no_joined_string_fields(none_fields);
+}
+
+/// Boundary case: a tier-2 (0x1A) structure under SMBIOS 2.0. The text prints
+/// every line unconditionally, so every field is still present, with the
+/// getters' own defaults: pre-2.3 "No Cache" handles, "Not Specified"
+/// strings, "Unknown" counts, and the "None" characteristics sentinel.
+BOOST_AUTO_TEST_CASE(ProcessorInformationEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = with_strings(build_buffer(0x1A), kProcessorStrings);
+    DMIHeader header = make_header(buffer);
+    ProcessorInformationEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Socket Designation", str("CPU0")},
+        {"Type", str("Central Processor")},
+        {"Family", str("Pentium")},
+        {"Manufacturer", str("Acme")},
+        {"ID", str("1122334455667788")},
+        {"Version", str("Acme CPU 9000")},
+        {"Voltage", str("Unknown")},
+        {"External Clock", str("100 MHz")},
+        {"Max Speed", str("3000 MHz")},
+        {"Current Speed", str("2500 MHz")},
+        {"Status", str("Populated, Enabled")},
+        {"Upgrade", str("Socket AM4")},
+        {"L1 Cache Handle", str("No Cache")},
+        {"L2 Cache Handle", str("No Cache")},
+        {"L3 Cache Handle", str("No Cache")},
+        {"Serial Number", str("Not Specified")},
+        {"Asset Tag", str("Not Specified")},
+        {"Part Number", str("Not Specified")},
+        {"Core Count", str("Unknown")},
+        {"Core Enabled", str("Unknown")},
+        {"Thread Count", str("Unknown")},
+        {"Characteristics", str("None")},
+        {"Thread Enabled", str("Unknown")},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -87,3 +87,14 @@ bool ManagementDeviceComponentEntry::has_threshold() const
 {
     return get_threshold_handle() != NoThresholdHandle;
 }
+
+std::vector<NamedField> ManagementDeviceComponentEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Description", get_description_string()});
+    fields.push_back({"Management Device Handle", static_cast<uint64_t>(get_management_device_handle())});
+    fields.push_back({"Component Handle", static_cast<uint64_t>(get_component_handle())});
+    fields.push_back({"Threshold Handle", has_threshold() ? std::to_string(get_threshold_handle())
+                                                          : std::string("None")});
+    return fields;
+}

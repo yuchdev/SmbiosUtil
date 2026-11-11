@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // Management Device Threshold Data entry
@@ -51,6 +52,12 @@ public:
 
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same six fields as render_to_description(), in the same order. Each
+    /// stays the printed string (a decimal or the "Unknown" sentinel), since
+    /// every threshold can print that sentinel.
+    std::vector<NamedField> get_fields() const override;
 
     //////////////////////////////////////////////////////////////////////////
     // Word values

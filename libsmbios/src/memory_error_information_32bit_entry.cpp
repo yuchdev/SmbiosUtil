@@ -214,3 +214,28 @@ std::string MemoryErrorInformation32BitEntry::get_error_operation_string() const
     auto it = error_operation_names_.find(get_error_operation());
     return it != error_operation_names_.end() ? (*it).second : "Unknown";
 }
+
+std::vector<NamedField> MemoryErrorInformation32BitEntry::get_fields() const
+{
+    // Same zero-padded "0x..." / "Unknown" rendering the text output uses.
+    auto hex_or_unknown = [](bool known, uint64_t value, int width) {
+        if (!known) {
+            return std::string("Unknown");
+        }
+        std::stringstream hex_stream;
+        hex_stream << "0x" << std::hex << std::setfill('0') << std::setw(width) << value;
+        return hex_stream.str();
+    };
+
+    std::vector<NamedField> fields;
+    fields.push_back({"Error Type", get_error_type_string()});
+    fields.push_back({"Error Granularity", get_error_granularity_string()});
+    fields.push_back({"Error Operation", get_error_operation_string()});
+    fields.push_back({"Vendor Syndrome", hex_or_unknown(is_vendor_syndrome_known(), get_vendor_syndrome(), 8)});
+    fields.push_back({"Memory Array Error Address",
+                      hex_or_unknown(is_memory_array_error_address_known(), get_memory_array_error_address(), 8)});
+    fields.push_back({"Device Error Address",
+                      hex_or_unknown(is_device_error_address_known(), get_device_error_address(), 8)});
+    fields.push_back({"Error Resolution", hex_or_unknown(is_error_resolution_known(), get_error_resolution(), 8)});
+    return fields;
+}

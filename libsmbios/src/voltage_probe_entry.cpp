@@ -241,3 +241,25 @@ bool VoltageProbeEntry::is_nominal_value_known() const
 {
     return has_nominal_value() && !is_word_value_unknown(get_nominal_value());
 }
+
+std::vector<NamedField> VoltageProbeEntry::get_fields() const
+{
+    // Same "<value><unit>" or "Unknown" string the text prints.
+    auto decorated = [](bool known, uint16_t value, const char* unit) {
+        return known ? std::to_string(value) + unit : std::string("Unknown");
+    };
+
+    std::vector<NamedField> fields;
+    fields.push_back({"Description", get_description_string()});
+    fields.push_back({"Location", get_location_string()});
+    fields.push_back({"Status", get_status_string()});
+    fields.push_back({"Maximum Value", decorated(is_maximum_value_known(), get_maximum_value(), " mV")});
+    fields.push_back({"Minimum Value", decorated(is_minimum_value_known(), get_minimum_value(), " mV")});
+    fields.push_back({"Resolution", decorated(is_resolution_known(), get_resolution(), " (tenths of mV)")});
+    fields.push_back({"Tolerance", decorated(is_tolerance_known(), get_tolerance(), " mV")});
+    fields.push_back({"Accuracy", decorated(is_accuracy_known(), get_accuracy(), " (1/100th %)")});
+    if (has_nominal_value()) {
+        fields.push_back({"Nominal Value", decorated(is_nominal_value_known(), get_nominal_value(), " mV")});
+    }
+    return fields;
+}

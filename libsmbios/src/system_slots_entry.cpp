@@ -353,14 +353,9 @@ std::string SystemSlotsEntry::get_characteristics_string() const
     const uint8_t characteristics1 = get_characteristics1();
     const uint8_t characteristics2 = get_characteristics2();
 
-    // See dmi_slot_characteristics(): bit 0 of characteristics1 set means
-    // the whole field is unknown; both bytes otherwise entirely zero means
-    // "None".
-    if (characteristics1 & Characteristics1Unknown) {
-        return "\tUnknown\n";
-    }
-    if ((characteristics1 & 0xFE) == 0 && characteristics2 == 0) {
-        return "\tNone\n";
+    const std::string sentinel = characteristics_sentinel();
+    if (!sentinel.empty()) {
+        return "\t" + sentinel + "\n";
     }
 
     std::stringstream properties;
@@ -392,4 +387,47 @@ std::string SystemSlotsEntry::get_bus_address_string() const
             << std::setw(2) << static_cast<unsigned>(get_device_number()) << '.'
             << std::dec << static_cast<unsigned>(get_function_number());
     return address.str();
+}
+
+std::string SystemSlotsEntry::characteristics_sentinel() const
+{
+    const uint8_t characteristics1 = get_characteristics1();
+    const uint8_t characteristics2 = get_characteristics2();
+
+    // See dmi_slot_characteristics(): bit 0 of characteristics1 set means
+    // the whole field is unknown; both bytes otherwise entirely zero means
+    // "None".
+    if (characteristics1 & Characteristics1Unknown) {
+        return "Unknown";
+    }
+    if ((characteristics1 & 0xFE) == 0 && characteristics2 == 0) {
+        return "None";
+    }
+    return std::string();
+}
+
+std::vector<NamedField> SystemSlotsEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Designation", get_designation_string()});
+    fields.push_back({"Type", get_slot_type_string()});
+    fields.push_back({"Data Bus Width", get_data_bus_width_string()});
+    fields.push_back({"Current Usage", get_current_usage_string()});
+    fields.push_back({"Length", get_slot_length_string()});
+    fields.push_back({"ID", get_slot_id_string()});
+
+    // Mirrors get_characteristics_string(): the "Unknown"/"None" sentinel
+    // exactly when the text prints it, otherwise one true field per set bit
+    // of both bytes, in the same order (the two label tables are disjoint).
+    const std::string sentinel = characteristics_sentinel();
+    if (!sentinel.empty()) {
+        fields.push_back({"Characteristics", sentinel});
+    }
+    else {
+        bitset_to_fields<uint8_t>(get_characteristics1(), characteristics1_map_, fields);
+        bitset_to_fields<uint8_t>(get_characteristics2(), characteristics2_map_, fields);
+    }
+
+    fields.push_back({"Bus Address", get_bus_address_string()});
+    return fields;
 }

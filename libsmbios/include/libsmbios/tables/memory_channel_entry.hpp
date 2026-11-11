@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <map>
 #include <string>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // Memory Channel entry
@@ -66,6 +67,13 @@ public:
 
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order. The text's
+    /// unnumbered per-device "Load: N, Handle: H" lines become
+    /// "Load <i>"/"Handle <i>" uint64_t fields with a 1-based index i
+    /// (the text prints both as plain decimals).
+    std::vector<NamedField> get_fields() const override;
 
     //////////////////////////////////////////////////////////////////////////
     // Byte/word values

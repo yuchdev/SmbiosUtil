@@ -1,5 +1,7 @@
 #include <cstdint>
 #include <memory>
+#include <sstream>
+#include <string>
 #include <vector>
 
 #include <libsmbios/smbios.hpp>
@@ -8,6 +10,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -140,6 +143,136 @@ BOOST_AUTO_TEST_CASE(CreateReturnsOemStringsEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<OemStringsEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 02)
+//
+// Type: unit - deterministic, synthetic buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description(): "String Count"
+// then one "String N" field per string, N 1-based, exactly the text's labels.
+// Boundaries: header-only structure (count field absent -> count 0, no
+// string fields); count larger than the string section ("Bad index").
+// On failure first check: OemStringsEntry::get_fields() in
+// libsmbios/src/oem_strings_entry.cpp.
+
+/// Normal case: count 3, three strings, uniquely named "String 1".."String 3".
+BOOST_AUTO_TEST_CASE(OemStringsEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::OemStrings, std::vector<uint8_t>{0x03},
+                          std::vector<std::string>{"Alpha", "Bravo", "Charlie"});
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    OemStringsEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"String Count", num(3)},
+        {"String 1", str("Alpha")},
+        {"String 2", str("Bravo")},
+        {"String 3", str("Charlie")},
+    });
+}
+
+/// Boundary case: header-only structure (length 0x04 < 0x05) - the count
+/// getter defaults to 0, so only the count field is present.
+BOOST_AUTO_TEST_CASE(OemStringsEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::OemStrings, std::vector<uint8_t>{},
+                          std::vector<std::string>{"Ignored"});
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    OemStringsEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"String Count", num(0)},
+    });
+}
+
+/// Invalid-input case: count claims more strings than exist - the extra
+/// field carries dmi_string()'s "Bad index" sentinel, exactly as the text does.
+BOOST_AUTO_TEST_CASE(OemStringsEntryGetFieldsCountBeyondStringsReportsBadIndexTestCase)
+{
+    using namespace smbios::test;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::OemStrings, std::vector<uint8_t>{0x02},
+                          std::vector<std::string>{"Only"});
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    OemStringsEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"String Count", num(2)},
+        {"String 1", str("Only")},
+        {"String 2", str("Bad index")},
+    });
+}
+
+// Regression: security finding HIGH-1 (CWE-835/770), see
+// docs/security/2026-11-10-structured-field-model.md.
+//
+// Type: unit - deterministic, synthetic buffers, no hardware/privileges.
+// Scenario: Count = 0xFF (spec-legal maximum). The 1-based loop over
+// 1..Count used a uint8_t counter, which wrapped 255 -> 0 and never
+// terminated, growing the output until allocation failed.
+// Boundaries: count = 255 with only two real strings - indices 3..255 fall
+// back to dmi_string()'s "Bad index" sentinel; output must stop at index 255.
+// On failure first check: the loop counter type in OemStringsEntry::get_fields()
+// / render_to_description() (libsmbios/src/oem_strings_entry.cpp) - it must be wider than uint8_t. A
+// timeout (rather than an assertion failure) means the wrap-around is back.
+
+/// Regression case: get_fields() with Count = 0xFF returns exactly 256 fields
+/// ("String Count" + "String 1".."String 255") and terminates.
+BOOST_AUTO_TEST_CASE(OemStringsEntryGetFieldsMaxCountTerminatesTestCase, *boost::unit_test::timeout(10))
+{
+    using namespace smbios::test;
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::OemStrings, std::vector<uint8_t>{0xFF},
+                          std::vector<std::string>{"First", "Second"});
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    OemStringsEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    std::vector<NamedField> expected{{"String Count", num(255)}};
+    for (unsigned index = 1; index <= 255; ++index) {
+        const char* value = index == 1 ? "First" : index == 2 ? "Second" : "Bad index";
+        expected.push_back({"String " + std::to_string(index), str(value)});
+    }
+
+    const std::vector<NamedField> fields = entry.get_fields();
+    BOOST_REQUIRE_EQUAL(fields.size(), static_cast<size_t>(256));
+    check_fields_equal(fields, expected);
+}
+
+/// Regression case: render_to_description() with Count = 0xFF terminates and
+/// emits exactly 256 count/item lines ("String Count" + 255 "String N"),
+/// after the "Header type" line.
+BOOST_AUTO_TEST_CASE(OemStringsEntryRenderMaxCountTerminatesTestCase, *boost::unit_test::timeout(10))
+{
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::OemStrings, std::vector<uint8_t>{0xFF},
+                          std::vector<std::string>{"First", "Second"});
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    OemStringsEntry entry(header, SMBiosVersion{2, 0}, buffer.data() + buffer.size());
+
+    std::string expected = "Header type: OEM Strings\nString Count: 255\n";
+    for (unsigned index = 1; index <= 255; ++index) {
+        const char* value = index == 1 ? "First" : index == 2 ? "Second" : "Bad index";
+        expected += "String " + std::to_string(index) + ": " + value + "\n";
+    }
+
+    const std::string description = entry.render_to_description();
+    std::istringstream lines(description);
+    std::string line;
+    size_t item_lines = 0;
+    while (std::getline(lines, line)) {
+        if (line.rfind("String ", 0) == 0) ++item_lines;
+    }
+    BOOST_CHECK_EQUAL(item_lines, static_cast<size_t>(256));
+    BOOST_CHECK_EQUAL(description, expected);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

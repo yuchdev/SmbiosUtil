@@ -38,6 +38,9 @@ System Information:
 | `-h` | `--help` | Print usage and exit. |
 | `-v` | `--version` | Print the version string and exit. |
 | `-d <path>` | `--dump-file <path>` | Write the raw SMBIOS table bytes to `<path>` instead of decoding and printing structures. |
+| `-f <name>` | `--format <name>` | Output format: `text` (default, the legacy output above, unchanged), `xml`, `json`, `yaml`, or `csv` (an example formatter compiled into the CLI from `smbios/examples/`). An unknown name prints the available formats to stderr and exits 1 before any table is read. |
+| `-m` | `--memory-scan` | Parsed but not yet wired - see below. |
+| `-r <path>` | `--read-file <path>` | Parsed but not yet wired - see below. |
 
 ```
 ./smbios --dump-file table.bin
@@ -45,13 +48,26 @@ System Information:
 
 Two flags are parsed but not yet wired to any behavior - `-m`/`--memory-scan` (intended to force the legacy physical-memory scan, skipping the native source chain) and `-r`/`--read-file` (intended to decode a previously-dumped table instead of reading live hardware). Passing them is accepted but currently has no effect; don't rely on them yet.
 
+## Structured output
+
+```
+./smbios --format json
+```
+
+Every structure is emitted as one element of a JSON array, with its decoded fields under `fields`. The
+same data is available as `xml`, `yaml` and `csv`. See [Output formats](output-formats.md) for each
+format's layout and escaping rules, and [Writing a custom output formatter](dev/custom-output-formatter.md)
+to add your own.
+
 ## Privileges
 
-No elevated privileges are required on any platform. Linux reads `/sys/firmware/dmi/tables` (then the UEFI systab) and macOS reads the `AppleSMBIOS` IORegistry entry via IOKit - both are plain, unprivileged reads. Windows uses `GetSystemFirmwareTable()`. All three fall back to the legacy BIOS memory scan only if every native path is unavailable; that fallback *may* need elevated privileges depending on the platform's own memory-access rules.
+macOS and Windows need no elevated privileges: macOS reads the `AppleSMBIOS` IORegistry entry via IOKit and Windows uses `GetSystemFirmwareTable()`.
+
+On Linux the first native source reads `/sys/firmware/dmi/tables/smbios_entry_point` and `/sys/firmware/dmi/tables/DMI`. The kernel exposes these root-readable only (mode 0400; observed as `-r-------- root root` on the GitHub-hosted `ubuntu-latest` runner, 2026-11-10), so an unprivileged run cannot open them (the source's availability check is a real open-for-read probe and reports unavailable). The chain then falls through to the UEFI systab source and the legacy memory scan, both of which read `/dev/mem` and also need root. Run `smbios` as root (e.g. with `sudo`) on Linux to get a table; without it you get an empty result (see below). Some distributions may relax the modes.
 
 ## Exit behavior
 
-A failure to read the table at all (no source succeeded) prints an error to stderr and the tool exits non-zero. A structure type this build doesn't yet decode still shows its raw `Header ID`, with no decoded body beneath it - this is expected, not an error; see the structure coverage table in the main [README](../README.md#smbios-structure-coverage) for what's implemented.
+If no source can read a table (for example an unprivileged run on Linux, or a virtual machine that exposes no SMBIOS table), the tool does **not** fail: it exits 0 with an empty result. `text` prints `DMI version: 0.0` and `Table size: 0` with no `Header ID` lines; the structured formats print a well-formed empty document (`[]` for `json`, an empty root element for `xml`, only the header row for `csv`, and `---` followed by a blank line for `yaml`, which a YAML parser loads as null). Only an exception during the read (`Unable to read SMBIOS table, ...` on stderr) exits non-zero. Scripts should treat zero structures as "no table available". A structure type this build doesn't yet decode still shows its raw `Header ID`, with no decoded body beneath it - this is expected, not an error; see the structure coverage table in the main [README](../README.md#smbios-structure-coverage) for what's implemented.
 
 ## See also
 

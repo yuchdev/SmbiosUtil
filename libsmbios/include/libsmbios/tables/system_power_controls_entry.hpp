@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // System Power Controls entry
@@ -37,6 +38,12 @@ public:
 
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same single field as render_to_description(): "Next Scheduled
+    /// Power-on" stays the printed "M/D H:M:S" string (unpadded decimals of
+    /// the BCD-decoded getters).
+    std::vector<NamedField> get_fields() const override;
 
     //////////////////////////////////////////////////////////////////////////
     // Raw BCD accessors

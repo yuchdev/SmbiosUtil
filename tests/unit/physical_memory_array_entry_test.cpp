@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -204,6 +205,54 @@ BOOST_AUTO_TEST_CASE(CreateReturnsPhysicalMemoryArrayEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<PhysicalMemoryArrayEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 03)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// every value is the text's printed string (enum lookups, unit-decorated
+// capacity, hex/sentinel handle, "Unknown"-or-count device number).
+// Boundaries: a header-only (truncated) structure, where every field is
+// still printed with its getter's default. No bitmask in this type.
+// On failure first check: PhysicalMemoryArrayEntry::get_fields() in
+// libsmbios/src/physical_memory_array_entry.cpp.
+
+/// Normal case: every text label becomes a field, in text order.
+BOOST_AUTO_TEST_CASE(PhysicalMemoryArrayEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = build_buffer(0x17);
+    DMIHeader header = make_header(buffer);
+    PhysicalMemoryArrayEntry entry(header, SMBiosVersion{2, 7}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Location", str("System Board Or Motherboard")},
+        {"Use", str("System Memory")},
+        {"Error Correction Type", str("Multi-bit ECC")},
+        {"Maximum Capacity", str("1048576 kB")},
+        {"Error Information Handle", str("No Error")},
+        {"Number Of Devices", str("4")},
+    });
+}
+
+/// Boundary case: a header-only structure. The text prints every line
+/// unconditionally, so every field is present with its getter's default.
+BOOST_AUTO_TEST_CASE(PhysicalMemoryArrayEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = build_buffer(0x04);
+    DMIHeader header = make_header(buffer);
+    PhysicalMemoryArrayEntry entry(header, SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Location", str("OutOfSpec")},
+        {"Use", str("OutOfSpec")},
+        {"Error Correction Type", str("OutOfSpec")},
+        {"Maximum Capacity", str("Unknown")},
+        {"Error Information Handle", str("Not Provided")},
+        {"Number Of Devices", str("Unknown")},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

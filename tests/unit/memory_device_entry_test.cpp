@@ -5,6 +5,7 @@
 #include <libsmbios/tables/memory_device_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -309,6 +310,125 @@ BOOST_AUTO_TEST_CASE(MemoryDeviceEntryFullBufferDecodesAllFieldsTestCase)
     BOOST_CHECK_EQUAL(entry.get_minimum_voltage(), static_cast<uint16_t>(1200));
     BOOST_CHECK_EQUAL(entry.get_maximum_voltage(), static_cast<uint16_t>(1350));
     BOOST_CHECK_EQUAL(entry.get_configured_voltage(), static_cast<uint16_t>(1200));
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 03)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field
+// (same labels incl. their lower-case spelling, same order, same printed
+// strings for handles, widths, sizes, speed and sentinel lookups), with the
+// Device details bit expanded into a {label, true} field.
+// Boundaries: get_device_detail() only recognises single-bit values (a
+// multi-bit value collapses to OutOfSpec = 0, which the text renders as no
+// lines), a tier-1 (0x15) structure.
+// On failure first check: MemoryDeviceEntry::get_fields() in
+// libsmbios/src/memory_device_entry.cpp.
+
+namespace {
+
+/// @brief Re-emit build_buffer()'s formatted area as a well-formed structure
+/// carrying the six DMI strings its string indices name.
+std::vector<uint8_t> with_strings(const std::vector<uint8_t>& buffer)
+{
+    const std::vector<uint8_t> formatted_area(buffer.begin() + 4, buffer.begin() + buffer[1]);
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::MemoryDevice, formatted_area,
+                          std::vector<std::string>{"DIMM 0", "BANK 0", "Acme", "SN1", "AT1", "PN1"});
+    return builder.build();
+}
+
+/// @brief Overwrite the type detail word (offset 0x13, little-endian).
+void set_type_detail(std::vector<uint8_t>& buffer, uint16_t detail)
+{
+    buffer[0x13] = static_cast<uint8_t>(detail & 0xFF);
+    buffer[0x14] = static_cast<uint8_t>(detail >> 8);
+}
+
+} // namespace
+
+/// Normal case: every text label becomes a field, in text order. "Data
+/// width" deliberately mirrors the text's own get_data_width_string().
+BOOST_AUTO_TEST_CASE(MemoryDeviceEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = with_strings(build_buffer(0x28));
+    DMIHeader header = make_header(buffer);
+    MemoryDeviceEntry entry(header, SMBiosVersion{3, 2}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Array Handle", str("0x1")},
+        {"Error Handle", str("No Error")},
+        {"Total width", str("72 bits")},
+        {"Data width", str("72 bits")},
+        {"Device size", str("8192 MB")},
+        {"Form factor", str("DIMM")},
+        {"Device set", str("None")},
+        {"Device locator", str("DIMM 0")},
+        {"Bank locator", str("BANK 0")},
+        {"Device type", str("DDR4")},
+        {"Synchronous", true},
+        {"Device speed", str("2400 MHz")},
+        {"Manufacturer", str("Acme")},
+        {"Serial Number", str("SN1")},
+        {"Asset Tag", str("AT1")},
+        {"Part Number", str("PN1")},
+    });
+}
+
+/// Edge case: a recognised Device details bit becomes exactly one true
+/// field; a multi-bit value (which the getter reports as OutOfSpec = 0 and
+/// the text prints as no lines) yields no bit field; nothing is joined.
+BOOST_AUTO_TEST_CASE(MemoryDeviceEntryGetFieldsExpandsBitmaskTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = with_strings(build_buffer(0x28));
+    set_type_detail(buffer, MemoryDeviceEntry::Registered);
+    MemoryDeviceEntry entry(make_header(buffer), SMBiosVersion{3, 2}, buffer.data() + buffer.size());
+
+    const std::vector<NamedField> fields = entry.get_fields();
+    BOOST_REQUIRE_EQUAL(fields.size(), static_cast<size_t>(15 + 1));
+    check_fields_equal({fields[10]}, {{"Registered", true}});
+    check_unique_field_names(fields);
+    check_no_joined_string_fields(fields);
+
+    set_type_detail(buffer, MemoryDeviceEntry::Synchronous | MemoryDeviceEntry::Registered);
+    MemoryDeviceEntry multi_entry(make_header(buffer), SMBiosVersion{3, 2}, buffer.data() + buffer.size());
+    const std::vector<NamedField> multi_fields = multi_entry.get_fields();
+    BOOST_CHECK_EQUAL(multi_fields.size(), static_cast<size_t>(15));
+    BOOST_CHECK_EQUAL(multi_fields[10].name, std::string("Device speed"));
+    check_unique_field_names(multi_fields);
+    check_no_joined_string_fields(multi_fields);
+}
+
+/// Boundary case: a tier-1 (0x15) structure. The text prints every line
+/// unconditionally, so every field is present; speed and the string indices
+/// past 0x15 use the getters' defaults.
+BOOST_AUTO_TEST_CASE(MemoryDeviceEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = with_strings(build_buffer(0x15));
+    DMIHeader header = make_header(buffer);
+    MemoryDeviceEntry entry(header, SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Array Handle", str("0x1")},
+        {"Error Handle", str("No Error")},
+        {"Total width", str("72 bits")},
+        {"Data width", str("72 bits")},
+        {"Device size", str("8192 MB")},
+        {"Form factor", str("DIMM")},
+        {"Device set", str("None")},
+        {"Device locator", str("DIMM 0")},
+        {"Bank locator", str("BANK 0")},
+        {"Device type", str("DDR4")},
+        {"Synchronous", true},
+        {"Device speed", str("Unknown")},
+        {"Manufacturer", str("Not Specified")},
+        {"Serial Number", str("Not Specified")},
+        {"Asset Tag", str("Not Specified")},
+        {"Part Number", str("Not Specified")},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

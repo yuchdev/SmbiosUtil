@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <string>
 #include <memory>
 #include <vector>
 
@@ -8,6 +9,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -298,6 +300,76 @@ BOOST_AUTO_TEST_CASE(CreateReturnsOnboardDevicesExtendedInformationEntryTestCase
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<OnboardDevicesExtendedInformationEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 04)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// Status (Enabled/Disabled) is bool, Type Instance a uint64_t, Bus Address
+// the printed string (empty when absent or all-FF, as in the text). No
+// bitmask in this type (the device type byte is a flag plus an enumeration).
+// Boundaries: a disabled device, a truncated structure, the all-FF address.
+// On failure first check: OnboardDevicesExtendedInformationEntry::
+// get_fields() in libsmbios/src/onboard_devices_extended_information_entry.cpp.
+
+/// Normal case: every text label becomes a field, in text order.
+BOOST_AUTO_TEST_CASE(OnboardDevicesExtendedInformationEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    // bit7=1 (enabled) | type=Ethernet(0x05); device 2, function 1
+    std::vector<uint8_t> formatted_area = make_formatted_area(0x85, 0x02, 0x0000, 0x03, (0x02 << 3) | 0x01);
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::OnboardDevicesExtendedInformation, formatted_area, {"J_LAN1"});
+    std::vector<uint8_t> buffer = builder.build();
+    OnboardDevicesExtendedInformationEntry entry(make_header(buffer), SMBiosVersion{2, 6}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Reference Designation", str("J_LAN1")},
+        {"Status", true},
+        {"Type", str("Ethernet")},
+        {"Type Instance", num(2)},
+        {"Bus Address", str("0000:03:02.1")},
+    });
+}
+
+/// Boundary cases: the text prints every line unconditionally - a truncated
+/// structure keeps every field with defaults and an empty Bus Address; the
+/// all-FF sentinel address is also the empty string; a disabled device is
+/// false.
+BOOST_AUTO_TEST_CASE(OnboardDevicesExtendedInformationEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        std::vector<uint8_t> formatted_area = {0x01, static_cast<uint8_t>(0x80 | OnboardDevicesExtendedInformationEntry::DeviceTypeVideo)};
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::OnboardDevicesExtendedInformation, formatted_area, {"Onboard Video"});
+        std::vector<uint8_t> buffer = builder.build();
+        OnboardDevicesExtendedInformationEntry entry(make_header(buffer), SMBiosVersion{2, 6}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Reference Designation", str("Onboard Video")},
+            {"Status", true},
+            {"Type", str("Video")},
+            {"Type Instance", num(0)},
+            {"Bus Address", str("")},
+        });
+    }
+    {
+        std::vector<uint8_t> formatted_area = make_formatted_area(0x05, 0x01, 0xFFFF, 0xFF, 0xFF);
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::OnboardDevicesExtendedInformation, formatted_area, {"J_LAN2"});
+        std::vector<uint8_t> buffer = builder.build();
+        OnboardDevicesExtendedInformationEntry entry(make_header(buffer), SMBiosVersion{2, 6}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Reference Designation", str("J_LAN2")},
+            {"Status", false},
+            {"Type", str("Ethernet")},
+            {"Type Instance", num(1)},
+            {"Bus Address", str("")},
+        });
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -7,7 +7,8 @@ set(TARGET libsmbios)
 # in its own CMakeLists.txt.
 file(GLOB SOURCES *.cpp
      ${CMAKE_CURRENT_SOURCE_DIR}/../include/libsmbios/*.hpp
-     ${CMAKE_CURRENT_SOURCE_DIR}/../include/libsmbios/tables/*.hpp)
+     ${CMAKE_CURRENT_SOURCE_DIR}/../include/libsmbios/tables/*.hpp
+     ${CMAKE_CURRENT_SOURCE_DIR}/../include/libsmbios/formatters/*.hpp)
 
 # fallback_source_chain.cpp supplies make_default_source_chain() only for
 # platforms with no per-OS library at all (SMBIOS_PLATFORM_LIB empty - BSD/

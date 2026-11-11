@@ -46,6 +46,8 @@ and every regression fix lands first.
 | `BiosInformationEntryUnitTests` (`bios_information_entry_test.cpp`) | Every `BiosInformationEntry` field accessor across the three real length tiers (`< 0x12`, `0x12`-`0x18`, `> 0x18`), including the newly-added `get_extended_rom_size()` | A length-guard regression silently reading past a truncated structure's declared bounds, or a field decoding at the wrong byte offset (two such offset bugs were found and fixed by this exact suite's sibling, see Memory Device below) |
 | `MemoryDeviceEntryUnitTests` (`memory_device_entry_test.cpp`) | Every `MemoryDeviceEntry` field accessor across all five legacy length tiers, including the five previously-unexposed getters (`get_extended_size()`, `get_memory_clock_speed()`, three voltage fields) | The real latent out-of-bounds read closed in milestone 0003 (the old `MemoryDeviceV23` pointer-overlay technique could read 4 trailing fields past a structure's actual length for `0x17 <= length < 0x1B`) and two doc-comment offset bugs (`get_array_handle()`, `get_device_rank()`) this suite caught by exercising hand-computed expected values at each tier |
 | `SmbiosTableWalkUnitTests` (`smbios_table_walk_test.cpp`) | `SMBios::read_smbios_table()`/`count_smbios_structures()`'s bounds checks against a truncated last structure, an exact-boundary-fitting header, and an empty buffer | An out-of-bounds read past the mapped SMBIOS table on a malformed/truncated input - confirmed via a real pre-fix/post-fix behavior difference, with AddressSanitizer (the CI `sanitizers` job) as the independent proof this suite's assertions alone can't fully provide locally |
+| `DocSamplesTests` (`doc_samples_test.cpp`) | `GoldenOutputsMatchFixtureRender`: rendering the synthetic doc-sample fixture through each built-in formatter matches the golden files in `tests/data/output_formats/`; `FixtureCoversEveryFieldValueAlternative`: the fixture exercises every `FieldValue` alternative | Doc samples (and `scripts/check_doc_samples.py`'s embedded excerpts) drifting from what the formatters really emit; a new `FieldValue` alternative that no sample covers |
+| Formatter suites (`output_formatter_registry_test.cpp`, `built_in_formatter_registry_test.cpp`, `text_`/`xml_`/`json_`/`yaml_`/`csv_formatter_test.cpp`, `formatter_escaping_test.cpp`) | `OutputFormatterRegistryUnitTests`, `BuiltInFormatterRegistryUnitTests`, `{Text,Xml,Json,Yaml,Csv}FormatterUnitTests`, `FormatterEscapingUnitTests`: registry lookup/duplicate rules, each format's layout, and per-format escaping | A formatter silently changing its output shape, unescaped control or markup characters corrupting a document, a built-in format failing to register |
 
 ### Mock - `tests/mock/` (`smbios_mock_test`)
 
@@ -81,6 +83,20 @@ native source discovery, legacy-scan fallback, table walk, entry
 factory - actually produces a sane result end-to-end on a real host,
 which no synthetic-buffer unit test can claim regardless of how many
 tiers it covers.
+
+CTest-level smoke tests are also classified **Integration** (they run the
+built `smbios` binary or an example, not a Boost.Test case):
+
+- `smbios_cli_*` (`tests/integration/CMakeLists.txt`):
+  `smbios_cli_unknown_format` (`--format bogus` must exit non-zero),
+  `smbios_cli_unknown_format_lists_names` (stderr lists the registered
+  formats), and `smbios_cli_format_csv` (`--format csv` header line; reads
+  real hardware, so it is the only one that can fail without privileges).
+- `smbios_example_*` (`examples/CMakeLists.txt`): the `format_table`
+  example for `text`/`xml`/`json`/`yaml`, its unknown-format case,
+  `read_fields`, and (when Python 3 is found) the `*_parses` structural
+  checks. They degrade by design (no readable table gives a notice, an empty
+  document and exit 0), so they are must-pass even without privileges.
 
 ### C ABI - `tests/c_abi/` (five plain executables, not Boost.Test)
 

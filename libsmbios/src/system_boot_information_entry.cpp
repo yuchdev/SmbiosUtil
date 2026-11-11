@@ -4,6 +4,7 @@
 #include <libsmbios/smbios_entry_factory.hpp>
 
 #include <sstream>
+#include <utility>
 #include <iomanip>
 #include <cassert>
 
@@ -111,4 +112,15 @@ std::string SystemBootInformationEntry::get_status_data_string() const
         payload_stream << std::setw(2) << static_cast<unsigned>(payload[i]);
     }
     return payload_stream.str();
+}
+
+std::vector<NamedField> SystemBootInformationEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Status", get_boot_status_string()});
+    std::vector<uint8_t> status_data = get_status_data();
+    if (!status_data.empty()) {
+        fields.push_back({"Status Data", std::move(status_data)});
+    }
+    return fields;
 }

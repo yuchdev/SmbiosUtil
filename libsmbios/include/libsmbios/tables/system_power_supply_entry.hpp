@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <map>
 #include <string>
+#include <vector>
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 // System Power Supply entry
@@ -149,6 +150,14 @@ public:
 
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
+
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order and under
+    /// the same guards. Unplugged/Present/Hot-replaceable are bool; Power
+    /// Unit Group ("N (redundant)"), Max Power Capacity ("N W"/"Unknown")
+    /// and the three optional "0x" + hex handles stay the printed string.
+    /// Each handle field is present exactly when the text prints it.
+    std::vector<NamedField> get_fields() const override;
 
     //////////////////////////////////////////////////////////////////////////
     // Byte/word values

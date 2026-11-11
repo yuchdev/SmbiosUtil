@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -142,6 +143,52 @@ BOOST_AUTO_TEST_CASE(CreateReturnsOutOfBandRemoteAccessEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<OutOfBandRemoteAccessEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009 Story 01.0 Task 05)
+//
+// Type: unit - deterministic, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description(); the two
+// Yes/No connection flags become bool fields.
+// Boundaries: full (0x06) vs header-only (0x04) structure. The connection
+// flags are two fixed Yes/No lines, not a bitset_to_properties() list, so
+// there is no ExpandsBitmask case.
+// On failure first check: OutOfBandRemoteAccessEntry::get_fields() against
+// OutOfBandRemoteAccessEntry::render_to_description() in libsmbios/src/out_of_band_remote_access_entry.cpp.
+
+/// Normal case: inbound disabled, outbound enabled - each flag decoded
+/// independently into its own bool field.
+BOOST_AUTO_TEST_CASE(OutOfBandRemoteAccessEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area{0x01, 0x02};
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::OutOfBandRemoteAccess, formatted_area, {"Acme Remote Access"});
+    std::vector<uint8_t> buffer = builder.build();
+    OutOfBandRemoteAccessEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Manufacturer Name", str("Acme Remote Access")},
+        {"Inbound Connection Enabled", false},
+        {"Outbound Connection Enabled", true},
+    });
+}
+
+/// Boundary case: a header-only structure still yields all three fields
+/// (the text prints all three lines) with their defaults.
+BOOST_AUTO_TEST_CASE(OutOfBandRemoteAccessEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::OutOfBandRemoteAccess, std::vector<uint8_t>{});
+    std::vector<uint8_t> buffer = builder.build();
+    OutOfBandRemoteAccessEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Manufacturer Name", str("")},
+        {"Inbound Connection Enabled", false},
+        {"Outbound Connection Enabled", false},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

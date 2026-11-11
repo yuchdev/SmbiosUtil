@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -301,6 +302,54 @@ BOOST_AUTO_TEST_CASE(CreateReturnsMemoryDeviceMappedAddressEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<MemoryDeviceMappedAddressEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 03)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// every value is the printed string (hex addresses/handles and the
+// sentinel-aware position renderings, which mix words and decimals).
+// Boundaries: a header-only structure (addresses "Unknown", defaulted
+// handles/positions). No bitmask in this type.
+// On failure first check: MemoryDeviceMappedAddressEntry::get_fields() in
+// libsmbios/src/memory_device_mapped_address_entry.cpp.
+
+/// Normal case: every text label becomes a field, in text order.
+BOOST_AUTO_TEST_CASE(MemoryDeviceMappedAddressEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = build_buffer(0x23, 0x00000010, 0x02, 0x00);
+    DMIHeader header = make_header(buffer);
+    MemoryDeviceMappedAddressEntry entry(header, SMBiosVersion{2, 7}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Starting Address", str("0x0000000000004000 bytes")},
+        {"Ending Address", str("0x0000000000008000 bytes")},
+        {"Memory Device Handle", str("0x0005")},
+        {"Memory Array Mapped Address Handle", str("0x0006")},
+        {"Partition Row Position", str("2")},
+        {"Interleave Position", str("Non-interleaved")},
+    });
+}
+
+/// Boundary case: a header-only structure. The text prints every line
+/// unconditionally, so every field is present with its getter's default.
+BOOST_AUTO_TEST_CASE(MemoryDeviceMappedAddressEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> buffer = build_buffer(0x04);
+    DMIHeader header = make_header(buffer);
+    MemoryDeviceMappedAddressEntry entry(header, SMBiosVersion{2, 1}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Starting Address", str("Unknown")},
+        {"Ending Address", str("Unknown")},
+        {"Memory Device Handle", str("0xffff")},
+        {"Memory Array Mapped Address Handle", str("0xffff")},
+        {"Partition Row Position", str("Unknown")},
+        {"Interleave Position", str("Unknown")},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

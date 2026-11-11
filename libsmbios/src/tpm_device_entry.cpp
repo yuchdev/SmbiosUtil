@@ -150,3 +150,17 @@ std::string TpmDeviceEntry::get_characteristics_string() const
 {
     return bitset_to_properties<uint64_t>(get_characteristics(), characteristics_map_);
 }
+
+std::vector<NamedField> TpmDeviceEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Vendor ID", get_vendor_id_string()});
+    fields.push_back({"Spec Version", std::to_string(static_cast<unsigned>(get_major_spec_version())) + "."
+                                          + std::to_string(static_cast<unsigned>(get_minor_spec_version()))});
+    fields.push_back({"Firmware Version 1", static_cast<uint64_t>(get_firmware_version_1())});
+    fields.push_back({"Firmware Version 2", static_cast<uint64_t>(get_firmware_version_2())});
+    fields.push_back({"Description", get_description_string()});
+    bitset_to_fields<uint64_t>(get_characteristics(), characteristics_map_, fields);
+    fields.push_back({"OEM-defined", static_cast<uint64_t>(get_oem_defined())});
+    return fields;
+}

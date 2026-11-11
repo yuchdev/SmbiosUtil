@@ -7,7 +7,7 @@ real machine (or a synthetic test buffer) becomes a typed, human-readable
 SMBIOS entry. It is written for a reader who was not part of either
 milestone's design discussions. It is cross-checked against the current
 code (`libsmbios/src/smbios.cpp`, `libsmbios/include/libsmbios/smbios_entry_factory.hpp`,
-`libsmbios/include/libsmbios/bios_information_entry.hpp`/`.cpp`), not against
+`libsmbios/include/libsmbios/tables/bios_information_entry.hpp` and `libsmbios/src/bios_information_entry.cpp`), not against
 what any roadmap `plan.md` merely describes as intent - several renames
 (`smbios`/`libsmbios` swapping names, the repo-root library split) landed
 after those plan files were written.
@@ -22,7 +22,7 @@ job).
 
 - **Milestone 0003 - field-table accessors.** Every concrete SMBIOS entry
   class (`BiosInformationEntry`, `MemoryDeviceEntry`, etc., in
-  `libsmbios/include/libsmbios/`) reads its own fixed-offset fields through
+  `libsmbios/include/libsmbios/tables/`) reads its own fixed-offset fields through
   the little-endian `read_u8`/`read_u16`/`read_u32`/`read_u64` helpers
   (`sys_interface/include/smbios/sys_interface/byte_reader.hpp`) plus a
   `get_entry_size()`-based length guard before every read, instead of
@@ -76,6 +76,10 @@ flowchart TD
     J -->|yes| K["Concrete AbstractSMBiosEntry subclass\n(e.g. BiosInformationEntry)\nconstructed from (header, version, table_end)"]
     J -->|no, unregistered type| K0["nullptr returned\n(caller skips this structure)"]
     K --> N["Field accessors: read_u8/u16/u32/u64\n+ get_entry_size() length guard per field\n(milestone 0003 pattern)"]
+    N --> O["get_fields()\n(libsmbios/include/libsmbios/field_value.hpp)\nordered NamedField list"]
+    O --> P["get_output_formatter(name)\n(libsmbios/include/libsmbios/output_formatter.hpp)"]
+    P --> Q["begin_document / render per entry /\nentry_separator / end_document\n(render_document())"]
+    Q --> R["stdout"]
 ```
 
 Walking this left to right in prose:
@@ -128,6 +132,16 @@ Walking this left to right in prose:
    bounds-checked against `table_end` so a missing double-NUL terminator
    stops cleanly instead of reading past the buffer.
 
+7. **Rendering** (`get_fields()` onward in the diagram). Each concrete
+   entry also implements the pure virtual `AbstractSMBiosEntry::get_fields()`
+   (`libsmbios/include/libsmbios/field_value.hpp`), returning an ordered list
+   of `NamedField` values. `smbios --format <name>` looks the formatter up
+   with `get_output_formatter(name)`
+   (`libsmbios/include/libsmbios/output_formatter.hpp`) and
+   `render_document()` drives `begin_document()`, `render()` per entry,
+   `entry_separator()` and `end_document()` to build the text written to
+   stdout. See [Output formats](../output-formats.md) for the built-in formats.
+
 ## How to add a new structure type
 
 Milestone 0004 established this pattern; it still holds today. To add
@@ -139,7 +153,7 @@ support for an SMBIOS structure type this project does not yet decode:
    structures and data" table.
 2. **Write one entry class** extending `AbstractSMBiosEntry`
    (`libsmbios/include/libsmbios/abstract_smbios_entry.hpp`), in its own header
-   + `.cpp` pair under `libsmbios/include/libsmbios/` + `libsmbios/src/`
+   + `.cpp` pair under `libsmbios/include/libsmbios/tables/` + `libsmbios/src/`
    (matching every existing entry, e.g. `BiosInformationEntry`). The
    constructor takes `(const DMIHeader& header, const SMBiosVersion&
    version, const uint8_t* table_end)` and forwards `header`/`table_end`
@@ -176,6 +190,10 @@ support for an SMBIOS structure type this project does not yet decode:
    binary both include it - this is why the macro's own doc comment and
    every existing entry class's `.cpp` file place it there and nowhere
    else.
+   Also implement the pure virtual `get_fields()` (returning the entry's
+   decoded fields as an ordered `NamedField` list,
+   `libsmbios/include/libsmbios/field_value.hpp`); without it the class is
+   abstract and will not compile, and no output format could render it.
 5. **No change is needed to `SMBiosEntryFactory`, `SMBios`, or any
    `ISmbiosSource`** - the factory's registry is populated entirely by
    step 4's static initializer, and `SMBios`'s own table walk and the
@@ -188,3 +206,32 @@ support for an SMBIOS structure type this project does not yet decode:
    and assert each accessor against the bytes you constructed, including
    at least one length tier shorter than the full structure to exercise
    the length-guard defaults.
+
+## How to add an output format
+
+An output format turns the `get_fields()` lists of a whole table into one
+document. It mirrors the structure-type recipe above: one class, one
+registration line, no change to the core.
+
+1. **Write one class** implementing `IOutputFormatter`
+   (`libsmbios/include/libsmbios/output_formatter.hpp`): `format_name()` (the
+   `--format` value) and `render(entry)` are required; `begin_document()`,
+   `entry_separator()` and `end_document()` are optional framing hooks
+   defaulting to empty strings. Built-in examples live under
+   `libsmbios/include/libsmbios/formatters/`; a complete out-of-tree one is
+   `smbios/examples/csv_formatter.cpp`.
+2. **Register exactly once**, in the class's own `.cpp` (never a header, for
+   the same double-registration reason as `REGISTER_SMBIOS_ENTRY`):
+   ```cpp
+   REGISTER_OUTPUT_FORMATTER(YourFormatter);
+   ```
+3. **Make sure the object file is linked.** Like entry classes, the
+   registration only runs if the `.cpp` is linked into the binary (the
+   `smbios` CLI force-links `libsmbios` as a whole archive; a formatter in
+   your own target must be compiled into it directly).
+4. **Check it** with `get_output_formatter("<name>")` or
+   `registered_output_formatter_names()`, and render with `render_document()`.
+
+See the [custom output formatter guide](../dev/custom-output-formatter.md)
+for the full walkthrough and [Output formats](../output-formats.md) for the
+built-in formats.

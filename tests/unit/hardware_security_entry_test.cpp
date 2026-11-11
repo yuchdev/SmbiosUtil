@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <string>
 #include <memory>
 #include <vector>
 
@@ -8,6 +9,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -145,6 +147,54 @@ BOOST_AUTO_TEST_CASE(CreateReturnsHardwareSecurityEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<HardwareSecurityEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 04)
+//
+// Type: unit - deterministic, hand-built buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description() field by field;
+// each status is a four-state value, so it stays the printed string. No
+// bitmask list in this type (Settings is four 2-bit enumerations).
+// Boundaries: four distinct statuses at once, a bare header.
+// On failure first check: HardwareSecurityEntry::get_fields() in
+// libsmbios/src/hardware_security_entry.cpp.
+
+/// Normal case: every text label becomes a field, in text order.
+BOOST_AUTO_TEST_CASE(HardwareSecurityEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    const uint8_t settings = static_cast<uint8_t>(
+        (HardwareSecurityEntry::Enabled << 6) | (HardwareSecurityEntry::Disabled << 4)
+        | (HardwareSecurityEntry::NotImplemented << 2) | (HardwareSecurityEntry::Unknown << 0));
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::HardwareSecurity, std::vector<uint8_t>{settings});
+    std::vector<uint8_t> buffer = builder.build();
+    HardwareSecurityEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Power-on Password Status", str("Enabled")},
+        {"Keyboard Password Status", str("Disabled")},
+        {"Administrator Password Status", str("Not Implemented")},
+        {"Front Panel Reset Status", str("Unknown")},
+    });
+}
+
+/// Boundary case: a bare header keeps every field (the text prints every
+/// line unconditionally), each defaulting to Disabled.
+BOOST_AUTO_TEST_CASE(HardwareSecurityEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::HardwareSecurity, std::vector<uint8_t>{});
+    std::vector<uint8_t> buffer = builder.build();
+    HardwareSecurityEntry entry(make_header(buffer), SMBiosVersion{2, 2}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Power-on Password Status", str("Disabled")},
+        {"Keyboard Password Status", str("Disabled")},
+        {"Administrator Password Status", str("Disabled")},
+        {"Front Panel Reset Status", str("Disabled")},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -98,6 +98,13 @@ public:
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
 
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// Same fields as render_to_description(), in the same order. Each
+    /// protocol record's "Protocol Type"/"Data Length" pair carries a
+    /// 1-based index suffix ("Protocol Type 1", "Data Length 1", ...); all
+    /// counts and lengths are uint64_t (plain decimals in the text).
+    std::vector<NamedField> get_fields() const override;
+
     //////////////////////////////////////////////////////////////////////////
     // Byte values
 

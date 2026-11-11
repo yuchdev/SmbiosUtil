@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -232,6 +233,107 @@ BOOST_AUTO_TEST_CASE(CreateReturnsFirmwareInventoryInformationEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<FirmwareInventoryInformationEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009, Story 01.0, Task 02)
+//
+// Type: unit - deterministic, synthetic buffers, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description(): same labels and
+// order; "Version"/"Firmware ID" carry the text's own "value (format)"
+// string; each set Characteristics bit is a {label, true} field; each
+// associated handle is "Handle N" (N 1-based, "0x" hex string as printed).
+// Boundaries: both characteristic bits set; a structure truncated before
+// Characteristics (no bit fields, state "Reserved", count 0).
+// On failure first check: FirmwareInventoryInformationEntry::get_fields() in
+// libsmbios/src/firmware_inventory_information_entry.cpp.
+
+/// Normal case: two associated handles, one characteristic bit.
+BOOST_AUTO_TEST_CASE(FirmwareInventoryInformationEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area = make_formatted_area(
+        FirmwareInventoryInformationEntry::VersionFormatMajorMinor,
+        FirmwareInventoryInformationEntry::FirmwareIdFormatUefiGuid,
+        12345, FirmwareInventoryInformationEntry::Updatable,
+        FirmwareInventoryInformationEntry::StateEnabled, {0x0009, 0x002B});
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::FirmwareInventoryInformation, formatted_area, kStrings);
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    FirmwareInventoryInformationEntry entry(header, SMBiosVersion{3, 5}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Component Name", str("BMC Firmware")},
+        {"Version", str("1.45 (Major.Minor)")},
+        {"Firmware ID", str("1624a9df-5e13-47fc-874a-df3aff143089 (UEFI ESRT FwClass GUID / FMP ImageTypeId)")},
+        {"Release Date", str("2021-05-15T04:14:33+06:00")},
+        {"Manufacturer", str("Acme Corp")},
+        {"Lowest Supported Version", str("1.00")},
+        {"Image Size", str("12345 bytes")},
+        {"Updatable", true},
+        {"State", str("Enabled")},
+        {"Associated Component Count", num(2)},
+        {"Handle 1", str("0x9")},
+        {"Handle 2", str("0x2b")},
+    });
+}
+
+/// Edge case: both characteristic bits set -> two true fields, nothing
+/// joined; unknown image size keeps the text's "Unknown" string.
+BOOST_AUTO_TEST_CASE(FirmwareInventoryInformationEntryGetFieldsExpandsBitmaskTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area = make_formatted_area(
+        FirmwareInventoryInformationEntry::VersionFormatFreeForm,
+        FirmwareInventoryInformationEntry::FirmwareIdFormatFreeForm,
+        FirmwareInventoryInformationEntry::kImageSizeUnknown,
+        FirmwareInventoryInformationEntry::Updatable | FirmwareInventoryInformationEntry::WriteProtect | 0x8000,
+        FirmwareInventoryInformationEntry::StateDisabled, {});
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::FirmwareInventoryInformation, formatted_area, kStrings);
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    FirmwareInventoryInformationEntry entry(header, SMBiosVersion{3, 5}, buffer.data() + buffer.size());
+
+    const std::vector<NamedField> fields = entry.get_fields();
+    BOOST_REQUIRE_EQUAL(fields.size(), static_cast<size_t>(11));
+    check_fields_equal(std::vector<NamedField>(fields.begin() + 6, fields.begin() + 9), {
+        {"Image Size", str("Unknown")},
+        {"Updatable", true},
+        {"Write-Protect", true},
+    });
+    check_unique_field_names(fields);
+    check_no_joined_string_fields(fields);
+}
+
+/// Boundary case: structure truncated right after Image Size (length
+/// 0x14) - Characteristics/State/count default, so no bit or handle fields.
+BOOST_AUTO_TEST_CASE(FirmwareInventoryInformationEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area = make_formatted_area(
+        FirmwareInventoryInformationEntry::VersionFormatHex32,
+        FirmwareInventoryInformationEntry::FirmwareIdFormatFreeForm,
+        0x200000, FirmwareInventoryInformationEntry::Updatable,
+        FirmwareInventoryInformationEntry::StateEnabled, {0x0009});
+    formatted_area.resize(0x14 - 4);
+    smbios::test::SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::FirmwareInventoryInformation, formatted_area, kStrings);
+    std::vector<uint8_t> buffer = builder.build();
+    DMIHeader header = make_header(buffer);
+    FirmwareInventoryInformationEntry entry(header, SMBiosVersion{3, 5}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Component Name", str("BMC Firmware")},
+        {"Version", str("1.45 (32-bit hexadecimal)")},
+        {"Firmware ID", str("1624a9df-5e13-47fc-874a-df3aff143089 (Free-form)")},
+        {"Release Date", str("2021-05-15T04:14:33+06:00")},
+        {"Manufacturer", str("Acme Corp")},
+        {"Lowest Supported Version", str("1.00")},
+        {"Image Size", str("2097152 bytes")},
+        {"State", str("Reserved")},
+        {"Associated Component Count", num(0)},
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

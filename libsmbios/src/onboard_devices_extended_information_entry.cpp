@@ -194,3 +194,14 @@ std::string OnboardDevicesExtendedInformationEntry::get_bus_address_string() con
             << std::dec << static_cast<unsigned>(get_function_number());
     return address.str();
 }
+
+std::vector<NamedField> OnboardDevicesExtendedInformationEntry::get_fields() const
+{
+    std::vector<NamedField> fields;
+    fields.push_back({"Reference Designation", get_reference_designation_string()});
+    fields.push_back({"Status", is_device_enabled()});
+    fields.push_back({"Type", get_device_type_string()});
+    fields.push_back({"Type Instance", static_cast<uint64_t>(get_device_type_instance())});
+    fields.push_back({"Bus Address", get_bus_address_string()});
+    return fields;
+}

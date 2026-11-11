@@ -8,6 +8,7 @@
 #include <libsmbios/abstract_smbios_entry.hpp>
 
 #include "synthetic_table_builder.hpp"
+#include "field_assertions.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/auto_unit_test.hpp>
@@ -177,6 +178,74 @@ BOOST_AUTO_TEST_CASE(CreateReturnsManagementDeviceThresholdDataEntryTestCase)
 
     BOOST_REQUIRE(entry != nullptr);
     BOOST_CHECK(dynamic_cast<ManagementDeviceThresholdDataEntry*>(entry.get()) != nullptr);
+}
+
+// get_fields() (milestone 0009 Story 01.0 Task 05)
+//
+// Type: unit - deterministic, no hardware/privileges.
+// Scenario: get_fields() mirrors render_to_description(); each of the six
+// thresholds stays the printed decimal or "Unknown" string.
+// Boundaries: 0x8000 sentinel, a structure truncated after two thresholds,
+// header-only structure. No bitmask.
+// On failure first check: ManagementDeviceThresholdDataEntry::get_fields() against
+// ManagementDeviceThresholdDataEntry::render_to_description() in libsmbios/src/management_device_threshold_data_entry.cpp.
+
+/// Normal case: five known thresholds and one 0x8000 sentinel.
+BOOST_AUTO_TEST_CASE(ManagementDeviceThresholdDataEntryGetFieldsMatchesDecodedValuesTestCase)
+{
+    using namespace smbios::test;
+    std::vector<uint8_t> formatted_area = build_formatted_area(100, 200, ManagementDeviceThresholdDataEntry::ValueUnknown, 250, 10, 300);
+    SyntheticTableBuilder builder;
+    builder.add_structure(SMBios::ManagementDeviceThresholdData, formatted_area);
+    std::vector<uint8_t> buffer = builder.build();
+    ManagementDeviceThresholdDataEntry entry(make_header(buffer), SMBiosVersion{2, 3}, buffer.data() + buffer.size());
+
+    check_fields_equal(entry.get_fields(), {
+        {"Lower Threshold - Non-critical", str("100")},
+        {"Upper Threshold - Non-critical", str("200")},
+        {"Lower Threshold - Critical", str("Unknown")},
+        {"Upper Threshold - Critical", str("250")},
+        {"Lower Threshold - Non-recoverable", str("10")},
+        {"Upper Threshold - Non-recoverable", str("300")},
+    });
+}
+
+/// Boundary cases: every threshold is always printed, so a structure
+/// truncated after the first two WORDs, or with no formatted area at all,
+/// still yields all six fields, the missing ones as "Unknown".
+BOOST_AUTO_TEST_CASE(ManagementDeviceThresholdDataEntryGetFieldsHonoursLengthTiersTestCase)
+{
+    using namespace smbios::test;
+    {
+        std::vector<uint8_t> formatted_area = build_formatted_area(100, 200, 0, 0, 0, 0);
+        formatted_area.resize(4); // keep only 0x04-0x07
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::ManagementDeviceThresholdData, formatted_area);
+        std::vector<uint8_t> buffer = builder.build();
+        ManagementDeviceThresholdDataEntry entry(make_header(buffer), SMBiosVersion{2, 3}, buffer.data() + buffer.size());
+
+        check_fields_equal(entry.get_fields(), {
+            {"Lower Threshold - Non-critical", str("100")},
+            {"Upper Threshold - Non-critical", str("200")},
+            {"Lower Threshold - Critical", str("Unknown")},
+            {"Upper Threshold - Critical", str("Unknown")},
+            {"Lower Threshold - Non-recoverable", str("Unknown")},
+            {"Upper Threshold - Non-recoverable", str("Unknown")},
+        });
+    }
+    {
+        SyntheticTableBuilder builder;
+        builder.add_structure(SMBios::ManagementDeviceThresholdData, std::vector<uint8_t>{});
+        std::vector<uint8_t> buffer = builder.build();
+        ManagementDeviceThresholdDataEntry entry(make_header(buffer), SMBiosVersion{2, 3}, buffer.data() + buffer.size());
+
+        const std::vector<NamedField> fields = entry.get_fields();
+        BOOST_REQUIRE_EQUAL(fields.size(), static_cast<size_t>(6));
+        for (const auto& field : fields) {
+            BOOST_CHECK(field.value == str("Unknown"));
+        }
+        check_unique_field_names(fields);
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

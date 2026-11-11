@@ -80,6 +80,11 @@ public:
     /// @brief Render all entry information into single string
     virtual std::string render_to_description() const override;
 
+    /// @brief Structured view of this entry (milestone 0009 contract C1).
+    /// "Status", plus "Status Data" (raw payload bytes)
+    /// exactly when render_to_description() prints it (non-empty payload).
+    std::vector<NamedField> get_fields() const override;
+
     //////////////////////////////////////////////////////////////////////////
     // Byte values
 
