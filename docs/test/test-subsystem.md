@@ -20,7 +20,7 @@ milestone 0007), each its own top-level directory, all wired into
 | Integration  | `tests/integration/`  | `smbios_integration_test`  | Yes (real hardware) | No - same as Perf |
 | C ABI        | `tests/c_abi/`         | `smbios_c_compile_as_c_test`, `smbios_c_example`, `smbios_c_open_close_test`, `smbios_c_entry_iteration_test`, `smbios_c_typed_getters_test` | No (reads real hardware, but no elevated privilege needed - same as the native sources `smbios_c` sits on top of) | Yes - each checks `smbios_open()`'s own return code and degrades gracefully rather than failing when no table is available |
 
-**GUI (`smbios_gui`, milestone 0011).** Its ImGui-free view-model layer (`libsmbios_gui_model`) is unit-tested in `tests/unit/gui_*_test.cpp`; the window, rendering and clipboard cannot be driven headlessly and are covered by the manual plan in [ManualTesting.md](ManualTesting.md).
+**GUI (`smbios_gui`, milestone 0011).** Its ImGui-free view-model layer (`libsmbios_gui_model`) is unit-tested in `tests/unit/gui_*_test.cpp`; the window, rendering and clipboard cannot be driven headlessly and are covered by the manual plan in [manual-testing.md](manual-testing.md).
 
 **No `e2e` category.** A hardware-inventory library/CLI has no user journey
 distinct from "construct an `SMBios`, read its structures" - that journey
@@ -32,6 +32,23 @@ throughout, matching the vcpkg-declared `boost-test` dependency. Run one
 suite directly for a focused check: `./smbios_unit_test
 --run_test=<SuiteName> --log_level=message`; run everything via `ctest
 --test-dir build/<preset> --output-on-failure`.
+
+## Keeping this registry current
+
+This document is the registry of automated tests. **Whenever an automated test
+is added, renamed, split, removed or moved to another category, update this
+file in the same change**: add or adjust the suite's row under *Implemented
+coverage* (suite name, file, case count, what it covers, what it guards
+against), move any matching item out of *Intended coverage*, and update the
+taxonomy table if a new executable, directory or CTest label appears. A quick
+self-check, limited to what your change touches: list the suites in the test
+files you added or modified (`git diff --name-only HEAD -- tests` plus any new
+files, then `grep -hoE 'BOOST_AUTO_TEST_SUITE\(\w+\)'` on them) and confirm each
+`<Name>` and its case count appear here. (Older per-structure-type suites such
+as `<Type>EntryUnitTests` are covered only at group level above; backfilling
+individual rows is welcome but is not required by an unrelated change.) Manual-only checks live in the separate manual plans
+(for the GUI: [manual-testing.md](manual-testing.md)) and are linked, not
+duplicated, here.
 
 ## Implemented coverage
 
@@ -50,6 +67,9 @@ and every regression fix lands first.
 | `SmbiosTableWalkUnitTests` (`smbios_table_walk_test.cpp`) | `SMBios::read_smbios_table()`/`count_smbios_structures()`'s bounds checks against a truncated last structure, an exact-boundary-fitting header, and an empty buffer | An out-of-bounds read past the mapped SMBIOS table on a malformed/truncated input - confirmed via a real pre-fix/post-fix behavior difference, with AddressSanitizer (the CI `sanitizers` job) as the independent proof this suite's assertions alone can't fully provide locally |
 | `DocSamplesTests` (`doc_samples_test.cpp`) | `GoldenOutputsMatchFixtureRender`: rendering the synthetic doc-sample fixture through each built-in formatter matches the golden files in `tests/data/output_formats/`; `FixtureCoversEveryFieldValueAlternative`: the fixture exercises every `FieldValue` alternative | Doc samples (and `scripts/check_doc_samples.py`'s embedded excerpts) drifting from what the formatters really emit; a new `FieldValue` alternative that no sample covers |
 | Formatter suites (`output_formatter_registry_test.cpp`, `built_in_formatter_registry_test.cpp`, `text_`/`xml_`/`json_`/`yaml_`/`csv_formatter_test.cpp`, `formatter_escaping_test.cpp`) | `OutputFormatterRegistryUnitTests`, `BuiltInFormatterRegistryUnitTests`, `{Text,Xml,Json,Yaml,Csv}FormatterUnitTests`, `FormatterEscapingUnitTests`: registry lookup/duplicate rules, each format's layout, and per-format escaping | A formatter silently changing its output shape, unescaped control or markup characters corrupting a document, a built-in format failing to register |
+| `GuiViewModelUnitTests` (`gui_view_model_test.cpp`, 17 cases) | `smbios::gui::build_entry_tree()` / `entry_type_label()` over `SyntheticTableBuilder` tables: node count equals the walk count (registered, unregistered and OEM types), fields equal a direct `get_fields()`, `Unknown (0xNN)` labels for all 46 `SMBiosHandler` values and unnamed types, hostile strings (`%n%s%x`, `##`, ESC, bidi, invalid UTF-8, 64 KiB) kept raw, five malformed-table shapes plus 500 fixed-seed random tables, duplicate handles stay distinct nodes, empty / end-of-table-only tables, a throwing entry becoming a `decode_failed` node, `bad_alloc` propagating, nodes outliving the `SMBios` | A hostile or malformed table making the GUI crash, skip a structure, merge two structures with the same handle, or show firmware text unsanitised; the view model silently disagreeing with the entry classes' own `get_fields()` |
+| `GuiFieldTextUnitTests` (`gui_field_text_test.cpp`, 15 cases) | `display_text()` (display-only sanitising: C0/DEL/C1/bidi replacement edges, embedded NUL, 4096-byte cap incl. suffix, never splitting a code point, idempotence, bounded cost on a 16 MiB input), `field_value_text()` (string / number decimal+hex / bool / byte-vector hex dump with its 1024-byte cap) and `entry_node_label()` | A firmware string reaching ImGui with control or direction-override characters, a multi-megabyte string slowing every frame (the P-1 finding - the bounded-cost cases fail against the old implementation), a hex dump or label growing without bound |
+| `GuiCopyAsUnitTests` (`gui_copy_as_test.cpp`, 10 cases) | `render_entry_as()` for every registered formatter (byte-exact `IOutputFormatter::render()` output, including hostile strings; unknown / empty / case-variant names and over-1 MiB output give `nullopt`; exactly 1 MiB allowed), `default_copy_format_index()`, `is_terminal_safe_format()`, `create_entry_for_node()` (index/type/handle re-check, duplicate handles resolved by index) | The "Copy as..." clipboard text diverging from the CLI's formatter output, copying the wrong structure after a stale selection, an oversized copy or a terminal-unsafe default format |
 
 ### Mock - `tests/mock/` (`smbios_mock_test`)
 

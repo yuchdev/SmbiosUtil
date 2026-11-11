@@ -105,6 +105,13 @@ project already ships a performance-timing suite):
    are for.
 4. **Manual test checklist** - `docs/test/<feature>.md`: numbered steps, expected results, the
    env/fixtures needed, and any human-escalation paths to verify by hand.
+5. **Registry update (mandatory, same change)** - `docs/test/test-subsystem.md` is the project's
+   registry of automated tests and must be kept current *every time* you add, rename, split, remove
+   or recategorise an automated test. In that file: add or adjust the suite's row under *Implemented
+   coverage* (suite name, source file, case count, what it covers, what failure class it guards
+   against), delete or move the matching item out of *Intended coverage* if the commitment is now
+   met, and update the taxonomy table when a new executable, directory, CTest label or test tier
+   appears. If you also wrote a manual checklist, link it from the registry rather than copying it.
 
 ## Test-gap analysis (the /test-gap flow)
 
@@ -118,6 +125,12 @@ Run these unconditionally, in order, before reporting the work done:
 
 1. `cmake --build --preset <os>` (fix every compiler warning your change introduced, not just errors)
 2. `ctest --test-dir build/<os> --output-on-failure`
+3. Registry self-check (scoped to your change): list the suites in the test files you added or
+   modified (`git diff --name-only HEAD -- tests` plus new files, then
+   `grep -hoE 'BOOST_AUTO_TEST_SUITE\(\w+\)'` on them) and confirm each suite - and the case
+   counts you stated - is present and correct in `docs/test/test-subsystem.md`. Older suites the
+   registry only covers at group level are not your concern unless you touched them. Then run
+   `python3 scripts/check_doc_links.py docs/` if you edited any link. A change that adds tests without the registry update is not done.
 
 After each command, read its output and act on it: fix every warning/error it left behind
 (including in fixtures/test helpers, not just the new test file). If a fix isn't obviously safe -
@@ -141,6 +154,8 @@ When reporting verification:
   your own domain model's fields (e.g. an order's `status` and `total`, not just "the function
   returned").
 - Never weaken or delete a failing test to go green - fix the cause or escalate to `cpp-expert`.
+- Never leave `docs/test/test-subsystem.md` stale: every new, renamed, removed or moved automated
+  test updates the registry in the same change (see *What you produce*, item 5).
 - Honor `@docs/dev/cpp_coding_standard.md`, including Doxygen comments and the test classification
   scheme. Tests build warning-clean under the project's compiler flags.
 - Always end with the coverage delta vs. the baseline and a green/red verdict.

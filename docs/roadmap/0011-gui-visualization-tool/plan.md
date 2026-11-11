@@ -28,6 +28,9 @@ implemented yet; every story and task starts "Not started."
 | 01.0  | App shell: windowing, GPU backend and build target | core     | `smbios_gui` CMake target; GLFW+OpenGL3 window/frame loop; Dear ImGui context; whole-archive link of `libsmbios` |
 | 02.0  | SMBIOS browsing UI: entry tree and field table     | feature  | View-model layer over `get_fields()`; tree + field-table rendering; "copy as..." via the existing formatter registry |
 | 03.0  | Cross-platform build integration                   | infrastructure | `CMakePresets.json`/root `CMakeLists.txt` wiring on Windows/Linux/macOS; CI build-only wiring |
+| 04.0  | GUI test tiers: CI-safe and local-only             | testing  | `tests/gui/` with a headless `gui-ci` tier (runs in the `gui-build` CI job) and a `gui-local` tier (display/clipboard/live table; never on CI), gated by `SMBIOS_GUI_LOCAL_TESTS` / `SMBIOS_GUI_LOCAL_ONLY_TESTS` |
+
+> **Scope extension 2026-11-11 (maintainer-authorized):** Story 04.0 was added after Stories 01.0-03.0 were specified, on the maintainer's requirement for two GUI test groups, one runnable on GitHub Actions and one local-only, separated by definitions and CMake conditions. Where it conflicts with the testing-scope wording below (Non-goals) and in Stories 01.0-03.0, Story 04.0 supersedes it. See [04.0-gui-test-tiers/README.md](/docs/roadmap/0011-gui-visualization-tool/04.0-gui-test-tiers/README.md).
 
 ## Rationale
 
@@ -156,6 +159,11 @@ that parity check.
   widget-tree assertion. This is a deliberate scope line, not an oversight
   - see the per-story tests tasks for why an automated pixel test is not a
   realistic bar for an immediate-mode UI in this project's CI.
+  *Amended 2026-11-11 by Story 04.0:* the Dear ImGui rendering code is now
+  also tested headlessly (structure, text and stack balance, not pixels) in
+  CI's `gui-ci` tier, and a local-only `gui-local` tier covers the window,
+  clipboard and live parity. Pixel and visual-regression testing is still a
+  non-goal.
 - **Multi-table diffing/comparison view, search/filter UI, light/dark
   theme switching, or any other UI feature beyond "browse one live table's
   structures and fields."** A future milestone's scope if a real need
@@ -219,14 +227,18 @@ can be developed and tested independently. "Copy as..." (Story 02.0, Task
 flowchart TD
     A["Story 01.0<br/>App shell: windowing, GPU backend, build target"] --> B["Story 02.0<br/>SMBIOS browsing UI"]
     A --> C["Story 03.0<br/>Cross-platform build integration"]
+    B --> D["Story 04.0<br/>GUI test tiers: CI-safe and local-only<br/>(scope extension 2026-11-11)"]
+    C --> D
     B --> M["Milestone exit<br/>(parity check: registered-type nodes match `smbios --format text` (amended 2026-11-11),<br/>on all three CMake presets)"]
     C --> M
+    D --> M
 ```
 
 Story 03.0 (per-OS preset/CI wiring) depends only on Story 01.0's
 `smbios_gui` target existing and can proceed in parallel with Story 02.0's
 UI work, the same relationship milestone 0007's Story 03.0 had to its
-Story 02.0.
+Story 02.0. Story 04.0 needs both of them: the rendering code from 02.0,
+and from 03.0 the `gui-build` job and `<os>-gui` presets.
 
 **Depends on milestone 0009** (R1's `get_fields()` on every entry type, R2's
 `IOutputFormatter` registry, both already shipped - see

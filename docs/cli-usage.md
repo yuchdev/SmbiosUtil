@@ -4,7 +4,7 @@ The `smbios` executable reads the local machine's SMBIOS/DMI table and prints ev
 
 Not writing C++? `smbios_c` (milestone 0007) is a separate C ABI shim over this project's core library (`libsmbios`), for calling into it from Python, Rust, C#, or any other language with C FFI support, without linking C++ directly - see its header at `smbios_c/include/smbios/smbios.hpp` and [CLAUDE.md](../CLAUDE.md)'s Overview section for the full rationale.
 
-Prefer a window to a terminal? `smbios_gui` (milestone 0011, opt-in build: `cmake --preset <os>-gui`) is a read-only Dear ImGui browser over the same structures, with a "Copy as..." action that reuses this CLI's output formatters (`json`, `text`, `xml`, `yaml`) - see [CLAUDE.md](../CLAUDE.md)'s "Building the GUI" bullet and the [manual test plan](test/ManualTesting.md).
+Prefer a window to a terminal? `smbios_gui` (milestone 0011, opt-in build: `cmake --preset <os>-gui`) is a read-only Dear ImGui browser over the same structures, with a "Copy as..." action that reuses this CLI's output formatters (`json`, `text`, `xml`, `yaml`) - see [CLAUDE.md](../CLAUDE.md)'s "Building the GUI" bullet and the [manual test plan](test/manual-testing.md).
 
 ## Running it
 
