@@ -318,8 +318,14 @@ jobs:
   # Milestone 0011, Story 03.0, Task 02: smbios_gui is opt-in
   # (SMBIOS_BUILD_GUI=OFF by default, imgui/glfw3 in the non-default vcpkg
   # manifest feature `gui`), so the `build` job above never compiles it.
-  # This job builds ONLY the <os>-gui presets. Build-only: no step runs
-  # smbios_gui (no display/GPU on hosted runners - see the story README).
+  # This job builds ONLY the <os>-gui presets. No step ever runs smbios_gui
+  # itself (no display/GPU on hosted runners - see the story README).
+  # Story 04.0 (docs/roadmap/0011-gui-visualization-tool/04.0-gui-test-tiers/):
+  # the job also runs the headless CI-safe GUI tier (`ctest -L gui-ci`: a
+  # Dear ImGui context with no window, no GL and no OS hooks, synthetic
+  # tables only), checks that the shipped smbios_gui has no test-hook
+  # strings, and fails if any local-only GUI test (`gui-local`) or its
+  # binary exists - that tier never runs on CI.
   # Output stays short: configure/build logs go to a file; on success one
   # summary line is printed, on failure only the first matching error
   # lines plus a short tail.
@@ -393,7 +399,7 @@ jobs:
 
       # Windows: no --config, same as the `build` job (multi-config VS
       # generator defaults to Debug).
-      - name: Configure and build (${{ matrix.preset }} preset, build only)
+      - name: Configure, build and run gui-ci tests (${{ matrix.preset }} preset)
         id: build
         shell: bash
         env:
@@ -430,3 +436,55 @@ jobs:
             exit 1
           fi
           echo "ok: $BIN ($(wc -c < "$BIN" | tr -d ' ') bytes)"
+          # fail <message>: one ::error:: line, then stop the step.
+          fail() { echo "::error::$1"; exit 1; }
+          # count_total <log>: N from ctest -N's "Total Tests: N" line, or
+          # nothing if that line is missing (the callers treat that as a
+          # failure, never as 0). tr strips Windows CRLF line ends.
+          count_total() { tr -d '\r' < "$1" | sed -n -E 's/^Total Tests: ([0-9]+)$/\1/p' | head -n1; }
+          # Story 04.0 / threat model R-7: the shipped binary must not contain
+          # the test-only auto-exit hook (Task 04 adds it to a separate twin
+          # target only). -F -e: a bare --exit-after-frames would be parsed as
+          # a grep option and check nothing. grep exits 1 for 0 matches and 2
+          # for an error; only 2 (or no number) fails closed.
+          for pattern in '--exit-after-frames' 'usage: --exit-after-frames'; do
+            rc=0
+            n=$(grep -a -c -F -e "$pattern" "$BIN") || rc=$?
+            if [ "$rc" -gt 1 ] || ! [[ "$n" =~ ^[0-9]+$ ]]; then
+              fail "test hook string check could not read the shipped smbios_gui (grep exit $rc)"
+            fi
+            [ "$n" -eq 0 ] || fail "test hook present in shipped smbios_gui: expected 0 -> $n"
+          done
+          echo "ok: no test hook strings in the shipped smbios_gui"
+          # Story 04.0, Task 02: the headless CI-safe GUI tier. Captured and
+          # fixture text is never printed by these tests (threat model R-5),
+          # so the bounded failure output cannot carry it. --no-tests=error:
+          # an empty gui-ci label is a failure, not a pass.
+          run_quiet test ctest --test-dir build/${{ matrix.preset }} -C Debug -L gui-ci --timeout 60 --no-tests=error --output-on-failure
+          passed=$(tr -d '\r' < "$LOGDIR/test.log" | sed -n -E 's/^100% tests passed, 0 tests failed out of ([0-9]+)$/\1/p' | head -n1) || true
+          [ -n "$passed" ] || fail "ctest -L gui-ci exited 0 but printed no '100% tests passed' summary"
+          echo "ok: ctest -L gui-ci ($passed tests passed)"
+          # The local-only tier must be absent (threat model R-8), and the
+          # guard fails closed: a missing "Total Tests:" line is a failure.
+          # Checked by label and by name (in case a label is ever missing),
+          # and by file: find has no -type f, so CMakeFiles/<target>.dir
+          # directories count too.
+          rc=0
+          ctest --test-dir build/${{ matrix.preset }} -C Debug -N -L gui-local > "$LOGDIR/local-label.log" 2>&1 || rc=$?
+          total=$(count_total "$LOGDIR/local-label.log") || true
+          [ "$rc" -eq 0 ] && [ -n "$total" ] || fail "local-only GUI test check: ctest -N -L gui-local gave no 'Total Tests:' line (exit $rc)"
+          [ "$total" -eq 0 ] || fail "local-only GUI tests are configured on CI: expected 0 -> $total"
+          rc=0
+          ctest --test-dir build/${{ matrix.preset }} -C Debug -N -R 'smbios_gui_local_test|smbios_gui_autoexit' > "$LOGDIR/local-name.log" 2>&1 || rc=$?
+          total=$(count_total "$LOGDIR/local-name.log") || true
+          [ "$rc" -eq 0 ] && [ -n "$total" ] || fail "local-only GUI test check: ctest -N -R gave no 'Total Tests:' line (exit $rc)"
+          [ "$total" -eq 0 ] || fail "local-only GUI tests are configured on CI (by name): expected 0 -> $total"
+          rc=0
+          find build/${{ matrix.preset }} \( -name 'smbios_gui_local_test*' -o -name 'smbios_gui_autoexit*' \) > "$LOGDIR/local-files.log" 2>&1 || rc=$?
+          [ "$rc" -eq 0 ] || fail "local-only GUI file check: find failed (exit $rc)"
+          found=$(wc -l < "$LOGDIR/local-files.log" | tr -d ' ')
+          if [ "$found" -ne 0 ]; then
+            head -n 5 "$LOGDIR/local-files.log"
+            fail "local-only GUI files exist on CI: expected 0 -> $found"
+          fi
+          echo "ok: no gui-local tests configured"

@@ -20,7 +20,14 @@ milestone 0007), each its own top-level directory, all wired into
 | Integration  | `tests/integration/`  | `smbios_integration_test`  | Yes (real hardware) | No - same as Perf |
 | C ABI        | `tests/c_abi/`         | `smbios_c_compile_as_c_test`, `smbios_c_example`, `smbios_c_open_close_test`, `smbios_c_entry_iteration_test`, `smbios_c_typed_getters_test` | No (reads real hardware, but no elevated privilege needed - same as the native sources `smbios_c` sits on top of) | Yes - each checks `smbios_open()`'s own return code and degrades gracefully rather than failing when no table is available |
 
-**GUI (`smbios_gui`, milestone 0011).** Its ImGui-free view-model layer (`libsmbios_gui_model`) is unit-tested in `tests/unit/gui_*_test.cpp`; the window, rendering and clipboard cannot be driven headlessly and are covered by the manual plan in [manual-testing.md](manual-testing.md).
+**GUI (`smbios_gui`, milestone 0011).** Its ImGui-free view-model layer (`libsmbios_gui_model`) is unit-tested in `tests/unit/gui_*_test.cpp`; the window, rendering and clipboard are covered by the manual plan in [manual-testing.md](manual-testing.md). Story 04.0 adds two GUI test tiers under `tests/gui/`, both only configured when `SMBIOS_BUILD_GUI=ON` (a non-GUI build adds no target and no test). Run them with `ctest -L gui-ci`, `ctest -L gui-local` or `ctest -L gui`:
+
+| Category | Directory | Target / CTest name(s) | CTest labels | Needs root/admin? | Always expected green? |
+|----------|-----------|--------------------------|----------------|--------------------|--------------------------|
+| Unit (GUI, CI-safe) | `tests/gui/ci/` | `smbios_gui_ci_test` (one CTest entry) | `gui;gui-ci` | No (no window, GL or OS clipboard; synthetic tables only) | Yes - never skips; runs in CI's `gui-build` job on all three OSes |
+| Integration (GUI, local-only) | `tests/gui/local/` | `smbios_gui_local_test`, one CTest entry per case: `smbios_gui_local_test.<CaseName>` | `gui;gui-local` | No | Yes, or *Skipped* when a display/GL/clipboard/table is missing - never on CI |
+
+The local-only tier is controlled by `SMBIOS_GUI_LOCAL_TESTS` (default ON for a GUI build outside CI). When the `GITHUB_ACTIONS` or `CI` environment variable is set at configure time it is forced OFF with a warning, and `tests/gui/CMakeLists.txt` re-checks the CI environment where the targets are created, so under CI the tier is not configured, compiled or registered. CI's `gui-build` job proves it, failing closed: `ctest -N -L gui-local` and `ctest -N -R 'smbios_gui_local_test|smbios_gui_autoexit'` must both print `Total Tests: 0` (a missing line is a failure), and no `smbios_gui_local_test*`/`smbios_gui_autoexit*` file or directory may exist in the build tree. The same job checks that the shipped `smbios_gui` contains the test-hook string `--exit-after-frames` 0 times (`grep -a -c -F -e`). Every local-only source also fails to compile unless the target-private definition `SMBIOS_GUI_LOCAL_ONLY_TESTS` is set (`tests/gui/support/local_only_guard.hpp`). A missing resource makes a local case print one `SKIP: <CaseName>: <reason>` line (`skip_unless()`, `tests/gui/support/local_skip.hpp`), which the CTest property `SKIP_REGULAR_EXPRESSION "(^|\n)SKIP: "` reports as *Skipped*. (`"^SKIP: "` does not work: CMake anchors `^` to the start of the whole output, which begins with Boost.Test's `Running 1 test case...` line.)
 
 **No `e2e` category.** A hardware-inventory library/CLI has no user journey
 distinct from "construct an `SMBios`, read its structures" - that journey
@@ -70,6 +77,28 @@ and every regression fix lands first.
 | `GuiViewModelUnitTests` (`gui_view_model_test.cpp`, 17 cases) | `smbios::gui::build_entry_tree()` / `entry_type_label()` over `SyntheticTableBuilder` tables: node count equals the walk count (registered, unregistered and OEM types), fields equal a direct `get_fields()`, `Unknown (0xNN)` labels for all 46 `SMBiosHandler` values and unnamed types, hostile strings (`%n%s%x`, `##`, ESC, bidi, invalid UTF-8, 64 KiB) kept raw, five malformed-table shapes plus 500 fixed-seed random tables, duplicate handles stay distinct nodes, empty / end-of-table-only tables, a throwing entry becoming a `decode_failed` node, `bad_alloc` propagating, nodes outliving the `SMBios` | A hostile or malformed table making the GUI crash, skip a structure, merge two structures with the same handle, or show firmware text unsanitised; the view model silently disagreeing with the entry classes' own `get_fields()` |
 | `GuiFieldTextUnitTests` (`gui_field_text_test.cpp`, 15 cases) | `display_text()` (display-only sanitising: C0/DEL/C1/bidi replacement edges, embedded NUL, 4096-byte cap incl. suffix, never splitting a code point, idempotence, bounded cost on a 16 MiB input), `field_value_text()` (string / number decimal+hex / bool / byte-vector hex dump with its 1024-byte cap) and `entry_node_label()` | A firmware string reaching ImGui with control or direction-override characters, a multi-megabyte string slowing every frame (the P-1 finding - the bounded-cost cases fail against the old implementation), a hex dump or label growing without bound |
 | `GuiCopyAsUnitTests` (`gui_copy_as_test.cpp`, 10 cases) | `render_entry_as()` for every registered formatter (byte-exact `IOutputFormatter::render()` output, including hostile strings; unknown / empty / case-variant names and over-1 MiB output give `nullopt`; exactly 1 MiB allowed), `default_copy_format_index()`, `is_terminal_safe_format()`, `create_entry_for_node()` (index/type/handle re-check, duplicate handles resolved by index) | The "Copy as..." clipboard text diverging from the CLI's formatter output, copying the wrong structure after a stale selection, an oversized copy or a terminal-unsafe default format |
+
+### GUI tiers - `tests/gui/` (`smbios_gui_ci_test`, `smbios_gui_local_test`)
+
+**CI-safe tier: headless spike (Story 04.0, Task 02); local tier: Task 01
+placeholders.** `smbios_gui_ci_test` runs Dear ImGui frames with no window,
+no GL and no OS hooks on the harness `tests/gui/support/headless_imgui.{hpp,cpp}`
+(`HeadlessImGuiContext`: in-memory clipboard, refusing `OpenInShell`, no IME
+hook, no `imgui.ini`/log file, a null renderer that acknowledges 1.92 texture
+requests). Every SMBios is replaced through `load_table()` before any frame,
+and every assertion on captured text or clipboard bytes is the boolean,
+counts-only form - captured or fixture text is never printed (threat model
+`docs/security/2026-11-11-gui-test-tiers.md`, R-5). The suite passes with
+`--random=1`. CI's `gui-build` job runs it on all three OSes
+(`ctest -L gui-ci --timeout 60`). It uses `imgui_internal.h` (symbol list in
+`headless_imgui.hpp`), so a vcpkg baseline bump that changes the imgui version
+must re-run it. The local tier is still the Task 01 placeholders; Task 04
+replaces them.
+
+| Suite | Covers | Guards against |
+|-------|--------|------------------|
+| `GuiHeadlessSpikeTests` (`ci/headless_spike_test.cpp`, 6 cases: `S1HeadlessFrameLoopRuns1000Frames`, `S2NoOsSideEffects`, `S3BalancedStacksAroundRenderEntryBrowser`, `S4TextCaptureSeesRenderedText`, `S5LocatorActivatesWidgetsWithoutPixels`, `S6IdConflictSignalIsHoverScoped`) | S1: 1000 frames on the null renderer, no pending texture request, at most 2 tracked textures. S2: every OS hook replaced and unchanged after every frame, the clipboard kept in memory, `OpenInShell` refused, no `imgui.ini`/`imgui_log.txt` in the CTest working directory after 6.7 s of simulated frames. S3: equal `ErrorRecoveryStoreState()` snapshots around the real `render_entry_browser()` for every node and the empty table, plus a negative control. S4: `LogToBuffer()` captures labels, field rows and widget text; logging disables clipping, so all 200 rows of a 200-node table are captured. S5: `ActivateItemByID()` with IDs computed from the widget's ID path (no pixel coordinates): a node click, the Hex toggle, Copy into the in-memory clipboard (byte-equal to `render_entry_as()` in exactly one format), opening the format combo. S6: the only duplicate-ID signal (`ImGuiContext::DebugDrawIdConflictsId`) is hover-scoped | The CI tier touching the runner's clipboard, shell, IME or disk; texture requests piling up with no renderer; `render_entry_browser()` leaving an ID/style/window stack unbalanced; the text, locator or ID-conflict oracles that Task 03 builds on silently stopping working (for example after an imgui version bump) |
+| `SmbiosGuiLocalTests` (`local/gui_local_main.cpp`, 2 cases: `ScaffoldingPlaceholder`, `SkipHelperPlaceholder`) | Placeholder: the local tier builds and runs; `SkipHelperPlaceholder` always skips through `skip_unless()` so CTest reports it *Skipped* while its passing sibling stays *Passed* | A missing-resource skip being reported as Passed or Failed (the `^SKIP: ` regex bug) |
 
 ### Mock - `tests/mock/` (`smbios_mock_test`)
 

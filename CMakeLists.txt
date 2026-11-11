@@ -31,6 +31,50 @@ option("SMBIOS_BUILD_EXAMPLES" SMBIOS_BUILD_EXAMPLES ON)
 # smbios_gui executable; its GUI-free view-model library is always built.
 option("SMBIOS_BUILD_GUI" SMBIOS_BUILD_GUI OFF)
 
+# Milestone 0011, Story 04.0, Task 01: the two GUI test tiers under
+# tests/gui/ (only added when SMBIOS_BUILD_GUI=ON). The CI-safe tier
+# (smbios_gui_ci_test, label gui-ci) is always built with the GUI. The
+# local-only tier (smbios_gui_local_test.*, label gui-local) needs a real
+# display, GL context, OS clipboard and live SMBIOS table, so it must never
+# be configured, compiled or registered on CI.
+#
+# SMBIOS_CI_ENVIRONMENT is a plain (non-cache) variable recomputed on EVERY
+# configure, so neither a stale cache nor a -D can override it (threat
+# model docs/security/2026-11-11-gui-test-tiers.md, R-1). Any defined
+# GITHUB_ACTIONS or CI counts, even CI=false - the fail-safe direction.
+# SMBIOS_GUI_LOCAL_TESTS' default (ON only for a GUI build outside CI) only
+# seeds a fresh cache; under CI an ON value (a -D or a reused cache) is
+# forced OFF with a warning, and there is deliberately no override.
+# tests/gui/CMakeLists.txt re-checks NOT SMBIOS_CI_ENVIRONMENT where the
+# local targets are created (R-2), so the tier fails closed even if the
+# cached option and this force ever diverge. Never set either variable in
+# CMakePresets.json (R-4).
+if(DEFINED ENV{GITHUB_ACTIONS} OR DEFINED ENV{CI})
+    set(SMBIOS_CI_ENVIRONMENT ON)
+else()
+    set(SMBIOS_CI_ENVIRONMENT OFF)
+endif()
+
+if(SMBIOS_BUILD_GUI AND NOT SMBIOS_CI_ENVIRONMENT)
+    set(SMBIOS_GUI_LOCAL_TESTS_DEFAULT ON)
+else()
+    set(SMBIOS_GUI_LOCAL_TESTS_DEFAULT OFF)
+endif()
+option(SMBIOS_GUI_LOCAL_TESTS
+    "Build/register the local-only GUI tests (display/GL/clipboard/live table; never on CI)"
+    ${SMBIOS_GUI_LOCAL_TESTS_DEFAULT})
+
+if(SMBIOS_CI_ENVIRONMENT AND SMBIOS_GUI_LOCAL_TESTS)
+    set(SMBIOS_GUI_LOCAL_TESTS OFF CACHE BOOL "" FORCE)
+    message(WARNING "SMBIOS_GUI_LOCAL_TESTS forced OFF: CI environment detected (GITHUB_ACTIONS/CI set); the local-only GUI tier never runs on CI.")
+endif()
+
+# Not FATAL_ERROR: a cached ON from an earlier GUI configure must not break
+# a later non-GUI reconfigure of the same build tree.
+if(SMBIOS_GUI_LOCAL_TESTS AND NOT SMBIOS_BUILD_GUI)
+    message(STATUS "SMBIOS_GUI_LOCAL_TESTS=ON is ignored because SMBIOS_BUILD_GUI is OFF.")
+endif()
+
 if(SMBIOS_BUILD_FUZZERS AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     message(FATAL_ERROR
         "SMBIOS_BUILD_FUZZERS=ON requires Clang or AppleClang (libFuzzer is "
