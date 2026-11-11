@@ -332,7 +332,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          # Pinned, not ubuntu-latest: the 26.04 ('resolute') image's apt mirrors
+          # did not resolve in the first runs (see the apt step below).
+          - os: ubuntu-24.04
             preset: linux-gui
             allow_build_failure: false
             vcpkg_cache_path: ~/.cache/vcpkg/archives
@@ -350,18 +352,20 @@ jobs:
 
       # Package list from the vcpkg glfw3 port's own message
       # (ports/glfw3/portfile.cmake); Wayland is not enabled.
-      # A first run sat in this step until the 30-minute job timeout with its
-      # output discarded. So: non-interactive (a debconf prompt would wait
-      # forever), a bounded wait for the apt lock, a step-level timeout so a
-      # hang fails in minutes, and -qq output left visible (it is short).
+      # Two earlier runs on ubuntu-latest (26.04, 'resolute') stalled here: apt
+      # update printed "Temporary failure resolving" for every mirror and the
+      # install then hung until the timeout. Now: pinned image (see matrix),
+      # non-interactive, short fetch timeouts and a single retry so a network
+      # problem fails in about a minute with its message visible, plus a
+      # step-level timeout as the backstop.
       - name: Install GLFW system packages (Linux)
         if: runner.os == 'Linux'
         timeout-minutes: 10
         run: |
           set -eu
-          sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq -o DPkg::Lock::Timeout=120
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
-            -o DPkg::Lock::Timeout=120 \
+          APT="sudo DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=120 -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20"
+          $APT update -qq
+          $APT install -y -qq --no-install-recommends \
             libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config
           echo "ok: GLFW system packages installed"
 
