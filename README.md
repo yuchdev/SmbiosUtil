@@ -58,6 +58,16 @@ See [Output formats](docs/output-formats.md) for every format.
 
 Everything comes from vcpkg, declared in [`vcpkg.json`](vcpkg.json) and pinned to a `builtin-baseline` commit: `boost-iostreams`, `boost-program-options`, `boost-test`, `boost-date-time`. No manual Boost install or `-DBOOST_ROOT` flags needed.
 
+### Finding `VCPKG_ROOT`
+
+vcpkg has no standard install location: `VCPKG_ROOT` is simply the directory it was cloned or installed into (it contains the `vcpkg` executable, a `.vcpkg-root` marker file and `scripts/buildsystems/vcpkg.cmake`). To locate it on a machine, check in this order: the environment (`echo $VCPKG_ROOT`; GitHub Actions runners set `VCPKG_INSTALLATION_ROOT` instead); `vcpkg` on `PATH` (`dirname "$(realpath "$(command -v vcpkg)")"`, or `where vcpkg` on Windows); common clone locations (`~/vcpkg`, `C:\vcpkg`, `/usr/local/share/vcpkg`, `brew --prefix vcpkg`); the copy bundled with Visual Studio (`C:\Program Files\Microsoft Visual Studio\2022\<Edition>\VC\vcpkg`, already exported by a "Developer PowerShell for VS"); and, on Windows, `%LOCALAPPDATA%\vcpkg\vcpkg.path.txt` after `vcpkg integrate install`. Or let [`scripts/find_vcpkg_root.py`](scripts/find_vcpkg_root.py) do all of this and print what it finds:
+
+```bash
+python scripts/find_vcpkg_root.py
+```
+
+If there is none, clone one (a full clone, not `--depth 1`, because `vcpkg.json` pins a `builtin-baseline` commit): `git clone https://github.com/microsoft/vcpkg ~/vcpkg && ~/vcpkg/bootstrap-vcpkg.sh`.
+
 ### Build presets
 
 [`CMakePresets.json`](CMakePresets.json) defines one preset per platform (`windows`, `linux`, `macos`), each wiring `CMAKE_TOOLCHAIN_FILE` to vcpkg's toolchain file automatically:
