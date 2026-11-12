@@ -26,8 +26,32 @@ target_compile_options(${TARGET} PRIVATE ${SMBIOS_COMPILE_OPTIONS})
 target_compile_definitions(${TARGET} PRIVATE SMBIOS_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/tests/data")
 target_link_options(${TARGET} PRIVATE ${SMBIOS_LINK_OPTIONS})
 
+# Whole-archive link of libsmbios - the identical three-way block
+# smbios/src/CMakeLists.txt, smbios_c/CMakeLists.txt, tests/c_abi/ and
+# smbios_gui/CMakeLists.txt carry, for the identical reason:
+# REGISTER_SMBIOS_ENTRY's and REGISTER_OUTPUT_FORMATTER's static
+# initializers only run for object files actually linked in. Before
+# milestone 0011 this suite got away without it, because some test TU named
+# every concrete entry/formatter class; the GUI view-model tests
+# (gui_*_test.cpp, Story 02.0 Task 04) reach entries and formatters only
+# through SMBiosEntryFactory/get_output_formatter(), so the registries must
+# be complete regardless of which classes other TUs happen to name.
+if(APPLE)
+    target_link_options(${TARGET} PRIVATE "LINKER:-force_load,$<TARGET_FILE:libsmbios>")
+elseif(MSVC)
+    target_link_options(${TARGET} PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:libsmbios>")
+else()
+    target_link_options(${TARGET} PRIVATE
+        "LINKER:--whole-archive,$<TARGET_FILE:libsmbios>,--no-whole-archive")
+endif()
+
+# libsmbios_gui_model (smbios_gui/CMakeLists.txt, always built, no
+# imgui/glfw/OpenGL dependency) carries the Dear-ImGui-free view model,
+# field-text projections and "Copy as..." logic that gui_*_test.cpp test.
+# Its PUBLIC include directory provides <smbios/gui/*.hpp>.
 target_link_libraries(${TARGET}
     ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+    libsmbios_gui_model
     libsmbios)
 
 

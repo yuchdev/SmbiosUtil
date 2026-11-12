@@ -1,7 +1,7 @@
 # Story 01.0 - App Shell: Windowing, GPU Backend and Build Target
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-11)
 **Depends on:** Milestone 0009 (`get_fields()`/`IOutputFormatter`, already shipped); [docs/adr/0003-gui-toolkit-for-smbios-visualization.md](/docs/adr/0003-gui-toolkit-for-smbios-visualization.md)
 
 ## Scope
@@ -19,9 +19,9 @@ tree/field-table content.
 
 | #  | Document                                                                    | Status         | Blocks |
 |----|--------------------------------------------------------------------------------|----------------|--------|
-| 01 | [vcpkg dependencies: Dear ImGui and GLFW](01-vcpkg-dependencies-imgui-and-glfw.md) | ⬜ Not started | 02     |
-| 02 | [`smbios_gui` CMake target and window skeleton](02-smbios-gui-cmake-target-and-window-skeleton.md) | ⬜ Not started | 03     |
-| 03 | [Tests](03-tests.md)                                                           | ⬜ Not started | -      |
+| 01 | [vcpkg dependencies: Dear ImGui and GLFW](01-vcpkg-dependencies-imgui-and-glfw.md) | ✅ Complete | 02     |
+| 02 | [`smbios_gui` CMake target and window skeleton](02-smbios-gui-cmake-target-and-window-skeleton.md) | ✅ Complete | 03     |
+| 03 | [Tests](03-tests.md)                                                           | ✅ Complete | -      |
 
 ## Key constraints
 

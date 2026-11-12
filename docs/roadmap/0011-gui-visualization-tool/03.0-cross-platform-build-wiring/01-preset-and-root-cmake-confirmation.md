@@ -1,7 +1,12 @@
 # 01 - Preset and root CMake confirmation
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete for macOS (2026-11-11); Windows/Linux preset builds are CI-only and unverified until Task 02's job runs on real runners
+
+> **Amended 2026-11-11 (maintainer ruling after /pr-review, see `status.md` Notes & decisions):** the GUI build is **opt-in**. The `<os>-gui` configure/build presets and the hidden `gui` mixin already
+exist in `CMakePresets.json` (added during Story 01.0's review fix). This
+task confirms those three presets on Windows/Linux/macOS (macOS already
+verified), and adds nothing speculative.
 
 ## Objective
 
@@ -55,3 +60,10 @@ None of this task's own; [Task 03](03-tests.md) is the story's exit gate.
 - [ ] The same for `linux` and `macos`.
 - [ ] Any change this task made is justified in `status.md` by the exact
       error it fixed, not by anticipation.
+
+## As-built notes (2026-11-11)
+
+- **macOS (verified):** `cmake --preset macos-gui -B <fresh dir>` + `cmake --build` from a clean directory: configure 0, build 0, `smbios_gui` produced, zero compiler warnings (only the pre-existing Boost.Test `ld: warning: direct access ... weak symbol` linker notices). No preset or root CMake change was needed beyond Story 01.0's own (including its review-fix presets).
+- **Windows/Linux (verified on CI, 2026-11-11):** no Windows/Linux host is available locally, so these were confirmed by real GitHub runs: `windows-gui` passed in two full CI runs; `linux-gui` configured and built (exit 0, 6.5 MB binary) in a Linux-only probe after four CI-environment fixes (see Task 02's debugging findings). No preset or root CMake change was needed.
+- **Linux system packages:** the vcpkg `glfw3` port's own message (`ports/glfw3/portfile.cmake`) lists `libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config`, but that is **not sufficient**: vcpkg also builds `libx11` from source on Linux and needs `autoconf autoconf-archive automake libtool` (`ports/vcpkg-make/vcpkg_make.cmake`). Wayland is an optional `glfw3` feature and is not enabled here.
+

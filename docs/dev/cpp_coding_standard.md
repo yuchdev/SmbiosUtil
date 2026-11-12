@@ -37,7 +37,7 @@ auditable rather than aspirational.
 
 ### Test classification and layout (enforced by `tests/CMakeLists.txt`)
 
-Four categories, one top-level directory and one Boost.Test executable each,
+Four categories (plus the two GUI tiers below), one top-level directory and one Boost.Test executable each,
 all discovered by `ctest` (root `CMakeLists.txt` calls `enable_testing()`):
 
 | Category      | Directory           | Target                 | Needs root/admin? | Always expected green? |
@@ -46,6 +46,24 @@ all discovered by `ctest` (root `CMakeLists.txt` calls `enable_testing()`):
 | Mock          | `tests/mock/`        | `smbios_mock_test`      | No                 | Yes (currently a documented placeholder - no injectable seam exists until milestone 0005's `ISmbiosSource`) |
 | Perf          | `tests/perf/`        | `smbios_perf_test`      | Yes (real hardware) | No - fails cleanly without privileges, not a regression |
 | Integration   | `tests/integration/` | `smbios_integration_test` | Yes (real hardware) | No - same as Perf |
+| GUI CI-safe (Unit) | `tests/gui/ci/` | `smbios_gui_ci_test` (label `gui-ci`) | No (headless; no display, GL or clipboard) | Yes - never skips; runs in CI's `gui-build` job (only with `SMBIOS_BUILD_GUI=ON`) |
+| GUI local-only (Integration) | `tests/gui/local/` | `smbios_gui_local_test.<Case>` (label `gui-local`) | No (display/GL/clipboard/live table; skips as root) | Yes, or *Skipped* when a resource is missing - never configured on CI |
+
+GUI test rules (`tests/gui/`):
+
+- Every `tests/gui/local/*.cpp` includes `tests/gui/support/local_only_guard.hpp`
+  first (it `#error`s without the target-private `SMBIOS_GUI_LOCAL_ONLY_TESTS`),
+  and `tests/gui/ci/` never includes it, `glfw` or `imgui_impl_*` headers.
+- A local-only case may only **skip**, never fail, for a missing resource
+  (display, GL context, clipboard): it prints exactly one `SKIP: <case>: <reason>`
+  line before its first assertion (`skip_unless()`), which CTest's
+  `SKIP_REGULAR_EXPRESSION "(^|\n)SKIP: "` reports as *Skipped*. Known gap: an
+  unreadable SMBIOS table skips in the parity/clipboard cases, but
+  `HiddenWindowSmoke` and `AutoExitTwinSmoke` still fail instead (recorded as a
+  Task 04 follow-up), so treat the skip-not-fail rule as the intent there.
+- Assertion hygiene: GUI tests report counts, indices and the case's own fixed
+  literals only. Never print fixture, captured or firmware text, clipboard bytes
+  or CLI output - compare them without printing the operands.
 
 CTest-level smoke tests (`smbios_cli_*`, `smbios_example_*`) are classified
 **Integration**: they exercise the built `smbios` binary or an example program

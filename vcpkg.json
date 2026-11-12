@@ -7,5 +7,17 @@
     "boost-program-options",
     "boost-test",
     "boost-date-time"
-  ]
+  ],
+  "features": {
+    "gui": {
+      "description": "Dependencies of the opt-in smbios_gui visualization tool (Dear ImGui + GLFW + OpenGL3); enable with -DVCPKG_MANIFEST_FEATURES=gui alongside -DSMBIOS_BUILD_GUI=ON.",
+      "dependencies": [
+        {
+          "name": "imgui",
+          "features": ["glfw-binding", "opengl3-binding"]
+        },
+        "glfw3"
+      ]
+    }
+  }
 }

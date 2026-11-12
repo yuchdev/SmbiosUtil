@@ -1,7 +1,19 @@
 # 02 - CI build-only wiring
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-11); verified on real runners - CI run 43052749581, 8/8 jobs green
+
+> **Amended 2026-11-11 (maintainer ruling after /pr-review, see `status.md` Notes & decisions):** the GUI build is **opt-in**. `smbios_gui` is no longer built by the existing `build` job's default
+presets. This task must instead **add a dedicated GUI build job** (or matrix
+entries) that configures/builds the `<os>-gui` presets (or passes
+`-DSMBIOS_BUILD_GUI=ON -DVCPKG_MANIFEST_FEATURES=gui`) on all three OSes, with
+the Linux X11/GL development packages (`libxinerama-dev`, `libxcursor-dev`,
+`xorg-dev`, `libglu1-mesa-dev`, `pkg-config` - confirm the real set by a
+reproduced configure failure) installed ahead of `Configure`. The "no other
+change to CI" bullet below and the "existing `Build` step already covers it"
+reasoning no longer hold; the build-only/no-run constraints and the
+`allow_build_failure: false` posture still apply to the new job. The vcpkg
+binary-cache key (`hashFiles('vcpkg.json')`) already covers the new feature.
 
 ## Objective
 
@@ -54,11 +66,36 @@ None of this task's own; [Task 03](03-tests.md) is the story's exit gate.
 
 ## Success criteria
 
-- [ ] A CI run on a real push shows `smbios_gui`'s object files/link step
+- [x] (reworded: the job found and reported the built binary - one `ok:` line; object files are deliberately not printed) A CI run on a real push shows `smbios_gui`'s object files/link step
       in the `Build` step's own log output, on all three OSes.
-- [ ] Deliberately breaking `smbios_gui/src/main.cpp` (e.g. a syntax
+- [x] (demonstrated with a failing test assertion on 2026-11-12, not a syntax error - see Story 04.0 Task 02) Deliberately breaking `smbios_gui/src/main.cpp` (e.g. a syntax
       error) in a throwaway branch/PR, pushed once during this task's own
       verification and then reverted, fails the `build` job on all three
       OSes - proving this is a genuine hard gate, not a step CI silently
       skips.
-- [ ] No CI step attempts to execute `smbios_gui`.
+- [x] No CI step attempts to execute `smbios_gui`.
+
+## As-built notes (2026-11-11)
+
+- **Delivered:** a dedicated build-only `gui-build` job appended to `.github/workflows/ci.yml` (91 added lines, no existing step or `ctest -R` filter changed): ubuntu/windows/macos matrix building `linux-gui`/`windows-gui`/`macos-gui`; Linux apt packages from the vcpkg glfw3 port's own message (`libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config`) installed before configure; same pinned action SHAs as the existing jobs; distinct cache key `vcpkg-binarycache-gui-...`; `timeout-minutes: 30`; `allow_build_failure: false`; no step runs `smbios_gui`. Root `CLAUDE.md` GUI bullet corrected.
+- **Bounded output (maintainer priority, preview of the CI-rework milestone):** full configure/build logs go to a temp file; success prints one line (`ok: <path> (<bytes> bytes)`); failure prints one `::error::` line, <=20 lines matching real diagnostic shapes (`error:`, `error C####`, `FAILED:`, `fatal error`, `CMake Error`, `undefined reference`, `linker command failed`, `LNK####`) and the last 40 lines, preserving the exit code. The orchestrator tightened the coder's bare-word `error|Error|FAILED|fatal` pattern because it matched benign file names (`memory_error_information_*.cpp`: 4 false matches on a real clean log -> 0).
+- **Criterion 1 reworded:** "smbios_gui object files/link step visible in the log" now reads "the job found and reported the built `smbios_gui` binary (one `ok:` line)" - object files are deliberately not printed.
+- **Verified on real runners (see "CI debugging findings" below):** the job, the Windows/Linux `-gui` presets and the apt behaviour - CI run 43052749581 completed `success` (8/8). **Failure path demonstrated later (2026-11-12, Story 04.0 Task 02):** a throwaway always-failing `gui-ci` assertion made `gui-build` fail on all three OSes with bounded output (CI run 43067987979); a deliberately broken *compile* was not tried.
+
+### CI debugging findings (2026-11-11) - what the first real Linux runs taught
+
+The `gui-build` Linux job failed for four independent reasons, found one at a time (each with a probe or the job's own bounded output), none in the GUI code:
+
+1. **Ubuntu mirror DNS.** On the runners, DNS for `azure.archive` / `archive` / `security.ubuntu.com` failed (24.04 and 26.04 images alike; `mirrors.edge.kernel.org` resolved), so `apt-get update` fetched nothing and `apt-get install` stalled until the timeout. Fix: use the default mirrors when `azure.archive.ubuntu.com` resolves, else the kernel.org Ubuntu mirror (verified: update 6 s, whole install 39 s). Two earlier guesses (a debconf prompt / apt lock, then the 26.04 image) were wrong; the runner is pinned to `ubuntu-24.04` only because the fallback was verified there.
+2. **A bug in the bounded-failure script.** GitHub starts `shell: bash` with `-e`; the bare `"$@" > "$log"` exited the step before any diagnostics were printed. Fixed with `|| rc=$?` and re-tested under the exact CI flags (`bash --noprofile --norc -e -o pipefail`); the earlier local test had not used `-e`. Rule: test every workflow `run:` block under the runner's real shell flags.
+3. **Missing autotools.** `glfw3` depends on `libx11` on Linux, which vcpkg builds from source with `vcpkg_make`; that needs `autoconf autoconf-archive automake libtool` from the system (see `ports/vcpkg-make/vcpkg_make.cmake`). The glfw3 port's own message - the source of the original five-package list - does not list them. Final Linux package list: `libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config autoconf autoconf-archive automake libtool`.
+4. **Step timeouts.** Every apt stall had burned the 30-minute job ceiling; the apt step now has its own 10-minute timeout, short fetch timeouts and one retry.
+
+Verified on real runners: a Linux-only probe ran the same steps and `cmake --preset linux-gui` + `cmake --build --preset linux-gui` both exited 0 and produced `build/linux-gui/smbios_gui/bin/smbios_gui` (6.5 MB); then in the real workflow, CI run 43052749581 completed `success` with all 8 jobs green - `gui-build` on `ubuntu-24.04` reported `ok: build/linux-gui/smbios_gui/bin/smbios_gui (6557344 bytes)`, and in that same run the Linux job's log shows `azure.archive.ubuntu.com does not resolve; using the kernel.org Ubuntu mirror`, i.e. the mirror fallback itself executed and worked in the real job (the `ubuntu.com` DNS failure was still in effect). `gui-build` on macOS and Windows passed in every full run since the job existed (43038757951, 43043822324, 43045742980, 43052749581). The timings quoted above (update 6 s, install 39 s) and the "24.04 and 26.04 alike" observation come from the two probe workflows' logs, which were deleted afterwards (nothing from them remains in the tree).
+
+### Security review follow-ups (2026-11-11, PASS_WITH_FOLLOWUP, none blocking)
+
+- Add a top-level `permissions: { contents: read }` to `ci.yml` (the workflow declares none, so `GITHUB_TOKEN` gets the repo default; pre-existing, not made worse by this job) - for the CI-rework milestone.
+- Optionally log `apt-cache policy` after `apt-get update` so a run records which mirror was used; and add one comment line that the fallback keys off `azure.archive.ubuntu.com` only and deliberately does not handle the security pocket. Both are comment/log-only and ride along with the next `ci.yml` change.
+- Fork-PR cache poisoning, action pinning, expression injection and secrets exposure were reviewed: no finding.
+

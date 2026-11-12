@@ -18,6 +18,8 @@ this document focuses on the runtime data flow between them, not the
 build-time library graph (that is `docs/adr/0001-per-os-smbios-source-libraries.md`'s
 job).
 
+See also the [architecture diagrams](../diagrams/README.md) (component and process views).
+
 ## The two milestones this document connects
 
 - **Milestone 0003 - field-table accessors.** Every concrete SMBIOS entry

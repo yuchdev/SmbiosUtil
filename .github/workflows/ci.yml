@@ -314,3 +314,183 @@ jobs:
           ASAN_OPTIONS: ${{ matrix.os == 'macos-latest' && 'detect_leaks=0:detect_container_overflow=0' || 'detect_container_overflow=0' }}
         run: ctest --output-on-failure --timeout 60 -R 'smbios_integration_test|smbios_perf_test|smbios_cli_format_csv' || echo "::warning::sanitizer run of smbios_integration_test/smbios_perf_test failed or needs elevated privileges to read this runner's real SMBIOS table - same known limitation as the build job's functional-test step; making this reliable without root is milestone 0006's job."
         continue-on-error: true
+
+  # Milestone 0011, Story 03.0, Task 02: smbios_gui is opt-in
+  # (SMBIOS_BUILD_GUI=OFF by default, imgui/glfw3 in the non-default vcpkg
+  # manifest feature `gui`), so the `build` job above never compiles it.
+  # This job builds ONLY the <os>-gui presets. No step ever runs smbios_gui
+  # itself (no display/GPU on hosted runners - see the story README).
+  # Story 04.0 (docs/roadmap/0011-gui-visualization-tool/04.0-gui-test-tiers/):
+  # the job also runs the headless CI-safe GUI tier (`ctest -L gui-ci`: a
+  # Dear ImGui context with no window, no GL and no OS hooks, synthetic
+  # tables only), checks that the shipped smbios_gui has no test-hook
+  # strings, and fails if any local-only GUI test (`gui-local`) or its
+  # binary exists - that tier never runs on CI.
+  # Output stays short: configure/build logs go to a file; on success one
+  # summary line is printed, on failure only the first matching error
+  # lines plus a short tail.
+  gui-build:
+    name: gui-build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    # Same ceiling as the `build` job (GitHub's default is 360 min).
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Pinned (not ubuntu-latest) to the image the apt fallback below was
+          # verified on.
+          - os: ubuntu-24.04
+            preset: linux-gui
+            allow_build_failure: false
+            vcpkg_cache_path: ~/.cache/vcpkg/archives
+          - os: windows-latest
+            preset: windows-gui
+            allow_build_failure: false
+            vcpkg_cache_path: ~\AppData\Local\vcpkg\archives
+          - os: macos-latest
+            preset: macos-gui
+            allow_build_failure: false
+            vcpkg_cache_path: ~/.cache/vcpkg/archives
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Package list from the vcpkg glfw3 port's own message
+      # (ports/glfw3/portfile.cmake); Wayland is not enabled.
+      # On the runners, DNS for Ubuntu's own mirror hosts (azure.archive /
+      # archive / security.ubuntu.com) failed in the first runs while other
+      # hosts resolved (diagnosed with a probe, on the 24.04 and 26.04 images
+      # alike): `apt-get update` "succeeded" with nothing fetched and the
+      # install then stalled until the timeout. So: use the default mirrors if
+      # they resolve, otherwise the kernel.org Ubuntu mirror (verified: update
+      # 6 s, install 39 s). Also non-interactive, short fetch timeouts, one
+      # retry, and a step-level timeout so any stall fails in minutes.
+      # The last line of packages is not in the glfw3 port's own message: on
+      # Linux glfw3 depends on libx11, which vcpkg builds from source with
+      # vcpkg_make (see ports/vcpkg-make/vcpkg_make.cmake), and that needs
+      # autoconf, autoconf-archive, automake and libtool from the system.
+      - name: Install GLFW system packages (Linux)
+        if: runner.os == 'Linux'
+        timeout-minutes: 10
+        run: |
+          set -eu
+          if ! getent hosts azure.archive.ubuntu.com >/dev/null; then
+            echo "azure.archive.ubuntu.com does not resolve; using the kernel.org Ubuntu mirror"
+            printf 'https://mirrors.edge.kernel.org/ubuntu/\tpriority:1\n' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+          fi
+          APT="sudo DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=120 -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20"
+          $APT update -qq
+          $APT install -y -qq --no-install-recommends \
+            libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config \
+            autoconf autoconf-archive automake libtool
+          echo "ok: GLFW system packages installed"
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11.6
+        with:
+          vcpkgDirectory: ${{ github.workspace }}/vcpkg
+
+      - name: Cache vcpkg binary cache (built package archives)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ matrix.vcpkg_cache_path }}
+          key: vcpkg-binarycache-gui-${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}
+
+      # Windows: no --config, same as the `build` job (multi-config VS
+      # generator defaults to Debug).
+      - name: Configure, build and run gui-ci tests (${{ matrix.preset }} preset)
+        id: build
+        shell: bash
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+        continue-on-error: ${{ matrix.allow_build_failure }}
+        run: |
+          set -uo pipefail
+          LOGDIR=$(mktemp -d)
+          # (The pattern matches diagnostic shapes, not the bare word 'error':
+          # sources such as memory_error_information_*.cpp would fill the quota.)
+          # run_quiet <label> <cmd...>: full output to a file; on failure
+          # print at most 20 error lines + the last 40 lines, then exit.
+          run_quiet() {
+            local label=$1; shift
+            local log="$LOGDIR/$label.log"
+            # `|| rc=$?`, not a bare command: GitHub starts `shell: bash` with -e,
+            # which would exit here before any diagnostics were printed.
+            local rc=0
+            "$@" > "$log" 2>&1 || rc=$?
+            if [ "$rc" -ne 0 ]; then
+              echo "::error::$label failed (exit $rc) for preset ${{ matrix.preset }}"
+              echo "--- first error lines ($label) ---"
+              grep -n -m 20 -E 'error:|error C[0-9]+|FAILED:|fatal error|CMake Error|undefined reference|linker command failed|LNK[0-9]+' "$log" || echo "(no matching lines)"
+              echo "--- last 40 lines ($label) ---"
+              tail -n 40 "$log"
+              exit "$rc"
+            fi
+          }
+          run_quiet configure cmake --preset ${{ matrix.preset }}
+          run_quiet build cmake --build --preset ${{ matrix.preset }}
+          BIN=$(find build/${{ matrix.preset }} -type f -path '*/smbios_gui/bin/*' \( -name smbios_gui -o -name smbios_gui.exe \) | head -n1) || true
+          if [ -z "$BIN" ]; then
+            echo "::error::build succeeded but no smbios_gui binary found under build/${{ matrix.preset }}"
+            exit 1
+          fi
+          echo "ok: $BIN ($(wc -c < "$BIN" | tr -d ' ') bytes)"
+          # fail <message>: one ::error:: line, then stop the step.
+          fail() { echo "::error::$1"; exit 1; }
+          # count_total <log>: N from ctest -N's "Total Tests: N" line, or
+          # nothing if that line is missing (the callers treat that as a
+          # failure, never as 0). tr strips Windows CRLF line ends.
+          count_total() { tr -d '\r' < "$1" | sed -n -E 's/^Total Tests: ([0-9]+)$/\1/p' | head -n1; }
+          # Story 04.0 / threat model R-7: the shipped binary must not contain
+          # the test-only auto-exit hook (Task 04 adds it to a separate twin
+          # target only). -F -e: a bare --exit-after-frames would be parsed as
+          # a grep option and check nothing. grep exits 1 for 0 matches and 2
+          # for an error; only 2 (or no number) fails closed.
+          for pattern in '--exit-after-frames' 'usage: --exit-after-frames'; do
+            rc=0
+            n=$(grep -a -c -F -e "$pattern" "$BIN") || rc=$?
+            if [ "$rc" -gt 1 ] || ! [[ "$n" =~ ^[0-9]+$ ]]; then
+              fail "test hook string check could not read the shipped smbios_gui (grep exit $rc)"
+            fi
+            [ "$n" -eq 0 ] || fail "test hook present in shipped smbios_gui: expected 0 -> $n"
+          done
+          echo "ok: no test hook strings in the shipped smbios_gui"
+          # Story 04.0, Task 02: the headless CI-safe GUI tier. Captured and
+          # fixture text is never printed by these tests (threat model R-5),
+          # so the bounded failure output cannot carry it. --no-tests=error:
+          # an empty gui-ci label is a failure, not a pass.
+          run_quiet test ctest --test-dir build/${{ matrix.preset }} -C Debug -L gui-ci --timeout 60 --no-tests=error --output-on-failure
+          # ctest 3.31 prints "100% tests passed, 0 tests failed out of N"; ctest 4.x
+          # (the macOS and Windows runners) prints "100% tests passed out of N".
+          passed=$(tr -d '\r' < "$LOGDIR/test.log" | sed -n -E 's/^100% tests passed(, 0 tests failed)? out of ([0-9]+)$/\2/p' | head -n1) || true
+          if [ -z "$passed" ]; then
+            echo "--- last 15 lines of the ctest output (a passing run prints only test names and times) ---"
+            tail -n 15 "$LOGDIR/test.log" | cut -c1-200
+            fail "ctest -L gui-ci exited 0 but printed no '100% tests passed ... out of N' summary"
+          fi
+          echo "ok: ctest -L gui-ci ($passed tests passed)"
+          # The local-only tier must be absent (threat model R-8), and the
+          # guard fails closed: a missing "Total Tests:" line is a failure.
+          # Checked by label and by name (in case a label is ever missing),
+          # and by file: find has no -type f, so CMakeFiles/<target>.dir
+          # directories count too.
+          rc=0
+          ctest --test-dir build/${{ matrix.preset }} -C Debug -N -L gui-local > "$LOGDIR/local-label.log" 2>&1 || rc=$?
+          total=$(count_total "$LOGDIR/local-label.log") || true
+          [ "$rc" -eq 0 ] && [ -n "$total" ] || fail "local-only GUI test check: ctest -N -L gui-local gave no 'Total Tests:' line (exit $rc)"
+          [ "$total" -eq 0 ] || fail "local-only GUI tests are configured on CI: expected 0 -> $total"
+          rc=0
+          ctest --test-dir build/${{ matrix.preset }} -C Debug -N -R 'smbios_gui_local_test|smbios_gui_autoexit' > "$LOGDIR/local-name.log" 2>&1 || rc=$?
+          total=$(count_total "$LOGDIR/local-name.log") || true
+          [ "$rc" -eq 0 ] && [ -n "$total" ] || fail "local-only GUI test check: ctest -N -R gave no 'Total Tests:' line (exit $rc)"
+          [ "$total" -eq 0 ] || fail "local-only GUI tests are configured on CI (by name): expected 0 -> $total"
+          rc=0
+          find build/${{ matrix.preset }} \( -name 'smbios_gui_local_test*' -o -name 'smbios_gui_autoexit*' \) > "$LOGDIR/local-files.log" 2>&1 || rc=$?
+          [ "$rc" -eq 0 ] || fail "local-only GUI file check: find failed (exit $rc)"
+          found=$(wc -l < "$LOGDIR/local-files.log" | tr -d ' ')
+          if [ "$found" -ne 0 ]; then
+            head -n 5 "$LOGDIR/local-files.log"
+            fail "local-only GUI files exist on CI: expected 0 -> $found"
+          fi
+          echo "ok: no gui-local tests configured"
