@@ -142,11 +142,13 @@ void render_copy_as_action(SMBios& bios, const EntryNode& node, size_t node_inde
             if (ImGui::Selectable("##format_item", selected, ImGuiSelectableFlags_AllowOverlap)) {
                 state.format_index = index;
             }
-            ImGui::SameLine(start_x);
-            ImGui::TextUnformatted(names[index].c_str(), names[index].c_str() + names[index].size());
+            // Must follow the Selectable directly: SetItemDefaultFocus()
+            // targets the last submitted item, and the label below is one.
             if (selected) {
                 ImGui::SetItemDefaultFocus();
             }
+            ImGui::SameLine(start_x);
+            ImGui::TextUnformatted(names[index].c_str(), names[index].c_str() + names[index].size());
             ImGui::PopID();
         }
         ImGui::EndCombo();
