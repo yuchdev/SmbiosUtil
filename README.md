@@ -4,7 +4,7 @@ A cross-platform C++20 SDK that reads the SMBIOS/DMI firmware table and reports 
 
 Windows, Linux, and macOS all have native ways to read the table - no root/admin needed on Windows or macOS; on Linux, sysfs's DMI table is typically root-only (mode 0400), so run as root there (see [CLI usage](docs/cli-usage.md#privileges)). Each falls back to a legacy BIOS physical-memory scan only if its native path is unavailable.
 
-* **`libsmbios`** - the core library. All system calls, all structure parsing, no UI.
+* **`libsmbios`** - the core C++ library. All system calls, all structure parsing, no UI.
 * **`smbios`** - the command-line front end (`libsmbios`'s own namespace is `smbios::` everywhere; the CLI target happens to share that name).
 * **`smbios_gui`** - an opt-in, read-only desktop browser (Dear ImGui) over the same structures, with a "Copy as..." action that reuses the CLI's output formatters. Build with `cmake --preset <linux|macos|windows>-gui`; see [CLAUDE.md](CLAUDE.md) and the [manual test plan](docs/test/manual-testing.md).
 * **Packaging sources** *(in development)* - install rules, a self-hosted vcpkg port for `smbios_c`, GitHub Releases, and Rust/Python bindings over the C ABI; see roadmap milestones [0012](docs/roadmap/0012-package-manager-distribution/plan.md) and [0013](docs/roadmap/0013-language-bindings/plan.md).
