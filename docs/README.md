@@ -25,5 +25,6 @@
 | [roadmap/0009-structured-output-formats/plan.md](roadmap/0009-structured-output-formats/plan.md) | Milestone 0009: a structured field model and self-registering formatter registry producing text/XML/JSON/YAML and custom formats. |
 | [reviews/README.md](reviews/README.md) | Conventions for `background-reviewer` reports (dependency audits, secret scans, performance, licenses). |
 | [reviews/example-report.md](reviews/example-report.md) | Example efficiency-audit report showing the expected shape. |
+| [diagrams/README.md](diagrams/README.md) | Component and process diagrams (Mermaid): libraries and link graph, core classes, SMBIOS construction, CLI, GUI, test and CI flow. |
 | [security/README.md](security/README.md) | `security-auditor`'s directory conventions, security rules, and the initial libbios threat-model draft. |
 | [test/code_test_coverage.md](test/code_test_coverage.md) | Coverage checklist and the lcov/genhtml recipe for a `--coverage` CMake build. |

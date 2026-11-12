@@ -1,11 +1,13 @@
 # SMBIOS SDK
 
-A cross-platform C++20 library and command-line tool that reads the SMBIOS/DMI firmware table and reports what it finds: BIOS, motherboard, CPU, memory, and 45 of the 49 structure types the SMBIOS 3.9.0 specification defines (the remaining 4 are either the table's own terminator or marked obsolete by the spec itself - see [SMBIOS structure coverage](#smbios-structure-coverage) below).
+A cross-platform C++20 SDK that reads the SMBIOS/DMI firmware table and reports what it finds: BIOS, motherboard, CPU, memory, and 45 of the 49 structure types the SMBIOS 3.9.0 specification defines (the remaining 4 are either the table's own terminator or marked obsolete by the spec itself - see [SMBIOS structure coverage](#smbios-structure-coverage) below). It is more than a library and a CLI: the SDK ships a core library, a command-line tool, a C ABI for other languages, a desktop GUI browser, and (in development) packaging sources.
 
 Windows, Linux, and macOS all have native ways to read the table - no root/admin needed on Windows or macOS; on Linux, sysfs's DMI table is typically root-only (mode 0400), so run as root there (see [CLI usage](docs/cli-usage.md#privileges)). Each falls back to a legacy BIOS physical-memory scan only if its native path is unavailable.
 
 * **`libsmbios`** - the core library. All system calls, all structure parsing, no UI.
 * **`smbios`** - the command-line front end (`libsmbios`'s own namespace is `smbios::` everywhere; the CLI target happens to share that name).
+* **`smbios_gui`** - an opt-in, read-only desktop browser (Dear ImGui) over the same structures, with a "Copy as..." action that reuses the CLI's output formatters. Build with `cmake --preset <linux|macos|windows>-gui`; see [CLAUDE.md](CLAUDE.md) and the [manual test plan](docs/test/manual-testing.md).
+* **Packaging sources** *(in development)* - install rules, a self-hosted vcpkg port for `smbios_c`, GitHub Releases, and Rust/Python bindings over the C ABI; see roadmap milestones [0012](docs/roadmap/0012-package-manager-distribution/plan.md) and [0013](docs/roadmap/0013-language-bindings/plan.md).
 * **`smbios_c`** - a C ABI shim over `libsmbios`, for calling into it from Python, Rust, C#, or any other language with C FFI support, without linking C++. See [`smbios_c/include/smbios/smbios.h`](smbios_c/include/smbios/smbios.h) and [CLAUDE.md](CLAUDE.md) for details, and `pkg-config --cflags --libs smbios_c` for build flags after installing.
 
 ## Quick start

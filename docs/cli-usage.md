@@ -1,6 +1,6 @@
 # CLI Usage
 
-The `smbios` executable reads the local machine's SMBIOS/DMI table and prints every structure it can decode.
+The `smbios` executable is the command-line front end of the SMBIOS SDK (alongside the `smbios_c` C ABI, the `smbios_gui` GUI and, in development, packaging sources). It reads the local machine's SMBIOS/DMI table and prints every structure it can decode.
 
 Not writing C++? `smbios_c` (milestone 0007) is a separate C ABI shim over this project's core library (`libsmbios`), for calling into it from Python, Rust, C#, or any other language with C FFI support, without linking C++ directly - see its header at `smbios_c/include/smbios/smbios.hpp` and [CLAUDE.md](../CLAUDE.md)'s Overview section for the full rationale.
 

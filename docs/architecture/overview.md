@@ -12,6 +12,8 @@ what any roadmap `plan.md` merely describes as intent - several renames
 (`smbios`/`libsmbios` swapping names, the repo-root library split) landed
 after those plan files were written.
 
+The SDK's front ends - the `smbios` CLI, the `smbios_c` C ABI and the opt-in `smbios_gui` browser - all sit on the same `libsmbios` core described here; packaging sources are in development (roadmap milestones 0012 and 0013).
+
 See `CLAUDE.md`'s own Architecture section for the authoritative list of
 per-OS/legacy/interface library directories and their CMake target names;
 this document focuses on the runtime data flow between them, not the
