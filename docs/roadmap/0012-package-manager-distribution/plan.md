@@ -14,13 +14,37 @@ by construction rather than left for a future milestone to discover again.
 Nothing in this milestone is implemented yet; every story and task below
 starts "Not started."
 
+**Amended 2026-11-12 by [ADR 0005](/docs/adr/0005-unified-build-package-publish-pipeline.md)**
+(unified build, package and publish pipeline). This milestone's workflow
+work is no longer a separate `release.yml`. It defines the `package`,
+`verify` and `publish` **stages** of the one pipeline
+(`lint -> build/test -> package -> verify -> publish`). That pipeline's
+shared foundation is owned by
+[milestone 0014](/docs/roadmap/0014-ci-rework-from-scratch/plan.md):
+
+- the step runner and report contract (RC1-RC5), with reporter backends;
+- neutral `CI_*` environment names;
+- the pinned toolchain;
+- the policy gate (P1-P13);
+- `scripts/ci/stage.py`;
+- `scripts/ci/check_versions.py`;
+- the entry workflow and the reusable stage workflows;
+- stage contracts SC1-SC4.
+
+This milestone consumes that foundation. It does not restate it.
+
+- Story 03.0 is the `package` stage definition.
+- Story 04.0 is the `verify` and `publish` stage definitions, plus the
+  version sites and release preparation.
+
 ## Stories
 
 | Story | Name                                                  | Category       | Output                                                                                   |
 |-------|-----------------------------------------------------------|----------------|---------------------------------------------------------------------------------------------|
 | 01.0  | `libsmbios` install rules and whole-archive-safe package export | infrastructure | `install()` rules for `libsmbios` + its per-OS/legacy libraries; `libsmbiosConfig.cmake` exporting `libsmbios::libsmbios` with the whole-archive link baked in as an `INTERFACE` link option |
 | 02.0  | Self-hosted vcpkg overlay/registry port for `smbios_c`   | infrastructure | `ports/smbios-c/{portfile.cmake,vcpkg.json}`; a self-hosted vcpkg git-registry layout (`versions/baseline.json` + per-port version files) a consumer points their own `vcpkg-configuration.json` at |
-| 03.0  | GitHub Releases prebuilt artifacts (Windows/Linux/macOS)  | infrastructure | A release CI job producing per-platform tarballs/zips (`smbios_c` + `libsmbios`, once Story 01.0 lands) attached to tagged GitHub Releases |
+| 03.0  | GitHub Releases prebuilt artifacts (Windows/Linux/macOS)  | infrastructure | The pipeline's **`package` stage** (ADR 0005 D1/D4): `stage.py package` archives the build stage's tested `cmake --install` tree per packaging leg (`smbios_c` + `libsmbios`), with `.sha256` files and `manifest.json`. No rebuild, no separate `release.yml` |
+| 04.0  | Release and publish automation                            | infrastructure | The pipeline's **`verify` and `publish` stages** (ADR 0005 D6) plus release preparation: the D5 version derivation and new version-site rows for 0014's `check_versions.py`; a clean-room verify of the exact archives; a gated draft -> promote GitHub Release; a registry PR; a post-publish check (see [review](/docs/reviews/milestone-0012-packaging-automation-2026-11-12.md)) |
 
 ## Rationale
 
@@ -111,6 +135,19 @@ per-platform tarball rather than a `smbios_c`-only one.
   the `install()`/export gap (benefiting the GitHub Releases artifacts and
   any future packaging milestone) - it does not add a `ports/libsmbios/`
   vcpkg port.
+- **All CI work follows ADR 0005 and milestone 0014's foundation.** The
+  rules come from there, not from this plan: every step is one
+  `stage.py` invocation, logic lives only in neutral scripts, every stage
+  uses the pinned runners and tools, and the stage contracts SC1-SC4,
+  RC1-RC5 and policy rules P1-P13 apply. Nothing in this milestone adds a
+  workflow file other than `stage-package.yml`, `stage-verify.yml` and
+  `stage-publish.yml`, or a job to the entry workflow.
+- **One version source (ADR 0005 D5).** The root `CMakeLists.txt`
+  `project(... VERSION)` is authoritative. `SMBIOS_C_VERSION`/
+  `LIBSMBIOS_VERSION` derive from it, while the port `vcpkg.json`, the
+  registry baseline and the release tag are checked against it. This
+  supersedes Story 03.0 Task 02's "versions may drift". The derivation is
+  a root-CMake change owned by Story 04.0 Task 01.
 - **Every verification task in this milestone is a packaging-correctness
   test, not a unit test.** None of them is a Boost.Test case under
   `tests/unit|mock|perf|integration/` (the four categories
@@ -243,8 +280,26 @@ flowchart TD
     A["Story 01.0<br/>libsmbios install rules &amp; package export"] --> C["Story 03.0<br/>GitHub Releases prebuilt artifacts"]
     B["Story 02.0<br/>Self-hosted vcpkg port for smbios_c"] --> M["Milestone exit"]
     A --> M
+    C --> D["Story 04.0<br/>Release &amp; publish automation"]
+    B --> D
+    D --> M
     C --> M
+    F["Milestone 0014<br/>pipeline foundation (Stories 01.0-03.0,<br/>04.0 Task 02 tier table)"] --> C
+    F --> D
 ```
+
+**The workflow work depends on milestone 0014 (ADR 0005).** Story 03.0
+(the `package` stage) and Story 04.0 (the `verify`/`publish` stages) can
+only start when 0014 has delivered:
+
+- the step runner, reporter backends and neutral env names (Story 01.0);
+- the pins and the policy gate (Story 02.0);
+- `stage.py`, the reusable stage workflows, `check_versions.py` and the
+  install-tree export from the build stage (Story 03.0);
+- the tier table rows for package/verify/publish (Story 04.0 Task 02).
+
+Stories 01.0 and 02.0 (CMake install/export, port files) do not touch CI
+and do not depend on 0014.
 
 Story 03.0 has a real, technical dependency on Story 01.0: its
 per-platform release tarball bundles `libsmbios`'s own `install()` output
@@ -262,6 +317,7 @@ implemented concurrently if desired.
 ## Links
 
 - **ADR implemented:** [docs/adr/0004-package-manager-distribution.md](/docs/adr/0004-package-manager-distribution.md)
+- **Pipeline ADR (CI/packaging/publishing as one subsystem):** [docs/adr/0005-unified-build-package-publish-pipeline.md](/docs/adr/0005-unified-build-package-publish-pipeline.md); foundation in [milestone 0014](/docs/roadmap/0014-ci-rework-from-scratch/plan.md)
 - **Direct precedent:** [docs/roadmap/0007-c-abi-shim-for-cross-language-interop/plan.md](/docs/roadmap/0007-c-abi-shim-for-cross-language-interop/plan.md)
   (Story 03.0 built `smbios_c`'s CMake target, `smbios_c.pc`, and deferred
   the vcpkg port decision this milestone now implements) and

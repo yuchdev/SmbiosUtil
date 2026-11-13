@@ -22,6 +22,7 @@ agent (milestone 0008).
 |--------------------------------------------------------------|---------------------------------------------------------------------|
 | [example-report.md](example-report.md)                       | Example efficiency audit.                                           |
 | [upstream-watch-2026-11-09.md](upstream-watch-2026-11-09.md) | First upstream watch: empty ranges; Windows doc baseline recorded. |
+| [milestone-0012-packaging-automation-2026-11-12.md](milestone-0012-packaging-automation-2026-11-12.md) | Milestone 0012 automation review: gaps, unknowns, new Story 04.0. |
 
 ## What a review report must contain
 

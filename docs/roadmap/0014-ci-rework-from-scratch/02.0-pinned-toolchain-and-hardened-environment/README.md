@@ -34,7 +34,7 @@ It also adds the gate that keeps those properties from drifting back: actionlint
 ## Non-goals
 
 - Self-hosted runners, container jobs, and caching apt packages (a cache of `.deb` files is a second stale-state source; the mirror fallback is enough).
-- Replacing `lukka/run-vcpkg` with a hand-written bootstrap. It is kept, SHA-pinned, unless Task 02 finds it cannot pin the vcpkg tool commit.
+- ~~Replacing `lukka/run-vcpkg` with a hand-written bootstrap.~~ **Reversed 2026-11-12 by [ADR 0005](/docs/adr/0005-unified-build-package-publish-pipeline.md):** policy rule P13 rejects an action whose job a neutral script can do. Task 02 therefore adds `scripts/ci/bootstrap_vcpkg.py`, which clones the pinned vcpkg commit and runs `bootstrap-vcpkg`, and that script replaces the action. Task 01's pins (runner labels, CMake/CTest/Ninja, vcpkg commit) live in one data file that every pipeline stage reads, including 0012's package/verify/publish.
 
 ## Open questions
 

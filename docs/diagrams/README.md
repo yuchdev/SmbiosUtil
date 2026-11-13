@@ -14,7 +14,8 @@ fix the diagram in the same change.
 | 3 | [`SMBios` construction](03-smbios-construction.md) | process (sequence, flow) | Source chain walk, per-platform source order, and the `read_smbios_table()` walk. |
 | 4 | [CLI run](04-cli-run.md) | process (flow) | `smbios` from argument parsing through `--format` to `render_document()`. |
 | 5 | [GUI flow](05-gui-flow.md) | process (sequence) | `build_entry_tree`, the ImGui frame, `display_text` + `TextUnformatted`, and "Copy as" via `render_entry_as`. |
-| 6 | [Test and CI flow](06-test-and-ci-flow.md) | process (flow) | `gui-ci` vs `gui-local` tiers and the `build`, `sanitizers` and `gui-build` CI jobs. |
+| 6 | [Test and CI flow](06-test-and-ci-flow.md) | process (flow) | `gui-ci` vs `gui-local` tiers and the `build`, `sanitizers` and `gui-build` CI jobs (as-is). |
+| 7 | [Build, package and publish pipeline](07-build-package-publish-pipeline.md) | process (flow), layering | Planned (ADR 0005) lint, build/test, package, verify, publish stages, artifact and digest gating, tier table, and the adapter / neutral `CI_*` / `stage.py` / reporter layering for CI-platform portability. |
 
 ## Conventions
 

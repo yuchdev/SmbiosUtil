@@ -17,7 +17,7 @@ Each block is bounded (plan E9).
 
 ## Files
 
-- **Create** `scripts/ci/job_summary.py`. It runs as the last step of every job with `if: always()`. It reads `$RUNNER_TEMP/ci-results.jsonl` (RC3) and `CI_ENV_LINE` (RC4), and appends one block of at most 30 lines and 4 KiB to `$GITHUB_STEP_SUMMARY`:
+- **Create** `scripts/ci/job_summary.py`. It runs as the last step of every job with `if: always()`. It reads `$CI_RESULTS_FILE` (RC3) and `CI_ENV_LINE` (RC4), and emits one block of at most 30 lines and 4 KiB through the reporter backend's `job_summary` event (ADR 0005). On GitHub that event appends the block to `$CI_SUMMARY_FILE`, which the adapter maps from `GITHUB_STEP_SUMMARY`. The block:
 
   ```text
   ### <job> (<leg>) - PASS | FAIL | PASS with <k> best-effort warnings

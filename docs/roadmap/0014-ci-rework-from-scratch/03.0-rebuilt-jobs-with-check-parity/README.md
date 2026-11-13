@@ -32,7 +32,7 @@ Target job topology (names are part of the contract, because branch protection m
 ## Key constraints
 
 - **The inventory is the contract.** A row is dropped only by its `plan.md` disposition (today only C05). Anything else that is found unnecessary while writing goes to the maintainer first.
-- **Every project-owned step is a `ci_step` call** (RC1-RC3) and passes the policy gate (P1-P9). No inline shell logic.
+- **Every project-owned step is one `stage.py` invocation** whose sub-steps are `ci_step` calls (RC1-RC3, SC1), and it passes the policy gate (P1-P13, [ADR 0005](/docs/adr/0005-unified-build-package-publish-pipeline.md)). No inline shell logic, and no platform syntax in scripts.
 - **Exit codes decide; structured output counts** (plan E4). Tests are counted from `ctest --output-junit`, never from the `% tests passed` line.
 - **Data hygiene for live-table steps** (C07, C08, C10, C14): counts only, no `--output-on-failure`, no artifact upload of their logs or JUnit files (RC1).
 - **ctest regexes are unchanged in meaning.** The C06/C13 `-R` regex and the C10/C14 regex are copied verbatim into one shared place (`scripts/ci/test_sets.json`), so `build` and `sanitizers` cannot drift apart.

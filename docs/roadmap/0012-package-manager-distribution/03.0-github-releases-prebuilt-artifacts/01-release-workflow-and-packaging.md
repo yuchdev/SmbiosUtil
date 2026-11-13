@@ -1,103 +1,82 @@
-# 01 - Release workflow and packaging
+# 01 - Package stage: archive the tested install tree
 
 **Parent story:** [README.md](README.md)
 **Status:** ⬜ Not started
+**Depends on:** milestone 0014 Story 03.0 Task 01 (`stage.py`, the
+install-tree export SC2)
+
+> **Amended 2026-11-12 by [ADR 0005](/docs/adr/0005-unified-build-package-publish-pipeline.md).**
+> The original version of this task specified a standalone tag-triggered
+> `release.yml` that rebuilt on `ubuntu-latest`/`macos-latest` and uploaded
+> with a marketplace action. That design is withdrawn, for three reasons:
+>
+> - It broke milestone 0014's policy rules P3 (floating labels), P6/P10
+>   (expressions in `run:`), P7 (multi-line shell) and P13 (an action
+>   where a script suffices).
+> - It shipped a build other than the tested one (ADR 0005 DD1).
+> - It raced three uploads into one release (review M2).
+>
+> Uploading is now the `publish` stage (Story 04.0 Task 02).
 
 ## Objective
 
-Add a CI workflow that, triggered by a version-tag push, builds this
-project on Windows/Linux/macOS via the existing `CMakePresets.json`
-presets, runs `cmake --install` into a scratch prefix, archives that
-prefix per platform, and uploads each archive to the GitHub Release
-corresponding to the pushed tag.
+Implement `python3 scripts/ci/stage.py package --leg <leg>`. For one
+packaging leg (`linux-x64`, `windows-x64`, `macos-arm64` - see 0014
+`legs.json`), it takes the build stage's tested
+`$CI_ARTIFACT_DIR/install/<leg>/` tree and produces the ADR 0005 D4 `dist/`
+entries. It never configures or builds.
 
 ## Files
 
-- **Create** `.github/workflows/release.yml`:
-  ```yaml
-  name: Release artifacts
-
-  on:
-    push:
-      tags: ["v*"] # exact pattern decided in Task 02's naming/versioning task
-
-  jobs:
-    package:
-      strategy:
-        matrix:
-          include:
-            - os: ubuntu-latest
-              preset: linux
-            - os: windows-latest
-              preset: windows
-            - os: macos-latest
-              preset: macos
-      runs-on: ${{ matrix.os }}
-      steps:
-        - uses: actions/checkout@<pinned-sha>
-        - name: Setup vcpkg
-          uses: lukka/run-vcpkg@<pinned-sha>
-          with:
-            vcpkgDirectory: ${{ github.workspace }}/vcpkg
-        - name: Configure
-          run: cmake --preset ${{ matrix.preset }}
-          env:
-            VCPKG_ROOT: ${{ github.workspace }}/vcpkg
-        - name: Build
-          run: cmake --build --preset ${{ matrix.preset }}
-        - name: Install
-          run: cmake --install build/${{ matrix.preset }} --prefix dist
-        - name: Archive
-          run: |
-            # exact archive tool/name is Task 02's job - illustrative only
-            tar -C dist -czf libbios-${{ github.ref_name }}-${{ matrix.preset }}.tar.gz .
-        - name: Upload to release
-          uses: softprops/action-gh-release@<pinned-sha>
-          with:
-            files: libbios-${{ github.ref_name }}-${{ matrix.preset }}.*
-  ```
-  (illustrative - archive format per OS, the release-upload action
-  choice, and exact step names are implementation decisions; pin every
-  third-party action to a commit SHA, matching this repo's existing
-  `ci.yml` convention.)
+- **Create** `scripts/ci/package_archive.py` (stdlib only). It:
+  - archives `install/<leg>/` as `.zip` on Windows legs and `.tar.gz`
+    elsewhere, with sorted entries, normalised mode bits and a fixed mtime;
+  - writes the `.sha256` file;
+  - merges its leg into `dist/manifest.json` (fields per ADR 0005 D4,
+    including the glibc / macOS minimum / MSVC toolset and the build
+    configuration).
+- **Modify** `scripts/ci/stage.py`: register the `package` stage. Its steps
+  go through `ci_step` (RC1-RC3).
+- **Create** `.github/workflows/stage-package.yml`: reusable, one
+  `stage.py package` step per leg, plus artifact download/upload of
+  `install/<leg>` and `dist/`. Every convention (pins, permissions,
+  neutral `CI_*` env, step shape) is defined by ADR 0005 and 0014, and the
+  policy gate checks it.
 
 ## Functions and Classes
 
-N/A - CI workflow only.
+```python
+def archive_tree(src: Path, dest: Path, fmt: Literal["zip", "tar.gz"]) -> Path: ...
+def sha256_file(path: Path) -> str: ...
+def update_manifest(manifest: Path, leg: str, archive: Path, meta: Mapping[str, str]) -> None: ...
+```
 
 ## Constraints
 
-- **Triggered only by a version-tag push**, never by an ordinary push or
-  pull request - this is a release artifact, not a CI-matrix build
-  check; `ci.yml`'s own existing jobs remain the per-push gate.
-- **Depends on Story 01.0's `libsmbios` `install()` rules** - without
-  them, `cmake --install` only produces `smbios_c`'s artifacts (and the
-  `smbios` CLI binary, which has no `install()` rule of its own either -
-  confirm during implementation whether the CLI binary should also gain
-  one so it is included in the release tarball; if so, record that as a
-  deliberate scope addition to Story 01.0's Task 01, not a silent extra
-  here).
-- **Must not require any secret beyond the default `GITHUB_TOKEN`** - no
-  new credential/signing-key management is introduced by this task.
-- Reuses the exact same preset names (`windows`/`linux`/`macos`) and
-  `VCPKG_ROOT`-driven toolchain this project's own `ci.yml` already uses
-  - no parallel build configuration invented for "release mode."
+- **No rebuild and no hand-assembled files**: the archive content is
+  exactly the `cmake --install` tree (ADR 0004 option 3, ADR 0005 D1).
+- **The shipped build configuration is decided in this story** and
+  recorded in `status.md` before implementation. The build stage's
+  packaging legs then build and test that configuration (0014 SC2).
+- **Whether the `smbios` CLI ships** in the tree is an open maintainer
+  question (ADR 0005 Open questions 3). If the answer is yes, the CLI's
+  `install()` rule is a scope addition to Story 01.0 Task 01, not part of
+  this task.
 
 ## Tests
 
-- Covered by Task 03 - the real test is downloading a produced artifact
-  on a clean machine and confirming it works, not a local dry run of the
-  workflow file's syntax alone.
+- `scripts/ci/tests/test_package_archive.py`: archiving the same tree twice
+  gives byte-identical archives; the manifest records the correct digest;
+  a missing `install/<leg>` exits 2 with one RC1 line.
+- End-to-end: covered by Story 04.0's `verify` stage.
 
 ## Success criteria
 
-- [ ] Pushing a version tag (e.g. a scratch `v0.0.0-test` tag during
-      implementation, deleted afterward) triggers the workflow and
-      produces three artifacts (one per OS) attached to the
-      corresponding GitHub Release (a draft/pre-release during testing).
-- [ ] Each artifact contains `smbios_c`'s library/headers/`.pc` file and,
-      per Story 01.0, `libsmbios`'s own installed library/headers/
-      package config - confirmed by inspecting the archive's contents,
-      not just its existence.
-- [ ] The workflow does not run on an ordinary push or pull request (no
-      change to `ci.yml`'s own existing trigger/behavior).
+- [ ] On a PR to `master`, `package` produces three archives, three
+      `.sha256` files and one manifest from the tested trees, with no
+      configure/build step in the stage.
+- [ ] Each archive contains `smbios_c`'s library/headers/`.pc` and
+      `libsmbios`'s installed library/headers/package config, confirmed by
+      listing the archive contents.
+- [ ] `stage.py package` runs locally against a local `install/<leg>/`
+      with `CI_REPORTER=plain`.

@@ -39,6 +39,19 @@ Spend runner time where it buys information (plan E7):
 | fork PR to `master`, push to `master`, nightly, dispatch `all` | yes | 3 OS | 2 OS | 3 OS |
 | dispatch with `jobs`/`os` set | yes | as selected | as selected | as selected |
 
+**ADR 0005 extension (2026-11-12; the Q1 ruling above is unchanged).** These columns are added for the pipeline stages that milestone 0012 defines. Until 0012 lands, the report shows them as `not run: stage not defined`.
+
+| Event | package | verify | publish |
+|-------|---------|--------|---------|
+| push (any branch), docs-only | - | - | - |
+| same-repo PR to `master` | yes (all packaging legs; the Linux packaging leg is rebuilt in this run) | yes | - |
+| fork PR, push to `master`, nightly, dispatch `all` | yes | yes | - |
+| tag `v*` (new trigger: `push: tags: ['v*']`) | yes | yes | yes |
+
+- **Tag runs** always run the full matrix and are never cancelled: the concurrency `cancel-in-progress` expression also excludes `refs/tags/`.
+- **Dispatch never reaches `publish`.** `matrix_for` receives `CI_EVENT`, never a GitHub event name, so the same function serves a TeamCity adapter (ADR 0005 Platform portability).
+- **Tiering is neutral.** `plan.py`/`classify_changes.py` emit a per-leg run/skip plan, which a leg can also consult itself and then print `skip: tier`.
+
 ## Functions and Classes
 
 ```python

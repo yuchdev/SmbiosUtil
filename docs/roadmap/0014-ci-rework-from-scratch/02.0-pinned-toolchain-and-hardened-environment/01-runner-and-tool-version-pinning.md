@@ -10,7 +10,7 @@ Every job runs on an explicit runner label with the same CMake/CTest/Ninja versi
 ## Files
 
 - **Create** `scripts/ci/requirements-tools.txt`: `cmake==<x.y.z>` and `ninja==<x.y.z>` from PyPI (the Kitware-maintained wheels), with `--hash=sha256:` lines for every wheel of the three runner platforms. Installed with `pip install --require-hashes --no-deps -r scripts/ci/requirements-tools.txt` into a job-local venv or `--user`. This needs no third-party action and pins by hash.
-- **Create** `scripts/ci/print_env.py`. It prints the RC4 line, writes it as the first line of `$GITHUB_STEP_SUMMARY`, and sets `CI_ENV_LINE` in `$GITHUB_ENV` for the RC3 records. Each probe has a 10 s timeout, and a missing tool prints `-`, never a failure, because this step is `info`.
+- **Create** `scripts/ci/print_env.py`. It prints the RC4 line and writes it as the first line of the job summary through the reporter backend (ADR 0005; `$CI_SUMMARY_FILE` on GitHub). It also hands `CI_ENV_LINE` to later steps for the RC3 records, by writing it to a file under `$CI_TEMP_DIR` rather than `$GITHUB_ENV`, so the hand-off stays platform-neutral. Each probe has a 10 s timeout, and a missing tool prints `-`, never a failure, because this step is `info`.
 - **Record** in this task's as-built notes: the chosen labels, the CMake/Ninja versions, and the vcpkg commit.
 
 ## Functions and Classes

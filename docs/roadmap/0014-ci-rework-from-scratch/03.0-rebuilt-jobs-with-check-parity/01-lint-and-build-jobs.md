@@ -20,6 +20,12 @@ Create `ci-next.yml` with the `lint` job and the 3-OS `build` job, carrying C01-
   - for each of `text xml json yaml csv`: run `examples/scripts/check_structured_output.py --format <f> -- [sudo] <bin> --format <f>` without a shell. Collect its `ok: <fmt>, <N> ...` line, and turn a `0 structures`/`0 rows` result into one `::warning title=empty table::` per format, as today;
   - byte-compare no-flag output with `--format text` in memory, never printed or written to the workspace. A mismatch prints `no-flag output: expected == --format text -> actual differs (<a> vs <b> bytes)`;
   - success: one line, `ok: cli formats: text <n>, xml <n>, json <n>, yaml <n>, csv <n>; no-flag == text`.
+- **ADR 0005 amendment (2026-11-12). Stage shape:**
+  - `ci-next.yml` is the entry workflow. It holds the triggers, the workflow-level `env:` mapping of `github.*` values to the neutral `CI_*` names, and `permissions`. Its jobs call the reusable `stage-lint.yml`/`stage-build.yml` (`on: workflow_call`).
+  - Every project-owned step is one `python3 scripts/ci/stage.py <stage> --leg <leg> [--only <step>]` line (plan SC1, policy P7/P10), and the step list above becomes `stage.py`'s internal sequence.
+  - **Create** `scripts/ci/stage.py` (`lint`, `build`, `test`), `scripts/ci/legs.json`, `scripts/ci/check_versions.py` + `scripts/ci/version_sites.json` (plan SC3; runs in `lint`), and `scripts/ci/bootstrap_vcpkg.py`'s call site, which replaces `run-vcpkg`.
+  - On packaging legs, `build` also runs `cmake --install` into `$CI_ARTIFACT_DIR/install/<leg>/` and uploads it as a stage artifact (plan SC2). The configuration built is the one 0012 Story 03.0 names as shipped.
+  - `package`/`verify`/`publish` are not defined here (milestone 0012).
 - **Failure-log artifacts:** only if plan Q3 is answered yes. Then a failing configure/build step's log goes to `actions/upload-artifact` (SHA-pinned, `if: failure()`, `retention-days: 3`, name `logs-<job>-<leg>`). Live-table and test logs are never uploaded.
 
 ## Functions and Classes
