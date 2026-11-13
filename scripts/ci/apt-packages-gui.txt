@@ -1,0 +1,12 @@
+# System packages for the GUI Linux leg (milestone 0011 final list; read by
+# scripts/ci/apt_install.py, milestone 0014 Story 02.0 Task 02).
+# One or more Debian package names per line; '#' starts a comment.
+
+# From the vcpkg glfw3 port's own message (ports/glfw3/portfile.cmake);
+# Wayland is not enabled.
+libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config
+
+# Not in the glfw3 message: on Linux glfw3 depends on libx11, which vcpkg
+# builds from source with vcpkg_make (ports/vcpkg-make/vcpkg_make.cmake), and
+# that needs autoconf, autoconf-archive, automake and libtool from the system.
+autoconf autoconf-archive automake libtool

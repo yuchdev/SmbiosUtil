@@ -45,11 +45,13 @@ Spend runner time where it buys information (plan E7):
 |-------|---------|--------|---------|
 | push (any branch), docs-only | - | - | - |
 | same-repo PR to `master` | yes (all packaging legs; the Linux packaging leg is rebuilt in this run) | yes | - |
-| fork PR, push to `master`, nightly, dispatch `all` | yes | yes | - |
-| tag `v*` (new trigger: `push: tags: ['v*']`) | yes | yes | yes |
+| fork PR, nightly, dispatch `all` | yes | yes | - |
+| tag `v*` (new trigger: `push: tags: ['v*']`) | yes | yes | yes (`release`-tier destinations) |
+| push to `master` | yes | yes | `staging`-tier destinations only (ADR 0005 D9 as amended 2026-11-13) |
 
 - **Tag runs** always run the full matrix and are never cancelled: the concurrency `cancel-in-progress` expression also excludes `refs/tags/`.
-- **Dispatch never reaches `publish`.** `matrix_for` receives `CI_EVENT`, never a GitHub event name, so the same function serves a TeamCity adapter (ADR 0005 Platform portability).
+- **Trigger allowlist** (2026-11-13, threat model CR-1, policy P8). `on:` names only `push`, `pull_request`, `schedule`, `workflow_dispatch` and `workflow_call`. No `pull_request_target`, `workflow_run`, `issue_comment`, review or discussion trigger, and no `secrets: inherit`.
+- **Dispatch never reaches `publish`,** for either tier. `plan.py` emits a publish row only for `CI_EVENT=tag` (release tier) or `CI_EVENT=push` with `CI_REF=refs/heads/master` (staging tier). `matrix_for` receives `CI_EVENT`, never a GitHub event name, so the same function serves a TeamCity adapter (ADR 0005 Platform portability).
 - **Tiering is neutral.** `plan.py`/`classify_changes.py` emit a per-leg run/skip plan, which a leg can also consult itself and then print `skip: tier`.
 
 ## Functions and Classes
@@ -64,11 +66,16 @@ def matrix_for(event: str, ref: str, classification: str, jobs: str, os: str) ->
 
 - **No `paths:`/`paths-ignore:` filters on `on:`.** A workflow skipped by path never reports, which leaves required checks pending (Q5). Classification happens inside the run, and the skipped legs are reported.
 - The `plan` job's outputs are JSON built by a script and passed through `fromJSON`. No expression concatenates user-controlled strings, such as branch names.
+- **Output channel** (2026-11-13, CR-6/CR-8). `plan.py` writes its outputs only through `Reporter.set_output()` (Story 02.0 Task 04): single-line JSON, no CR/LF, random per-call delimiter. It emits only runner labels found in the pins file and only legs in `legs.json`.
+- **Inputs are re-validated.** `plan.py` checks `jobs`, `os` and every `CI_*` value it reads against its own allowlists and exits 2 on an unknown value (for example `all\nmatrix=...`); it never trusts the platform's `type: choice` validation, because an actor with write access can send any string through the API.
+- **`env:` sources.** The `CI_*` mapping in the workflow-level `env:` reads only the contexts policy rule P10 allows (`github.event.before` and `github.event.pull_request.base.sha` for `CI_BASE_COMMIT`; never `head_ref`, titles, bodies or commit messages).
+- **Digest hand-off between stages uses job outputs, not artifacts** (CR-8). The `build` job's tree digest and artifact ID (Story 03.0 Task 01), and later 0012's `package` manifest digest, reach downstream stages as `needs.<job>.outputs.*`, which `ci.yml` passes through to the reusable stage workflows as `workflow_call` inputs.
 - The nightly schedule runs only on the default branch, by GitHub's own rule, and is the only event besides `master` pushes that saves the vcpkg cache.
 
 ## Tests
 
-- `scripts/ci/tests/test_classify_changes.py`: docs-only gives `docs`; a golden file under `tests/data/` gives `full`; a missing base gives `full`; and the tier table is checked row by row through `matrix_for`.
+- `scripts/ci/tests/test_classify_changes.py`: docs-only gives `docs`; a golden file under `tests/data/` gives `full`; a missing base gives `full`; and the tier table is checked row by row through `matrix_for`, including: dispatch never yields a publish row; a `master` push yields only `staging`-tier publish rows; a tag yields only `release`-tier rows.
+- `plan.py` tests: input `all\nmatrix=...` -> exit 2; output values never contain CR/LF; an unknown label in `legs.json` or one missing from the pins file -> exit 2.
 - On real runs:
   - a docs-only push runs `lint` only, and the report shows the others as `not run: tier`;
   - two quick pushes to one branch -> the first run is cancelled;

@@ -1,0 +1,8 @@
+=================================================================
+==4242==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x602000000011 at pc 0x0001 bp 0x0002 sp 0x0003
+READ of size 2 at 0x602000000011 thread T0
+    #0 0x0001 in synthetic_count_structures synthetic.cpp:10
+    #1 0x0002 in main synthetic_main.cpp:3
+0x602000000011 is located 0 bytes after 1-byte region [0x602000000010,0x602000000011)
+SUMMARY: AddressSanitizer: heap-buffer-overflow synthetic.cpp:10 in synthetic_count_structures
+==4242==ABORTING

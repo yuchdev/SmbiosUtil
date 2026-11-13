@@ -1,0 +1,19 @@
+build (windows)	Set up job	2026-11-13T10:00:00.1234567Z Current runner version: '2.330.0'
+build (windows)	Checkout	2026-11-13T10:00:00.1234567Z Syncing repository: owner/repo
+build (windows)	Compile (Windows)	2026-11-13T10:00:00.1234567Z ##[group]Run python scripts/ci/stage.py build --only compile
+build (windows)	Compile (Windows)	2026-11-13T10:00:00.1234567Z python scripts/ci/stage.py build --only compile
+build (windows)	Compile (Windows)	2026-11-13T10:00:00.1234567Z shell: /usr/bin/bash -e {0}
+build (windows)	Compile (Windows)	2026-11-13T10:00:00.1234567Z env:
+build (windows)	Compile (Windows)	2026-11-13T10:00:00.1234567Z   CI_PLATFORM: github
+build (windows)	Compile (Windows)	2026-11-13T10:00:00.1234567Z ##[endgroup]
+build (windows)	Compile (Windows)	2026-11-13T10:00:00.1234567Z ok: vcpkg bootstrap: 00c5775211f4 (20.0s)
+build (windows)	Compile (Windows)	2026-11-13T10:00:00.1234567Z ok: configure (40.0s)
+build (windows)	Compile (Windows)	2026-11-13T10:00:00.1234567Z ##[error]build failed (exit 1, 50.0s): x.cpp(10): error C2065: 'y': undeclared identifier
+build (windows)	Compile (Windows)	2026-11-13T10:00:00.1234567Z --- build: first 1 of 1 diagnostic lines ---
+build (windows)	Compile (Windows)	2026-11-13T10:00:00.1234567Z L812: x.cpp(10): error C2065: 'y': undeclared identifier
+build (windows)	Compile (Windows)	2026-11-13T10:00:00.1234567Z --- build: last 3 lines ---
+build (windows)	Compile (Windows)	2026-11-13T10:00:00.1234567Z TEST-SERIAL-0000 must never be relayed
+build (windows)	Compile (Windows)	2026-11-13T10:00:00.1234567Z Build FAILED.
+build (windows)	Compile (Windows)	2026-11-13T10:00:00.1234567Z ##[error]Process completed with exit code 1.
+build (windows)	Upload configure/build logs	2026-11-13T10:00:00.1234567Z Artifact logs-build-windows uploaded
+build (windows)	Complete job	2026-11-13T10:00:00.1234567Z Cleaning up orphan processes

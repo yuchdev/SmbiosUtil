@@ -1,0 +1,13 @@
+::error::100% injected%0Aannotation
+::add-mask::not-a-secret
+::stop-commands::x
+::warning::injected warning
+[31merror: coloured diagnostic[0m
+bytes ÿþÃ invalid utf-8 here
+##teamcity[buildProblem description='injected' identity='x']
+##teamcity[enableServiceMessages]
+progress 10%progress 100%cr-only line end::x::
+##[set-output name=x;]y
+##[error]x
+ok: x ##teamcity[buildStatus text='green']
+last hostile line

@@ -1,8 +1,8 @@
 # Story 03.0 - Rebuilt Jobs with Check Parity
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
-**Depends on:** Story 01.0 (inventory, step runner, harness), Story 02.0 (pinning, install, policy gate; threat model written)
+**Status:** 🔶 In progress (Tasks 01-03 implemented locally)
+**Depends on:** Story 01.0 (inventory, step runner, harness), Story 02.0 (pinning, install, policy gate, step-runner security follow-ups; threat model written: [2026-11-13-ci-rework.md](/docs/security/2026-11-13-ci-rework.md), whose per-task requirements are standing input for every task here)
 **Flag:** `security_sensitive`. The R-7/R-8 proofs (C18, C20) are merge-blocking under [docs/security/2026-11-11-gui-test-tiers.md](/docs/security/2026-11-11-gui-test-tiers.md).
 
 ## Scope
@@ -24,9 +24,9 @@ Target job topology (names are part of the contract, because branch protection m
 
 | #  | Document | Status | Blocks |
 |----|----------|--------|--------|
-| 01 | [`lint` and `build` jobs](01-lint-and-build-jobs.md) | ⬜ Not started | 02, 03, 04 |
-| 02 | [Test reporting and the `sanitizers` job](02-test-reporting-and-sanitizer-jobs.md) | ⬜ Not started | 03, 04 |
-| 03 | [`gui` job and the R-7/R-8 guard port](03-gui-job-and-guard-port.md) | ⬜ Not started | 04 |
+| 01 | [`lint` and `build` jobs](01-lint-and-build-jobs.md) | ✅ Complete locally (runner checks pending) | 02, 03, 04 |
+| 02 | [Test reporting and the `sanitizers` job](02-test-reporting-and-sanitizer-jobs.md) | ✅ Complete locally (runner checks pending) | 03, 04 |
+| 03 | [`gui` job and the R-7/R-8 guard port](03-gui-job-and-guard-port.md) | ✅ Complete locally (runner checks and security review pending) | 04 |
 | 04 | [Parity gate, negative proofs and cutover](04-parity-gate-negative-proofs-and-cutover.md) | ⬜ Not started | Story 04.0 |
 
 ## Key constraints

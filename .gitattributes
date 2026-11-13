@@ -1,3 +1,7 @@
 # Golden doc samples are compared byte-for-byte (tests/unit/doc_samples_test.cpp,
 # scripts/check_doc_samples.py): never convert their line endings.
 tests/data/output_formats/** -text
+
+# CI-runner test fixtures carry deliberate CR-only line endings and invalid
+# UTF-8 (scripts/ci/tests/fixtures/hostile.log): never convert them.
+scripts/ci/tests/fixtures/** -text

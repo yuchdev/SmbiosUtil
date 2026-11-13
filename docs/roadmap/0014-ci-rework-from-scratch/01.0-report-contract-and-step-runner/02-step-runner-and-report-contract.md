@@ -1,7 +1,7 @@
 # 02 - Step runner implementing the report contract
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-13, proven by Task 03's 37 tests on macOS; the three-runner `self-test` check is due in the first Story 03.0 run)
 **Depends on:** Task 01
 
 ## Objective
@@ -83,6 +83,6 @@ None in this task. All of them are in [Task 03](03-workflow-script-test-harness.
 
 ## Success criteria
 
-- [ ] `run` and `self-test` behave as RC1-RC3 specify, proven by Task 03's tests.
-- [ ] Locally (macOS) and on all three runners in the first Story 03.0 run, `self-test` prints one `ok:` line.
-- [ ] The file has no third-party import, and `python3 -I scripts/ci/ci_step.py --help` works from any working directory.
+- [x] `run` and `self-test` behave as RC1-RC3 specify, proven by Task 03's tests.
+- [ ] Locally (macOS) and on all three runners in the first Story 03.0 run, `self-test` prints one `ok:` line. *(macOS: done, `SelfTestIsOneOkLine`; three runners: pending the first Story 03.0 run.)*
+- [x] The file has no third-party import, and `python3 -I scripts/ci/ci_step.py --help` works from any working directory (`HelpWorksIsolatedFromAnyDirectory`).

@@ -1,0 +1,160 @@
+# Reusable `build` stage (milestone 0014, Story 03.0 Task 01; ADR 0005 D8).
+# Inventory rows: C03 (vcpkg cache), C04 (configure + build), C06/C10
+# (Windows ctest sets; Linux live-table under sudo, plan Q4), C07/C08/C09 (every --format through the real CLI),
+# C11 (job and step budgets, ctest --timeout 60). Every `run:` step is one
+# stage-command line (P7); the logic is in scripts/ci/stage.py.
+#
+# Legs: the matrix carries only the leg name. The runner label, preset,
+# build configuration and sudo use come from scripts/ci/legs.json and
+# scripts/ci/pins.json (the runner labels below equal pins.json "runners";
+# scripts/ci/tests/test_stage.py checks both). Tiering (plan Q1): a push to
+# a branch other than master runs only the Linux leg; every other event the
+# full matrix. stage.py applies the same rule itself and prints `skip:` for
+# a leg outside the tier.
+#
+# Steps run twice, once per interpreter name: the run: line must be a
+# literal (P6/P7), and the Windows image has `python` but no `python3`.
+name: stage-build
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+# Neutral names (ADR 0005 "Neutral environment names"). runner.temp is only
+# available at step level, so CI_TEMP_DIR is set on each stage step.
+env:
+  CI_PLATFORM: github
+  CI_REPORTER: github
+  CI_RUN_ID: ${{ github.run_id }}
+  CI_RUN_ATTEMPT: ${{ github.run_attempt }}
+  CI_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  CI_EVENT: ${{ github.ref_type == 'tag' && 'tag' || github.event_name == 'pull_request' && 'pr' || github.event_name == 'workflow_dispatch' && 'manual' || github.event_name }}
+  CI_REF: ${{ github.ref }}
+  CI_REF_NAME: ${{ github.ref_name }}
+  CI_COMMIT: ${{ github.sha }}
+  CI_BASE_COMMIT: ${{ github.event.pull_request.base.sha || github.event.before }}
+  CI_WORKSPACE: ${{ github.workspace }}
+
+jobs:
+  build:
+    name: build (${{ matrix.leg }})
+    runs-on: ${{ matrix.leg == 'windows' && 'windows-2022' || matrix.leg == 'macos' && 'macos-15' || 'ubuntu-24.04' }}
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        leg: ${{ fromJSON(github.event_name == 'push' && github.ref_type == 'branch' && github.ref != 'refs/heads/master' && '["linux"]' || '["linux", "windows", "macos"]') }}
+    env:
+      CI_JOB: build
+      CI_LEG: ${{ matrix.leg }}
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 3
+        with:
+          persist-credentials: false
+
+      # Pinned tools (job-local venv), RC4 header, ci_step self-test, and the
+      # vcpkg cache key as the step outputs `cache` ({"key", "restore_prefix"})
+      # and `cache_enabled` (false on a tag-event packaging leg, CR-2).
+      - name: Prepare
+        id: prepare
+        if: matrix.leg != 'windows'
+        run: python3 scripts/ci/stage.py build --only prepare
+        timeout-minutes: 6
+        env:
+          CI_TEMP_DIR: ${{ runner.temp }}
+
+      - name: Prepare (Windows)
+        id: prepare-win
+        if: matrix.leg == 'windows'
+        run: python scripts/ci/stage.py build --only prepare
+        timeout-minutes: 6
+        env:
+          CI_TEMP_DIR: ${{ runner.temp }}
+
+      # Restore only; the files provider directory is $CI_TEMP_DIR/vcpkg-binary-cache
+      # (bootstrap_vcpkg.py). Restored on every event except a tag-event
+      # packaging leg (cache_enabled false).
+      - name: Restore vcpkg cache
+        id: cache-restore
+        if: (steps.prepare.outputs.cache_enabled || steps.prepare-win.outputs.cache_enabled) == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        timeout-minutes: 5
+        with:
+          path: ${{ runner.temp }}/vcpkg-binary-cache
+          key: ${{ fromJSON(steps.prepare.outputs.cache || steps.prepare-win.outputs.cache).key }}
+          restore-keys: ${{ fromJSON(steps.prepare.outputs.cache || steps.prepare-win.outputs.cache).restore_prefix }}
+
+      # bootstrap_vcpkg.py (pinned commit, HEAD and tool SHA-512 checks,
+      # VCPKG_BINARY_SOURCES starting `clear;`), configure, cache-health line,
+      # build. Logs stay in $CI_TEMP_DIR/ci-logs.
+      - name: Compile
+        id: compile
+        if: matrix.leg != 'windows'
+        run: python3 scripts/ci/stage.py build --only compile
+        timeout-minutes: 15
+        env:
+          CI_TEMP_DIR: ${{ runner.temp }}
+
+      - name: Compile (Windows)
+        id: compile-win
+        if: matrix.leg == 'windows'
+        run: python scripts/ci/stage.py build --only compile
+        timeout-minutes: 15
+        env:
+          CI_TEMP_DIR: ${{ runner.temp }}
+
+      # Plan Q3 / threat model CR-10: the full configure and build logs of a
+      # failing compile step, as literal file paths only (never a directory or
+      # a glob), 3-day retention. A log above 50 MiB was renamed by stage.py
+      # and is skipped here. Test and live-table logs are never uploaded.
+      - name: Upload configure/build logs
+        id: upload-logs
+        if: failure() && (steps.compile.outcome == 'failure' || steps.compile-win.outcome == 'failure')
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        timeout-minutes: 3
+        with:
+          name: logs-build-${{ matrix.leg }}
+          path: |
+            ${{ runner.temp }}/ci-logs/configure.log
+            ${{ runner.temp }}/ci-logs/build.log
+          include-hidden-files: false
+          if-no-files-found: ignore
+          retention-days: 3
+
+      # C06 (Windows, hard), C09 (Linux info line), C07/C08 (every leg,
+      # counts only), C10 (Windows, best-effort) and the plan Q4 live-table
+      # set under sudo -n (Linux, best-effort). ctest sets run through
+      # ctest_report.py (exit code decides, counts from JUnit); live-table
+      # children run under ci_step --hygiene counts-only and their logs and
+      # JUnit files are never uploaded.
+      - name: Test
+        id: test
+        if: matrix.leg != 'windows'
+        run: python3 scripts/ci/stage.py test
+        timeout-minutes: 8
+        env:
+          CI_TEMP_DIR: ${{ runner.temp }}
+
+      - name: Test (Windows)
+        id: test-win
+        if: matrix.leg == 'windows'
+        run: python scripts/ci/stage.py test
+        timeout-minutes: 8
+        env:
+          CI_TEMP_DIR: ${{ runner.temp }}
+
+      # Cache writes only from a push to master or the nightly schedule
+      # (threat model CR-2, policy P15); never from a PR, a branch or a tag.
+      - name: Save vcpkg cache
+        id: cache-save
+        if: ((github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'schedule') && (steps.prepare.outputs.cache_enabled || steps.prepare-win.outputs.cache_enabled) == 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        timeout-minutes: 5
+        with:
+          path: ${{ runner.temp }}/vcpkg-binary-cache
+          key: ${{ fromJSON(steps.prepare.outputs.cache || steps.prepare-win.outputs.cache).key }}

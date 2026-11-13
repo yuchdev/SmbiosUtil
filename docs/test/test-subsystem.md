@@ -33,6 +33,12 @@ The local-only tier is controlled by `SMBIOS_GUI_LOCAL_TESTS` (default ON for a 
 
 **Child processes in the local tier** go only through `spawn_and_capture()` (`tests/gui/support/process_spawn.{hpp,cpp}`, threat model R-16): no shell and no PATH search (POSIX `fork` + `execv`; no shell, no libc process helpers that search PATH), no inherited descriptors (the POSIX child closes every descriptor above 2, except the close-on-exec exec-error pipe, before `execv` and resets SIGPIPE to its default; Windows inherits only the three standard handles), an absolute executable path that must be an existing regular file, and arguments that are compile-time literals (`LiteralArg` has a `consteval` constructor, so a runtime string does not compile; the paths come from the compile definitions `SMBIOS_GUI_AUTOEXIT_PATH`/`SMBIOS_CLI_PATH`). The child's working directory is set in the child (`chdir` after `fork`; `lpCurrentDirectory` on Windows), never in the test process. A 30 s deadline kills (whole process group) and reaps the child; stdout and stderr are drained together into memory, capped at 64 MiB in total (past the cap the child is killed); stdin is the null device. The result (status, exit code, both outputs, elapsed time) stays in memory and is never printed: assertions report status names, exit codes and byte counts only. `ScopedTempDirectory` (`support/scoped_temp_directory.*`, `mkdtemp`, mode 0700, R-17) gives the twin a fresh working directory; `display_and_gl_available()` (`support/display_probe.*`) opens and closes a hidden GLFW window with `main.cpp`'s context hints to decide the display skip. **Windows caveat: the Windows branches of `process_spawn.cpp` (`CreateProcessW` + Job Object with `KILL_ON_JOB_CLOSE`, reader threads, `PROC_THREAD_ATTRIBUTE_HANDLE_LIST`) and `scoped_temp_directory.cpp` are UNVERIFIED - never compiled or run, because the local-only tier is never built on CI and has only been run on macOS.** On Linux the POSIX branch is the macOS one, also not yet run there.
 
+**CI scripts (milestone 0014) - a separate, non-CTest category.** `scripts/ci/tests/` holds Python `unittest` suites for the CI step runner (`scripts/ci/ci_step.py`), its reporter backends and the neutral environment names. They are stdlib only and need no build, hardware or network. Run them all with `python3 scripts/ci/run_tests.py`, which prints one RC1 line. They are not registered with `ctest`, and CI's `lint` job runs them once 0014 Story 02.0 wires that job.
+
+| Category | Directory | Entry point | Needs root/admin? | Always expected green? |
+|----------|-----------|-------------|--------------------|--------------------------|
+| CI scripts | `scripts/ci/tests/` | `python3 scripts/ci/run_tests.py` (`unittest discover`) | No | Yes. Shell-flag cases skip with one line when no `bash` is found. |
+
 **No `e2e` category.** A hardware-inventory library/CLI has no user journey
 distinct from "construct an `SMBios`, read its structures" - that journey
 *is* the integration suite. Adding a separate `e2e` layer here would just
@@ -237,6 +243,19 @@ any type never directly named in that binary's own code, so `smbios_c`'s
 behavior could silently diverge from the CLI's for exactly those types
 without a test exercising every real structure, not just the ones the
 shim's own source happens to name.
+
+### CI scripts - `scripts/ci/tests/` (`python3 scripts/ci/run_tests.py`, Python `unittest`)
+
+Milestone 0014 Story 01.0 Task 03. The fixtures in `scripts/ci/tests/fixtures/` are small synthetic logs with no firmware data. The 50 MB `huge.log` is generated at test time and never committed.
+
+| Suite (file) | Cases | Covers | Guards against |
+|---|---|---|---|
+| `ReportContractTests` (`test_ci_step.py`) | 17 | RC1 grammar and ceilings (one `ok:` line; at most 20 diagnostic + 40 tail lines, 64 lines and 16 KiB; tail never repeats a diagnostic); a 50 MB log with peak traced memory under 64 MiB; a hostile log fenced by `stop-commands` with a fresh per-call token and an escaped annotation; RC5 best-effort exits 0 with an `outcome=warn` record; exit 127/143/70 and usage exit 2 with no traceback; both ctest summary wordings; the pattern sets against the cxx/boost/ASan fixtures; `ACTIONS_*_DEBUG` not passed to the child; `self-test`; `--help` under `-I` | CI output floods, injected workflow commands, lost exit codes, and summary-text parsing that breaks on a ctest version change (plan E4) |
+| `ReporterBackendTests` (`test_ci_step.py`) | 8 | ADR 0005: `github`, `teamcity` and `plain` each render every neutral event (`step_ok/fail/warn/skip`, the untrusted-block fence, `internal_error`, `job_summary`). Each backend is checked against a hostile `::error::` line and a hostile `##teamcity[` line. Also covers the `%` and `\|` escaping and backend selection through `--reporter`/`CI_REPORTER` | A backend that leaks a service message or workflow command out of the fence, or drifts from the ADR 0005 mapping table |
+| `EnvNamesTests` (`test_ci_step.py`) | 5 | Neutral-name accessor: a missing required name exits 2 with one line; local defaults apply; unknown or platform names are rejected | Scripts that fail obscurely, or read platform variables, when the CI adapter forgets a name |
+| `P11PolicyTests` (`test_ci_step.py`) | 2 | No `${{`, `%teamcity.`, `##teamcity[`, `::error`, `::warning`, `::stop-commands` or `GITHUB_`/`RUNNER_`/`TEAMCITY_` names under `scripts/ci/`. Exempt: `reporters/`, `env_names.py` and `tests/`. Includes a positive control for the scanner | Platform syntax leaking into neutral scripts (ADR 0005 portability) |
+| `ShellFlagsHarness` (`test_shell_flags.py`) | 3 | Runs shell under `bash --noprofile --norc -e -o pipefail` with Python stubs on a temporary `PATH`. The 0011 `run_quiet` bug form fails silently; the corrected one-call form exits with the documented code after printing its RC1 lines | Plan E5: shell that was never tested under the runner's flags |
+| `ShellScriptsUnderRunnerFlags` (`test_shell_flags.py`) | 2 | Every `scripts/ci/**/*.sh` (declares `# ci-expected-exit: <n>`), and workflow `run:` blocks. Both skip today: there is no `*.sh`, and the extractor is not yet built (0014 Story 02.0 Task 03) | E5 regressions in any shell added later |
 
 ## Intended coverage (committed, not yet implemented)
 

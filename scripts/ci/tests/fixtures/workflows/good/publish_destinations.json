@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "about": "Fixture for test_check_workflow_policy.py.",
+  "destinations": [
+    {"name": "s3-staging", "enabled": true, "tier": "staging", "permission_class": "oidc",
+     "environment": "staging", "credentials": ["CI_PUBLISH_S3_ROLE"]},
+    {"name": "github-release", "enabled": true, "tier": "release", "permission_class": "repo-write",
+     "environment": "release", "credentials": ["CI_PUBLISH_TOKEN"]}
+  ]
+}

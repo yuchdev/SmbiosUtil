@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "about": "Named ctest selections (milestone 0014 Story 03.0 Task 02, plan E4). The selection arguments are copied verbatim from the old ci.yml so the build, sanitizers and gui jobs cannot drift apart. ctest_report.py adds, for every set: --test-dir, -C <config> where the leg has one, --output-junit $CI_TEMP_DIR/junit-<label>.xml, --timeout <timeout> (inventory C11) and --no-tests=error. 'output_on_failure' adds --output-on-failure; 'live_table' sets read the real SMBIOS table, so they never use --output-on-failure, always run under ci_step --hygiene counts-only (logs under CI_LOG_DIR/live/), and their logs and JUnit files are never uploaded (RC1 data hygiene, threat model CR-9). 'inventory' names the plan.md rows the set serves.",
+  "timeout": "60",
+  "sets": {
+    "unprivileged": {
+      "args": ["-R", "smbios_unit_test|smbios_mock_test|smbios_c_|smbios_cli_unknown_format|smbios_example_"],
+      "output_on_failure": true,
+      "live_table": false,
+      "inventory": ["C06", "C13"]
+    },
+    "live_table": {
+      "args": ["-R", "smbios_integration_test|smbios_perf_test|smbios_cli_format_csv"],
+      "output_on_failure": false,
+      "live_table": true,
+      "inventory": ["C10", "C14"]
+    },
+    "gui_ci": {
+      "args": ["-L", "gui-ci"],
+      "output_on_failure": true,
+      "live_table": false,
+      "inventory": ["C19"]
+    }
+  }
+}

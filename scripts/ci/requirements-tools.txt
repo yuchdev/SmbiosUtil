@@ -1,0 +1,26 @@
+# Pinned CI build tools (milestone 0014, Story 02.0 Task 01; ADR 0005 D3).
+#
+# One CMake/CTest and one Ninja version on every leg, installed from the
+# Kitware-maintained PyPI wheels and checked by hash:
+#
+#   python3 -m pip install --require-hashes --no-deps --only-binary :all: \
+#       -r scripts/ci/requirements-tools.txt
+#
+# --only-binary :all: is required (threat model CR-7): without it a platform
+# with no matching wheel falls back to an sdist build, which executes code.
+# No sdist hash is listed here, so an sdist cannot satisfy --require-hashes.
+#
+# Hashes: one wheel per runner platform in scripts/ci/pins.json, taken from
+# https://pypi.org/pypi/<pkg>/<version>/json on 2026-11-13:
+#   manylinux2014_x86_64 (ubuntu-24.04, x64), macosx universal2 (macos-15,
+#   arm64; universal2 also covers x86_64), win_amd64 (windows-2022, x64).
+# The versions must equal pins.json "tools" (checked by test_print_env.py).
+
+cmake==4.4.4 \
+    --hash=sha256:f773a0544c66370408f451acd487c2c643b0dfebb48c5d64f3638bc1bb820238 \
+    --hash=sha256:883962a72b1b3a16ff445427f24c8caca9797dd9e563bbe208cbcd89e877f9d3 \
+    --hash=sha256:ad8e0a38b5707e27882701146bdfffecacd80e7703fa0fc36c77528518d545af
+ninja==1.13.2 \
+    --hash=sha256:65a24341b5ac09fcadcc37082660be40a94174e51a937fabf6e2cae26225fa2c \
+    --hash=sha256:fd82e26c0706ad4ab88e5fdd26f3fab0a987a90f810160f6c322e752c6af298b \
+    --hash=sha256:1293f4078278b70d0ee4b6cc8f3a9e030656c9b2f59909970343c4fe76070118

@@ -1,0 +1,13 @@
+Test project /work/build/synthetic
+    Start 1: synthetic_unit_test
+1/4 Test #1: synthetic_unit_test ..............   Passed    0.11 sec
+    Start 2: synthetic_mock_test
+2/4 Test #2: synthetic_mock_test ..............   Passed    0.02 sec
+    Start 3: synthetic_example_a
+3/4 Test #3: synthetic_example_a ..............   Passed    0.05 sec
+    Start 4: synthetic_example_b
+4/4 Test #4: synthetic_example_b ..............   Passed    0.04 sec
+
+100% tests passed, 0 tests failed out of 4
+
+Total Test time (real) =   0.24 sec

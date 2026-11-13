@@ -147,6 +147,9 @@ desktop.ini
 
 # Logs and temporary files
 *.log
+# ...except the committed synthetic CI-runner test fixtures (0014 Story 01.0 Task 03).
+# huge.log is generated at test time in a temp directory and never lands here.
+!/scripts/ci/tests/fixtures/*.log
 .claude/logs/
 .claude/state/
 *.tmp

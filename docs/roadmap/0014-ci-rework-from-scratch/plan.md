@@ -29,7 +29,7 @@ It keeps every check the current workflow performs. Each one is listed by ID in 
 | Story | Name | Category | Output |
 |-------|------|----------|--------|
 | 01.0 | Report contract, step runner and workflow-script test harness | infrastructure | Frozen check inventory + log-size baseline; `scripts/ci/ci_step.py` (RC1-RC3) with `github`/`teamcity`/`plain` reporter backends and the neutral env-name table (`scripts/ci/env_names.py`, ADR 0005); `scripts/ci/tests/` run under the runner's exact shell flags |
-| 02.0 | Pinned toolchain, hardened environment and least privilege | infrastructure | Pinned runner labels and CMake/CTest/Ninja/vcpkg versions in one data file read by every stage; one-line version header (RC4); robust apt install, `bootstrap_vcpkg.py` (replaces `lukka/run-vcpkg`) and vcpkg cache keys with a cache-health line; actionlint + `scripts/ci/check_workflow_policy.py` (P1-P13, incl. ADR 0005 portability and publish-privilege rules) |
+| 02.0 | Pinned toolchain, hardened environment and least privilege | infrastructure | Pinned runner labels and CMake/CTest/Ninja/vcpkg versions in one data file read by every stage; one-line version header (RC4); robust apt install, `bootstrap_vcpkg.py` (replaces `lukka/run-vcpkg`) and vcpkg cache keys with a cache-health line; actionlint + `scripts/ci/check_workflow_policy.py` (P1-P15, incl. ADR 0005 portability and publish-privilege rules); step-runner security follow-ups (env scrub, `--hygiene counts-only`, job-output channel; Task 04, threat model 2026-11-13) |
 | 03.0 | Rebuilt jobs with check parity | infrastructure | `scripts/ci/stage.py` (`lint`/`build`/`test`); entry `ci-next.yml` + reusable `stage-lint.yml`/`stage-build.yml`; `scripts/ci/check_versions.py` in `lint` (SC3); install-tree export on packaging legs (SC2); JUnit-based test reporting; explicit best-effort steps; inventory parity gate, negative proofs, cutover from the old `ci.yml` |
 | 04.0 | Summaries, triggers and the probe pattern | infrastructure | Bounded per-job summary (via the reporter backend) + one run-level `report` job; triggers/concurrency/tiering including the ADR 0005 D7 package/verify/publish rows; probe-workflow pattern and single-stage dispatch; `docs/dev/ci.md` and the milestone exit gate |
 
@@ -109,7 +109,7 @@ Every `run:` step that the project owns prints according to this grammar. Output
   - `job_summary`
 
   The `teamcity` backend renders the same events as `##teamcity[buildProblem ...]`/`##teamcity[message ... status='WARNING']` service messages, with `|`-escaping, and fences untrusted excerpts with `##teamcity[disableServiceMessages]`/`enableServiceMessages`. The `plain` backend (local runs) prints `error:`/`warning:` lines. The line and byte ceilings, the discrepancy form and data hygiene are applied before rendering and are identical for every backend. The mapping table is in [ADR 0005](/docs/adr/0005-unified-build-package-publish-pipeline.md#platform-specific-pieces-of-rc1-rc4-that-move-behind-the-reporter).
-- **Data hygiene:** a step that reads the live SMBIOS table (C07, C08, C10, C14) prints counts, formats and structure types only. Its excerpt is limited to CTest's own status lines (test name + status), never test stdout. These steps never use `--output-on-failure`, and their logs and JUnit files are never uploaded as artifacts.
+- **Data hygiene:** a step that reads the live SMBIOS table (C07, C08, C10, C14) prints counts, formats and structure types only. Its excerpt is limited to CTest's own status lines (test name + status), never test stdout. These steps never use `--output-on-failure`, and their logs and JUnit files are never uploaded as artifacts. The runner enforces this with `ci_step --hygiene counts-only` (02.0 Task 04), which every live-table step must use.
 - **Discrepancy form:** a gate that compares values prints one line per difference, `<what>: expected <x> -> actual <y>`, shortened to 160 characters, at most 20 lines plus `(+<k> more)`. This is the maintainer's standing preference.
 
 ### RC2 - Step runner interface (`scripts/ci/ci_step.py`, Python 3 stdlib only)
@@ -204,12 +204,15 @@ $CI_ARTIFACT_DIR/dist/*.sha256, dist/manifest.json    # package stage (0012): di
 
 - **Publish jobs:**
   - live only in `stage-publish.yml`;
-  - run only on a `v*` tag event (bindings: their own trigger, decided by 0013);
+  - run only on a `v*` tag event with the `release` environment (bindings: their own trigger, decided by 0013), or, for `staging`-tier destinations only, on a `push` to `refs/heads/master` with the `staging` environment (ADR 0005 D6/D9, amended 2026-11-13; never PR, dispatch, schedule or tag);
   - declare `needs:` on the `verify` job of the same run;
-  - use the `release` environment;
   - are the only jobs that may widen `permissions` (`contents: write`, `pull-requests: write`, `id-token: write`) or reference a credential.
 - **Release creation and registry PRs** are done by neutral scripts calling the GitHub REST API with `CI_PUBLISH_TOKEN`, never by a marketplace action (P13).
 - **Registry validation runs inside the publish run, before the PR is opened.** A PR opened with `GITHUB_TOKEN` triggers no workflow.
+
+### SC5 - Publish destination interface (contract only; built by 0012 Story 04.0 Task 05)
+
+Every publish target is a module in `scripts/ci/destinations/` with `NAME`, `REQUIRED_ENV`, `validate`, `publish(dry_run)` and `check_published`, listed in `scripts/ci/publish_destinations.json` (`tier`: `release` or `staging`; `permission_class`: `repo-write`, `oidc` or `token-only`; `environment`; credential names). `plan.py` builds the publish matrix from the enabled entries, so adding a destination does not touch the workflow while it fits an existing permission class. Policy gate P12 validates the registry and the job list together. Full rules: ADR 0005 D9 and [docs/dev/adding-a-publish-destination.md](/docs/dev/adding-a-publish-destination.md). This milestone builds no destination; it fixes the contract and the P12 check.
 
 ## Key constraints
 
@@ -218,8 +221,10 @@ $CI_ARTIFACT_DIR/dist/*.sha256, dist/manifest.json    # package stage (0012): di
 - **Logic lives in tested, platform-neutral scripts, not in YAML (ADR 0005 DD5).** A `run:` block is a single stage-command invocation (one line, no control flow). Scripts read only neutral `CI_*` names. Platform syntax lives only in the adapter (workflow files) and in `scripts/ci/reporters/`. Every rule is enforced by the policy gate (02.0 Task 03, P7-P13). Scripts are stdlib-only Python, following the existing `scripts/check_*.py`. Any shell that remains is tested under `bash --noprofile --norc -e -o pipefail` (E5).
 - **No new third-party action without a reason.** Every `uses:` is SHA-pinned with a version comment and listed in `scripts/ci/actions_allowlist.json` with a justification and its TeamCity equivalent or `needs reimplementation` (P13). An action a neutral script can replace is rejected, which is why `lukka/run-vcpkg` gives way to `bootstrap_vcpkg.py` (02.0 Task 02).
 - **Security stance carries over unchanged, with one scoped exception:**
-  - no secrets, except in publish-stage jobs that use the `release` environment (SC4, P8 amended); no job this milestone builds is a publish job;
-  - no `pull_request_target`;
+  - no secrets, except in publish-stage jobs that use the `release` or `staging` environment under SC4's guards (P8 amended); no job this milestone builds is a publish job;
+  - no `pull_request_target`, `workflow_run` or other base-repository-with-secrets trigger, and no `secrets: inherit` (P8, 2026-11-13);
+  - every checkout uses `persist-credentials: false` (P14), and child processes never inherit platform side channels or credentials (02.0 Task 04);
+  - the in-repo policy gate is not the security boundary; the repository settings in ADR 0005 "Repository settings required" are (03.0 Task 04 checklist, maintainer action). Threat model: [docs/security/2026-11-13-ci-rework.md](/docs/security/2026-11-13-ci-rework.md);
   - `permissions: contents: read` at the top;
   - no firmware values in any log, summary or artifact ([docs/security/2026-11-11-gui-browsing-ui.md](/docs/security/2026-11-11-gui-browsing-ui.md) requirement 20; [docs/security/2026-11-11-gui-test-tiers.md](/docs/security/2026-11-11-gui-test-tiers.md) T-3);
   - the R-7/R-8 proofs keep fail-closed semantics.

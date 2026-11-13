@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "about": "Toolchain pins for every CI stage (milestone 0014 Story 02.0 Task 01; ADR 0005 D3). Reasons: docs/roadmap/0014-ci-rework-from-scratch/02.0-pinned-toolchain-and-hardened-environment/01-runner-and-tool-version-pinning.md (As-built notes).",
+  "runner_images_consulted": {
+    "date": "2026-11-13",
+    "source": "https://github.com/actions/runner-images/blob/2cdd82f39871ec1e98584ee64008bc1261ce427f/README.md"
+  },
+  "runners": {
+    "linux": "ubuntu-24.04",
+    "macos": "macos-15",
+    "windows": "windows-2022"
+  },
+  "tools": {
+    "cmake": "4.4.4",
+    "ninja": "1.13.2",
+    "aws_cli": "2.40.2"
+  },
+  "vcpkg": {
+    "commit": "00c5775211f45cd08b37fce0484b4cb940e422ab",
+    "tool_release_tag": "2026-07-27",
+    "windows_tool_sha512_about": "bootstrap.ps1 does not hash-check vcpkg.exe and scripts/vcpkg-tool-metadata.txt has no Windows hash, so bootstrap_vcpkg.py checks these (threat model CR-7). Taken 2026-11-13 from the vcpkg-tool release 2026-07-27 assets; their sha256 matched the release API's published digest. Refresh together with commit when the baseline moves.",
+    "windows_tool_sha512": {
+      "x64": "5bb79a4d25657b11dddfe30ad87507518406f29d3829c7b3d4673d6366b7353570510efce4eeeb771d0c77fb98d25d38994602e8758f873b3c40677844152644",
+      "arm64": "4bfc9ca872ad763ec80414050b8fb8ca9a9dc25af4957ba953853ee5642f81ef782e7004276529f25644e979f334ef7f48b95d293943f17f5e50a7048b02774e"
+    }
+  }
+}

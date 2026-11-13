@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "about": "Policy rule P4 time budgets (milestone 0014 Story 02.0 Task 03). budget_minutes = ceil(2 x the slowest leg's median duration / 60), from the Story 01.0 Task 01 baseline: median of the last 5 green master runs of ci.yml, recorded in docs/roadmap/0014-ci-rework-from-scratch/status.md (2026-11-12). The gate recomputes budget_minutes from median_s. A job not listed here gets default_job_minutes. A step's timeout may not exceed its job's timeout; 'steps' may set a tighter per-step budget keyed '<job>/<step id>'. Table: docs/dev/ci.md. Per-step budgets (Story 03.0 Task 01) are first estimates, not baselines (no per-step median exists yet): every one is at most its job budget, and Story 03.0 Task 04 replaces them with measured values. The 'gui' baseline is the old ci.yml 'gui-build' job's (Story 03.0 Task 03 renamed the job).",
+  "default_job_minutes": 10,
+  "jobs": {
+    "build": {
+      "median_s": {
+        "linux": 261,
+        "macos": 230,
+        "windows": 534
+      },
+      "budget_minutes": 18
+    },
+    "sanitizers": {
+      "median_s": {
+        "linux": 255,
+        "macos": 306
+      },
+      "budget_minutes": 11
+    },
+    "gui": {
+      "median_s": {
+        "linux": 310,
+        "macos": 346,
+        "windows": 654
+      },
+      "budget_minutes": 22
+    }
+  },
+  "steps": {
+    "lint/checkout": 3,
+    "lint/stage": 8,
+    "build/checkout": 3,
+    "build/prepare": 6,
+    "build/prepare-win": 6,
+    "build/cache-restore": 5,
+    "build/compile": 15,
+    "build/compile-win": 15,
+    "build/upload-logs": 3,
+    "build/test": 8,
+    "build/test-win": 8,
+    "build/cache-save": 5,
+    "sanitizers/checkout": 3,
+    "sanitizers/prepare": 5,
+    "sanitizers/cache-restore": 4,
+    "sanitizers/compile": 10,
+    "sanitizers/test": 6,
+    "sanitizers/cache-save": 4,
+    "gui/checkout": 3,
+    "gui/packages": 10,
+    "gui/prepare": 6,
+    "gui/prepare-win": 6,
+    "gui/cache-restore": 5,
+    "gui/compile": 18,
+    "gui/compile-win": 18,
+    "gui/test": 6,
+    "gui/test-win": 6,
+    "gui/cache-save": 5
+  }
+}

@@ -1,0 +1,118 @@
+# Reusable `sanitizers` job (milestone 0014, Story 03.0 Task 02; ADR 0005 D8).
+# Inventory rows: C03 (vcpkg cache, `asan` flavor), C11 (job and step
+# budgets, ctest --timeout 60), C12 (configure into build/<preset>-asan with
+# -fsanitize=address,undefined -fno-omit-frame-pointer -g, plus
+# -fno-sanitize-recover=undefined: fatal UBSan, plan Q2/D2), C13 (the
+# unprivileged ctest set, hard), C14 (the live-table set: best-effort and
+# counts-only on macOS; `skip:` on Linux per plan Q4). Every `run:` step is
+# one stage-command line (P7); the logic is in scripts/ci/stage.py and
+# scripts/ci/ctest_report.py (exit code decides, counts from JUnit).
+#
+# Sanitizer run-time options are set by stage.py (sanitizer_env), not here:
+# ASAN_OPTIONS=detect_container_overflow=0 everywhere (libc++'s
+# vector<string> container annotations give a false-positive
+# container-overflow in AbstractSMBiosEntry::parse_dmi_strings(); not a real
+# out-of-bounds access), plus detect_leaks=0 on macOS (AddressSanitizer on
+# macOS does not support LeakSanitizer), and
+# UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1.
+#
+# Legs: the matrix carries only the leg name; preset, build directory and
+# cache flavor come from scripts/ci/legs.json ("job": "sanitizers"), runner
+# labels from scripts/ci/pins.json (scripts/ci/tests/test_stage.py checks
+# both). Tiering (plan Q1): a push to a branch other than master runs only
+# linux-asan; every other event both legs. No Windows leg (no MSVC
+# sanitizers; C06 runs there in the build job), so each step runs once,
+# with python3. No failure-log upload: policy P15 (CR-10) allows `logs-*`
+# uploads only in stage-build.yml, and the old sanitizers job had none.
+name: stage-sanitizers
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+# Neutral names (ADR 0005 "Neutral environment names"). runner.temp is only
+# available at step level, so CI_TEMP_DIR is set on each stage step.
+env:
+  CI_PLATFORM: github
+  CI_REPORTER: github
+  CI_RUN_ID: ${{ github.run_id }}
+  CI_RUN_ATTEMPT: ${{ github.run_attempt }}
+  CI_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  CI_EVENT: ${{ github.ref_type == 'tag' && 'tag' || github.event_name == 'pull_request' && 'pr' || github.event_name == 'workflow_dispatch' && 'manual' || github.event_name }}
+  CI_REF: ${{ github.ref }}
+  CI_REF_NAME: ${{ github.ref_name }}
+  CI_COMMIT: ${{ github.sha }}
+  CI_BASE_COMMIT: ${{ github.event.pull_request.base.sha || github.event.before }}
+  CI_WORKSPACE: ${{ github.workspace }}
+
+jobs:
+  sanitizers:
+    name: sanitizers (${{ matrix.leg }})
+    runs-on: ${{ matrix.leg == 'macos-asan' && 'macos-15' || 'ubuntu-24.04' }}
+    timeout-minutes: 11
+    strategy:
+      fail-fast: false
+      matrix:
+        leg: ${{ fromJSON(github.event_name == 'push' && github.ref_type == 'branch' && github.ref != 'refs/heads/master' && '["linux-asan"]' || '["linux-asan", "macos-asan"]') }}
+    env:
+      CI_JOB: sanitizers
+      CI_LEG: ${{ matrix.leg }}
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 3
+        with:
+          persist-credentials: false
+
+      # Pinned tools (job-local venv), RC4 header, ci_step self-test, and the
+      # `asan`-flavor vcpkg cache key as the step outputs `cache` and
+      # `cache_enabled`.
+      - name: Prepare
+        id: prepare
+        run: python3 scripts/ci/stage.py build --only prepare
+        timeout-minutes: 5
+        env:
+          CI_TEMP_DIR: ${{ runner.temp }}
+
+      - name: Restore vcpkg cache
+        id: cache-restore
+        if: steps.prepare.outputs.cache_enabled == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        timeout-minutes: 4
+        with:
+          path: ${{ runner.temp }}/vcpkg-binary-cache
+          key: ${{ fromJSON(steps.prepare.outputs.cache).key }}
+          restore-keys: ${{ fromJSON(steps.prepare.outputs.cache).restore_prefix }}
+
+      # bootstrap_vcpkg.py, the C12 sanitizer configure into
+      # build/<preset>-asan, cache-health line, build.
+      - name: Compile
+        id: compile
+        run: python3 scripts/ci/stage.py build --only compile
+        timeout-minutes: 10
+        env:
+          CI_TEMP_DIR: ${{ runner.temp }}
+
+      # C13 (unprivileged set, hard), C14 (live-table set: best-effort,
+      # counts-only on macos-asan; skip: on linux-asan, Q4). The cli-formats
+      # step prints skip: (C07 runs in the build job).
+      - name: Test
+        id: test
+        run: python3 scripts/ci/stage.py test
+        timeout-minutes: 6
+        env:
+          CI_TEMP_DIR: ${{ runner.temp }}
+
+      # Cache writes only from a push to master or the nightly schedule
+      # (threat model CR-2, policy P15).
+      - name: Save vcpkg cache
+        id: cache-save
+        if: ((github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'schedule') && steps.prepare.outputs.cache_enabled == 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        timeout-minutes: 4
+        with:
+          path: ${{ runner.temp }}/vcpkg-binary-cache
+          key: ${{ fromJSON(steps.prepare.outputs.cache).key }}

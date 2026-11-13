@@ -1,0 +1,27 @@
+# Policy-gate fixture: violates exactly P8 (staging job reachable from workflow_dispatch).
+name: stage-publish
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  publish-staging-oidc:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    if: github.ref == 'refs/heads/master'
+    environment: staging
+    # permissions: OIDC role assumption (ADR 0005 D9).
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 5
+        with:
+          persist-credentials: false
+      - name: Publish
+        run: python3 scripts/ci/stage.py publish --tier staging
+        timeout-minutes: 5
+        env:
+          CI_PUBLISH_TOKEN: ${{ secrets.TOKEN }}
