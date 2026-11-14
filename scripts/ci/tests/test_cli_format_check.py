@@ -259,6 +259,15 @@ class HelperTests(unittest.TestCase):
             (target / "smbios.exe").write_text("x")
             self.assertEqual(cfc.find_cli(tmp), target / "smbios.exe")
 
+    def test_FindsCliInVisualStudioConfigSubdirectory(self) -> None:
+        """Windows regression (PR run 43560778478): smbios/bin/Release/smbios.exe is found."""
+        with tempfile.TemporaryDirectory() as tmp_name:
+            tmp = Path(tmp_name)
+            target = tmp / "smbios" / "bin" / "Release"
+            target.mkdir(parents=True)
+            (target / "smbios.exe").write_text("x")
+            self.assertEqual(cfc.find_cli(tmp), target / "smbios.exe")
+
     @unittest.skipIf(os.name == "nt", "POSIX modes")
     def test_SysfsInfoListsAtMostThreeTriples(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_name:

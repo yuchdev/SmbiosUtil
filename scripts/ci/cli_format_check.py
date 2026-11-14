@@ -156,7 +156,7 @@ def _show_path(path: Path) -> str:
 
 
 def find_cli(build_dir: Path) -> Optional[Path]:
-    """Return the ``smbios`` CLI under ``build_dir`` (``*/smbios/bin/smbios[.exe]``), or ``None``.
+    """Return the ``smbios`` CLI under ``build_dir`` (``*/smbios/bin/[<config>/]smbios[.exe]``), or ``None``.
 
     Symlinks are neither followed nor returned; the first match in sorted
     walk order wins, so the result is deterministic.
@@ -166,7 +166,11 @@ def find_cli(build_dir: Path) -> Optional[Path]:
     for root, dirs, files in os.walk(build_dir, followlinks=False):
         dirs.sort()
         here = Path(root)
-        if here.name != "bin" or here.parent.name != "smbios":
+        # Single-config generators emit smbios/bin/smbios; Visual Studio adds a
+        # per-configuration directory (smbios/bin/Release/smbios.exe).
+        direct = here.name == "bin" and here.parent.name == "smbios"
+        per_config = here.parent.name == "bin" and here.parent.parent.name == "smbios"
+        if not (direct or per_config):
             continue
         for name in sorted(files):
             if name not in ("smbios", "smbios.exe"):
