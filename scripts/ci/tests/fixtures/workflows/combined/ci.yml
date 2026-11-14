@@ -1,0 +1,33 @@
+# Policy-gate fixture: breaks most rules at once, so the gate's output must
+# stop at 20 discrepancy lines plus "(+k more)". Not a real workflow.
+name: combined
+on: [push, pull_request_target, workflow_run]
+env:
+  CI_T: ${{ github.event.pull_request.title }}
+  ACTIONS_RUNNER_DEBUG: 'true'
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    permissions: write-all
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: lukka/run-vcpkg@v11
+      - uses: actions/github-script@v7
+      - uses: docker://alpine:3.20
+      - uses: ./local-action
+      - uses: actions/cache@v4
+        with:
+          path: x
+          key: y
+      - run: |
+          if [ -f x ]; then echo ${{ github.head_ref }} | tee out.log; fi
+          cmake --build build && ctest
+        env:
+          TOKEN: ${{ secrets.TOKEN }}
+  call:
+    uses: ./.github/workflows/stage-build.yml
+    secrets: inherit

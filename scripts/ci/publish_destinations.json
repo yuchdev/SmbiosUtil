@@ -1,0 +1,5 @@
+{
+  "schema": 1,
+  "about": "Publish destination registry (ADR 0005 D9; checked by policy rule P12). PLACEHOLDER: created empty by milestone 0014 Story 02.0 Task 03 so the gate can check it; its entries are owned by milestone 0012 Story 04.0 Task 05. Entry form: {name, enabled, tier, permission_class, environment, credentials}. How to add one: docs/dev/adding-a-publish-destination.md.",
+  "destinations": []
+}

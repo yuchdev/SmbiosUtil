@@ -1,0 +1,88 @@
+# Compliant entry-workflow fixture: every policy rule P1-P15 passes
+# (scripts/ci/tests/test_check_workflow_policy.py). Not a real workflow.
+name: ci-next
+on:
+  push:
+    branches: ['**']
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+  pull_request:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+    inputs:
+      jobs:
+        description: Which jobs to run
+        type: choice
+        options: [all, lint]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  CI_PLATFORM: github
+  CI_REPORTER: github
+  CI_RUN_ID: ${{ github.run_id }}
+  CI_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  CI_EVENT: ${{ github.event_name }}
+  CI_REF: ${{ github.ref }}
+  CI_REF_NAME: ${{ github.ref_name }}
+  CI_COMMIT: ${{ github.sha }}
+  CI_BASE_COMMIT: ${{ github.event.pull_request.base.sha }}
+  CI_WORKSPACE: ${{ github.workspace }}
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 5
+        with:
+          persist-credentials: false
+      - name: Lint
+        run: python3 scripts/ci/lint.py
+        timeout-minutes: 5
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 5
+        with:
+          persist-credentials: false
+      - name: Plan
+        run: python3 scripts/ci/stage.py plan
+        timeout-minutes: 2
+        env:
+          CI_JOB: ${{ inputs.jobs }}
+          CI_TEMP_DIR: ${{ runner.temp }}
+  build:
+    needs: [lint, plan]
+    uses: ./.github/workflows/stage-build.yml
+  verify:
+    needs: [build]
+    uses: ./.github/workflows/stage-verify.yml
+  publish-staging:
+    needs: [verify]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    # permissions: OIDC role assumption for the staging destination (ADR 0005 D9).
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/stage-publish.yml
+    with:
+      tier: staging
+    secrets:
+      S3_ROLE: ${{ secrets.S3_ROLE }}
+  publish-release:
+    needs: [verify]
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+    # permissions: release creation and the registry PR (ADR 0005 D6).
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: ./.github/workflows/stage-publish.yml
+    with:
+      tier: release

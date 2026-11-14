@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "about": "Policy rules P8 and P12 (milestone 0014 Story 02.0 Task 03; ADR 0005 D6/D9). The only jobs that may hold a publish-capable permission (contents: write, pull-requests: write, id-token: write, packages: write) or read a secret: 'jobs' are publish-stage jobs in stage-publish.yml, one per permission class and tier; 'callers' are the jobs that call stage-publish.yml. Each entry: file, job, tier (release or staging), permission_class (jobs only: repo-write, oidc, token-only), permissions. Empty until milestone 0012 adds the publish stage: no job may publish yet.",
+  "jobs": [],
+  "callers": []
+}

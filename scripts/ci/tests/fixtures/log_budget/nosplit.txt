@@ -1,0 +1,4 @@
+2026-11-13T10:00:00.1234567Z Current runner version: '2.330.0'
+2026-11-13T10:00:00.1234567Z ok: something
+2026-11-13T10:00:00.1234567Z TEST-SERIAL-0000 must never be relayed
+2026-11-13T10:00:00.1234567Z Cleaning up orphan processes

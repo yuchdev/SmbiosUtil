@@ -1,0 +1,77 @@
+[1/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_001.cpp.o
+[2/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_002.cpp.o
+[3/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_003.cpp.o
+[4/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_004.cpp.o
+[5/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_005.cpp.o
+[6/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_006.cpp.o
+[7/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_007.cpp.o
+[8/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_008.cpp.o
+[9/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_009.cpp.o
+[10/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_010.cpp.o
+[11/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_011.cpp.o
+[12/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_012.cpp.o
+[13/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_013.cpp.o
+[14/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_014.cpp.o
+[15/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_015.cpp.o
+[16/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_016.cpp.o
+[17/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_017.cpp.o
+[18/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_018.cpp.o
+[19/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_019.cpp.o
+[20/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_020.cpp.o
+[21/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_021.cpp.o
+[22/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_022.cpp.o
+[23/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_023.cpp.o
+[24/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_024.cpp.o
+[25/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_025.cpp.o
+[26/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_026.cpp.o
+[27/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_027.cpp.o
+[28/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_028.cpp.o
+[29/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_029.cpp.o
+[30/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/entry_030.cpp.o
+[31/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/entries/memory_error_information_32.cpp.o
+FAILED: libsmbios/CMakeFiles/libsmbios.dir/src/entries/synthetic_entry.cpp.o
+/src/libsmbios/src/entries/synthetic_entry.cpp:42:17: error: use of undeclared identifier 'synthetic_field'
+    return synthetic_field;
+           ^
+/src/libsmbios/src/entries/synthetic_entry.cpp:57:5: error: no matching function for call to 'make_synthetic'
+[32/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_032.cpp.o
+[33/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_033.cpp.o
+[34/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_034.cpp.o
+[35/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_035.cpp.o
+[36/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_036.cpp.o
+[37/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_037.cpp.o
+[38/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_038.cpp.o
+[39/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_039.cpp.o
+[40/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_040.cpp.o
+[41/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_041.cpp.o
+[42/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_042.cpp.o
+[43/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_043.cpp.o
+[44/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_044.cpp.o
+[45/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_045.cpp.o
+[46/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_046.cpp.o
+[47/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_047.cpp.o
+[48/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_048.cpp.o
+[49/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_049.cpp.o
+[50/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_050.cpp.o
+[51/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_051.cpp.o
+[52/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_052.cpp.o
+[53/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_053.cpp.o
+[54/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_054.cpp.o
+[55/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_055.cpp.o
+[56/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_056.cpp.o
+[57/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_057.cpp.o
+[58/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_058.cpp.o
+[59/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_059.cpp.o
+[60/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_060.cpp.o
+[61/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_061.cpp.o
+[62/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_062.cpp.o
+[63/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_063.cpp.o
+[64/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_064.cpp.o
+[65/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_065.cpp.o
+[66/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_066.cpp.o
+[67/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_067.cpp.o
+[68/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_068.cpp.o
+[69/120] Building CXX object libsmbios/CMakeFiles/libsmbios.dir/src/more/unit_069.cpp.o
+ld: error: undefined reference to 'synthetic_symbol()'
+2 errors generated.
+ninja: build stopped: subcommand failed.

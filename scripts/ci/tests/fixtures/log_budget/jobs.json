@@ -1,0 +1,92 @@
+{
+ "jobs": [
+  {
+   "databaseId": 101,
+   "name": "build / build (linux)",
+   "conclusion": "success",
+   "status": "completed",
+   "steps": [
+    {
+     "name": "Set up job",
+     "conclusion": "success",
+     "number": 1
+    },
+    {
+     "name": "Checkout",
+     "conclusion": "success",
+     "number": 2
+    },
+    {
+     "name": "Prepare",
+     "conclusion": "success",
+     "number": 3
+    },
+    {
+     "name": "Restore vcpkg cache",
+     "conclusion": "success",
+     "number": 4
+    },
+    {
+     "name": "Compile",
+     "conclusion": "success",
+     "number": 5
+    },
+    {
+     "name": "Test",
+     "conclusion": "success",
+     "number": 6
+    },
+    {
+     "name": "Post Checkout",
+     "conclusion": "success",
+     "number": 7
+    },
+    {
+     "name": "Complete job",
+     "conclusion": "success",
+     "number": 8
+    }
+   ]
+  },
+  {
+   "databaseId": 102,
+   "name": "build / build (windows)",
+   "conclusion": "failure",
+   "status": "completed",
+   "steps": [
+    {
+     "name": "Set up job",
+     "conclusion": "success",
+     "number": 1
+    },
+    {
+     "name": "Checkout",
+     "conclusion": "success",
+     "number": 2
+    },
+    {
+     "name": "Compile (Windows)",
+     "conclusion": "failure",
+     "number": 3
+    },
+    {
+     "name": "Upload configure/build logs",
+     "conclusion": "success",
+     "number": 4
+    },
+    {
+     "name": "Complete job",
+     "conclusion": "success",
+     "number": 5
+    }
+   ]
+  },
+  {
+   "databaseId": 103,
+   "name": "build (ubuntu-latest)",
+   "conclusion": "success",
+   "status": "completed",
+   "steps": []
+  }
+ ]
+}

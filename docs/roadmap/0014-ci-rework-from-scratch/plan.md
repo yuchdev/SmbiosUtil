@@ -11,16 +11,27 @@ This milestone replaces `.github/workflows/ci.yml` with a new workflow built on 
 - **pinned runners and tools**;
 - a **bounded job summary** per job and per run.
 
+**Amended 2026-11-12 by [ADR 0005](/docs/adr/0005-unified-build-package-publish-pipeline.md)** (unified build, package and publish pipeline; CI-platform portability). CI, packaging and publishing are now one pipeline: `lint -> build/test -> package -> verify -> publish`. **This milestone owns that pipeline's shared foundation:**
+
+- the step runner and report contracts (RC1-RC5), with reporter backends and neutral environment names;
+- the one pinned toolchain;
+- the policy gate (P1-P13);
+- the version-consistency check (`scripts/ci/check_versions.py`);
+- the platform-neutral stage entrypoint (`scripts/ci/stage.py`);
+- the entry workflow plus the reusable `stage-lint.yml`/`stage-build.yml`, and the stage contracts SC1-SC4 below.
+
+Milestone 0012 then defines the `package`/`verify`/`publish` stages on this foundation, and milestone 0013's binding jobs become legs of the same stages. The ADR's [Platform portability](/docs/adr/0005-unified-build-package-publish-pipeline.md#platform-portability) section governs where logic may live: YAML is a thin adapter, and stage logic lives in neutral scripts.
+
 It keeps every check the current workflow performs. Each one is listed by ID in the Phase-0 inventory below, so a check can only be removed by recording a reason, never silently. Shipped code is not touched (no `libsmbios`, `smbios`, `smbios_c` or `smbios_gui` source, CMake target or preset change). Nothing below is implemented yet, and every story starts "Not started".
 
 ## Stories
 
 | Story | Name | Category | Output |
 |-------|------|----------|--------|
-| 01.0 | Report contract, step runner and workflow-script test harness | infrastructure | Frozen check inventory + log-size baseline; `scripts/ci/ci_step.py` (RC1-RC3); `scripts/ci/tests/` run under the runner's exact shell flags |
-| 02.0 | Pinned toolchain, hardened environment and least privilege | infrastructure | Pinned runner labels and CMake/CTest/Ninja/vcpkg versions; one-line version header (RC4); robust apt install and vcpkg cache keys with a cache-health line; actionlint + `scripts/ci/check_workflow_policy.py` |
-| 03.0 | Rebuilt jobs with check parity | infrastructure | New `lint`/`build`/`sanitizers`/`gui` jobs on the Story 01.0/02.0 foundation; JUnit-based test reporting; explicit best-effort steps; inventory parity gate, negative proofs, cutover from the old `ci.yml` |
-| 04.0 | Summaries, triggers and the probe pattern | infrastructure | Bounded per-job `$GITHUB_STEP_SUMMARY` + one run-level `report` job; triggers/concurrency/tiering; probe-workflow pattern and single-job dispatch; `docs/dev/ci.md` and the milestone exit gate |
+| 01.0 | Report contract, step runner and workflow-script test harness | infrastructure | Frozen check inventory + log-size baseline; `scripts/ci/ci_step.py` (RC1-RC3) with `github`/`teamcity`/`plain` reporter backends and the neutral env-name table (`scripts/ci/env_names.py`, ADR 0005); `scripts/ci/tests/` run under the runner's exact shell flags |
+| 02.0 | Pinned toolchain, hardened environment and least privilege | infrastructure | Pinned runner labels and CMake/CTest/Ninja/vcpkg versions in one data file read by every stage; one-line version header (RC4); robust apt install, `bootstrap_vcpkg.py` (replaces `lukka/run-vcpkg`) and vcpkg cache keys with a cache-health line; actionlint + `scripts/ci/check_workflow_policy.py` (P1-P15, incl. ADR 0005 portability and publish-privilege rules); step-runner security follow-ups (env scrub, `--hygiene counts-only`, job-output channel; Task 04, threat model 2026-11-13) |
+| 03.0 | Rebuilt jobs with check parity | infrastructure | `scripts/ci/stage.py` (`lint`/`build`/`test`); entry `ci-next.yml` + reusable `stage-lint.yml`/`stage-build.yml`; `scripts/ci/check_versions.py` in `lint` (SC3); install-tree export on packaging legs (SC2); JUnit-based test reporting; explicit best-effort steps; inventory parity gate, negative proofs, cutover from the old `ci.yml` |
+| 04.0 | Summaries, triggers and the probe pattern | infrastructure | Bounded per-job summary (via the reporter backend) + one run-level `report` job; triggers/concurrency/tiering including the ADR 0005 D7 package/verify/publish rows; probe-workflow pattern and single-stage dispatch; `docs/dev/ci.md` and the milestone exit gate |
 
 ## Evidence - the problems this milestone fixes
 
@@ -89,7 +100,16 @@ Every `run:` step that the project owns prints according to this grammar. Output
   4. nothing else. The hard ceiling is 64 lines and 16 KiB per failing step. The full log stays in a file (RC2).
 - **Best-effort:** see RC5.
 - **Workflow-command safety (threat model T-3, CWE-77):** every excerpt of tool output is printed between `::stop-commands::<random token>` and `::<token>::`, so a hostile line cannot inject `::error::`, `::add-mask::` or similar. Annotation text is escaped (`%`->`%25`, CR->`%0D`, LF->`%0A`).
-- **Data hygiene:** a step that reads the live SMBIOS table (C07, C08, C10, C14) prints counts, formats and structure types only. Its excerpt is limited to CTest's own status lines (test name + status), never test stdout. These steps never use `--output-on-failure`, and their logs and JUnit files are never uploaded as artifacts.
+- **Platform-neutral form (ADR 0005).** The `::error`/`::warning` annotations, the `%` escaping, the `stop-commands` fence and the summary file above are the **`github` reporter backend's** rendering of neutral events:
+  - `step_ok`
+  - `step_fail`
+  - `step_warn`
+  - `step_skip`
+  - `begin/end_untrusted_block`
+  - `job_summary`
+
+  The `teamcity` backend renders the same events as `##teamcity[buildProblem ...]`/`##teamcity[message ... status='WARNING']` service messages, with `|`-escaping, and fences untrusted excerpts with `##teamcity[disableServiceMessages]`/`enableServiceMessages`. The `plain` backend (local runs) prints `error:`/`warning:` lines. The line and byte ceilings, the discrepancy form and data hygiene are applied before rendering and are identical for every backend. The mapping table is in [ADR 0005](/docs/adr/0005-unified-build-package-publish-pipeline.md#platform-specific-pieces-of-rc1-rc4-that-move-behind-the-reporter).
+- **Data hygiene:** a step that reads the live SMBIOS table (C07, C08, C10, C14) prints counts, formats and structure types only. Its excerpt is limited to CTest's own status lines (test name + status), never test stdout. These steps never use `--output-on-failure`, and their logs and JUnit files are never uploaded as artifacts. The runner enforces this with `ci_step --hygiene counts-only` (02.0 Task 04), which every live-table step must use.
 - **Discrepancy form:** a gate that compares values prints one line per difference, `<what>: expected <x> -> actual <y>`, shortened to 160 characters, at most 20 lines plus `(+<k> more)`. This is the maintainer's standing preference.
 
 ### RC2 - Step runner interface (`scripts/ci/ci_step.py`, Python 3 stdlib only)
@@ -104,12 +124,24 @@ python3 scripts/ci/ci_step.py run --label <label>
 python3 scripts/ci/ci_step.py self-test   # one-line ok/fail, used by every job's first step
 ```
 
-- It runs the command **without a shell** (argv list), sends stdout+stderr to `<logdir>/<label>.log`, and prints only RC1 output. `<logdir>` is `$RUNNER_TEMP/ci-logs`, or a fresh temp directory when run locally.
+- It runs the command **without a shell** (argv list), sends stdout+stderr to `<logdir>/<label>.log`, and prints only RC1 output. `<logdir>` is `$CI_LOG_DIR` (default `$CI_TEMP_DIR/ci-logs`), or a fresh temp directory when run locally.
+- **Reporter backend (ADR 0005).** `--reporter github|teamcity|plain` selects the backend, and defaults to `$CI_REPORTER`, or to `plain` when that is unset. Only `scripts/ci/reporters/` emits platform commands.
+- **Neutral inputs (ADR 0005).** The runner and every `scripts/ci/` script read only the neutral names in `scripts/ci/env_names.py`:
+  - `CI_PLATFORM`, `CI_REPORTER`
+  - `CI_RUN_ID`, `CI_RUN_URL`
+  - `CI_EVENT`, `CI_REF`, `CI_REF_NAME`, `CI_COMMIT`, `CI_BASE_COMMIT`
+  - `CI_JOB`, `CI_LEG`
+  - `CI_WORKSPACE`, `CI_TEMP_DIR`, `CI_ARTIFACT_DIR`
+  - `CI_LOG_DIR`, `CI_RESULTS_FILE`, `CI_SUMMARY_FILE`
+  - `CI_IMAGE`
+  - `CI_PUBLISH_TOKEN`
+
+  They never read `GITHUB_*`, `RUNNER_*` or TeamCity parameters. The workflow adapter maps them (the ADR's table gives the GitHub and TeamCity sources).
 - Exit code: hard mode returns the command's exit code (a signal maps to 128+n). Best-effort mode always returns 0.
 - Each call appends one RC3 record. It never reads `${{ }}` expressions. Callers pass matrix values through `env:` or argv (expression-injection rule, 02.0 Task 03).
 - It is the only place that implements truncation, escaping and `stop-commands`. Story 03.0 adds two siblings that **use** it and print RC1 output: `ctest_report.py` and `gui_guards.py`.
 
-### RC3 - Step result record (`$RUNNER_TEMP/ci-results.jsonl`, one JSON object per line)
+### RC3 - Step result record (`$CI_RESULTS_FILE`, default `$CI_TEMP_DIR/ci-results.jsonl`, one JSON object per line)
 
 ```json
 {"label": "build", "mode": "hard|best-effort|info", "outcome": "ok|fail|warn|skip",
@@ -124,22 +156,75 @@ Story 04.0 builds the job summary and the run summary only from these records an
 This is the first project-owned step of every job: one line, at most 240 characters, also written as the first line of the job summary:
 
 ```text
-env: <job>/<leg> image=<ImageOS> <ImageVersion> | cmake <v> | ctest <v> | ninja <v|-> | cxx <id> <v> | python <v> | vcpkg <sha12> | cache <exact|partial|miss>
+env: <job>/<leg> image=<CI_IMAGE> | cmake <v> | ctest <v> | ninja <v|-> | cxx <id> <v> | python <v> | vcpkg <sha12> | cache <exact|partial|miss>
 ```
+
+On GitHub, the adapter sets `CI_IMAGE` from `ImageOS` + `ImageVersion` (ADR 0005 neutral-name table).
 
 ### RC5 - Best-effort semantics
 
 A best-effort step is declared with `--best-effort "<reason>"` and never with `continue-on-error`, which is banned by the policy gate. It never fails the job. On a non-zero exit it prints one `::warning title=best-effort: <label>::<reason> (exit <rc>)` line plus the RC1 excerpt, and its outcome shows in the job summary's best-effort column. A best-effort step that cannot pass in a given environment is not run there. It is replaced by a one-line `skip: <label>: <reason>`, so that permanent warnings do not train readers to ignore warnings.
 
+## Pipeline stage contracts (ADR 0005)
+
+These are the contracts this milestone fixes for **every** stage. Milestone 0012 implements `package`/`verify`/`publish` against them, and milestone 0013's binding jobs are legs of the same stages. This milestone implements only `lint` and `build/test`. Until 0012 lands, the tier table reports the other stages as `not run: stage not defined`.
+
+### SC1 - Stage command (Story 03.0 Task 01)
+
+```text
+python3 scripts/ci/stage.py <lint|build|test|package|verify|publish> [--leg <leg>] [--only <step>]
+```
+
+- **One workflow step is one stage-command invocation** (policy rules P7/P10).
+- **Inside the command**, every sub-step goes through the `ci_step` library (RC1-RC3).
+- **Exit codes:** 0 success; 1 gate failed; 2 usage or environment error (a missing neutral variable or an unknown leg); 128+n killed by signal n.
+- **Locally**, the command runs the same way with `CI_REPORTER=plain` and default temp directories.
+- **Legs** are declared once, in `scripts/ci/legs.json`. Packaging legs are named `<os>-<arch>` (`linux-x64`, `windows-x64`, `macos-arm64`). Sanitizer and GUI legs are never packaging legs.
+
+### SC2 - Artifact layout and hand-off (Story 03.0 Task 01 for `install/`; 0012 for `dist/`)
+
+```text
+$CI_ARTIFACT_DIR/install/<leg>/                      # build stage, packaging legs only: cmake --install output of the tested build
+$CI_ARTIFACT_DIR/dist/libbios-<version>-<leg>.<ext>   # package stage (0012): archive of install/<leg>/, never a rebuild
+$CI_ARTIFACT_DIR/dist/*.sha256, dist/manifest.json    # package stage (0012): digests; verify/publish refuse any digest mismatch
+```
+
+- **The build stage on a packaging leg builds the shipped configuration once, tests that build, and exports `install/<leg>/`** as a stage artifact. The shipped configuration is decided by 0012 Story 03.0. The policy is "tested equals shipped" (ADR 0005 D1).
+- **This touches the C06 inventory row.** Today C06 runs `ctest -C Debug`. If 0012 picks a non-Debug configuration, C06's configuration changes on packaging legs. That is a recorded disposition change for the maintainer, not a silent one.
+
+### SC3 - Version consistency (Story 03.0 Task 01, runs in `lint`)
+
+- **Authoritative value:** the root `CMakeLists.txt` `project(... VERSION X.Y.Z)` (ADR 0005 D5).
+- **The check:** `scripts/ci/check_versions.py` reads `scripts/ci/version_sites.json`, where each row is `{site, file, extractor, rule: derived|equal}`. It prints mismatches in RC1 discrepancy form and exits 1 on any mismatch.
+- **Tag events:** `--tag "$CI_REF_NAME"` additionally requires `v<X.Y.Z>[-<pre>]`. A tag not matching `v*`, such as the `-DGIT_TAG` scheme, is not a release.
+- **Rows:** this milestone ships the rows for the sites that exist today. 0012 adds rows for the sites it creates: `LIBSMBIOS_VERSION`, the port `vcpkg.json` and the registry baseline.
+- **Prerequisite:** the root `project()` VERSION does not exist yet, so the derivation change is a 0012 product-build task. Until it lands, this milestone's row set treats `SMBIOS_C_VERSION` as the only site, and the check passes trivially.
+
+### SC4 - Publish gating and privilege (policy gate P8, P13; Story 04.0 Task 02 for triggers)
+
+- **Publish jobs:**
+  - live only in `stage-publish.yml`;
+  - run only on a `v*` tag event with the `release` environment (bindings: their own trigger, decided by 0013), or, for `staging`-tier destinations only, on a `push` to `refs/heads/master` with the `staging` environment (ADR 0005 D6/D9, amended 2026-11-13; never PR, dispatch, schedule or tag);
+  - declare `needs:` on the `verify` job of the same run;
+  - are the only jobs that may widen `permissions` (`contents: write`, `pull-requests: write`, `id-token: write`) or reference a credential.
+- **Release creation and registry PRs** are done by neutral scripts calling the GitHub REST API with `CI_PUBLISH_TOKEN`, never by a marketplace action (P13).
+- **Registry validation runs inside the publish run, before the PR is opened.** A PR opened with `GITHUB_TOKEN` triggers no workflow.
+
+### SC5 - Publish destination interface (contract only; built by 0012 Story 04.0 Task 05)
+
+Every publish target is a module in `scripts/ci/destinations/` with `NAME`, `REQUIRED_ENV`, `validate`, `publish(dry_run)` and `check_published`, listed in `scripts/ci/publish_destinations.json` (`tier`: `release` or `staging`; `permission_class`: `repo-write`, `oidc` or `token-only`; `environment`; credential names). `plan.py` builds the publish matrix from the enabled entries, so adding a destination does not touch the workflow while it fits an existing permission class. Policy gate P12 validates the registry and the job list together. Full rules: ADR 0005 D9 and [docs/dev/adding-a-publish-destination.md](/docs/dev/adding-a-publish-destination.md). This milestone builds no destination; it fixes the contract and the P12 check.
+
 ## Key constraints
 
 - **CI only.** The milestone changes `.github/workflows/`, `scripts/ci/`, docs, and possibly `.gitignore`. It makes no product source, CMake target, preset, `vcpkg.json` or test-code change. If a rebuilt check exposes a product bug (UBSan, D2), it goes to `cpp-expert` as a separate item. It is not fixed inside this milestone.
 - **Parity before cutover.** The old `ci.yml` stays live until Story 03.0 Task 04 shows every inventory row in the new workflow (built as `ci-next.yml` and renamed at cutover). There is never a period with no CI.
-- **Logic lives in tested scripts, not in YAML.** A `run:` block has at most 3 lines and no control flow. Every rule is enforced by the policy gate (02.0 Task 03). Scripts are stdlib-only Python, following the existing `scripts/check_*.py`. Any shell that remains is tested under `bash --noprofile --norc -e -o pipefail` (E5).
-- **No new third-party action without a reason.** Every `uses:` is SHA-pinned with a version comment. New actions (artifact upload/download) need a one-line justification in the task spec.
-- **Security stance carries over unchanged:**
-  - no secrets;
-  - no `pull_request_target`;
+- **Logic lives in tested, platform-neutral scripts, not in YAML (ADR 0005 DD5).** A `run:` block is a single stage-command invocation (one line, no control flow). Scripts read only neutral `CI_*` names. Platform syntax lives only in the adapter (workflow files) and in `scripts/ci/reporters/`. Every rule is enforced by the policy gate (02.0 Task 03, P7-P13). Scripts are stdlib-only Python, following the existing `scripts/check_*.py`. Any shell that remains is tested under `bash --noprofile --norc -e -o pipefail` (E5).
+- **No new third-party action without a reason.** Every `uses:` is SHA-pinned with a version comment and listed in `scripts/ci/actions_allowlist.json` with a justification and its TeamCity equivalent or `needs reimplementation` (P13). An action a neutral script can replace is rejected, which is why `lukka/run-vcpkg` gives way to `bootstrap_vcpkg.py` (02.0 Task 02).
+- **Security stance carries over unchanged, with one scoped exception:**
+  - no secrets, except in publish-stage jobs that use the `release` or `staging` environment under SC4's guards (P8 amended); no job this milestone builds is a publish job;
+  - no `pull_request_target`, `workflow_run` or other base-repository-with-secrets trigger, and no `secrets: inherit` (P8, 2026-11-13);
+  - every checkout uses `persist-credentials: false` (P14), and child processes never inherit platform side channels or credentials (02.0 Task 04);
+  - the in-repo policy gate is not the security boundary; the repository settings in ADR 0005 "Repository settings required" are (03.0 Task 04 checklist, maintainer action). Threat model: [docs/security/2026-11-13-ci-rework.md](/docs/security/2026-11-13-ci-rework.md);
   - `permissions: contents: read` at the top;
   - no firmware values in any log, summary or artifact ([docs/security/2026-11-11-gui-browsing-ui.md](/docs/security/2026-11-11-gui-browsing-ui.md) requirement 20; [docs/security/2026-11-11-gui-test-tiers.md](/docs/security/2026-11-11-gui-test-tiers.md) T-3);
   - the R-7/R-8 proofs keep fail-closed semantics.
@@ -153,7 +238,8 @@ A best-effort step is declared with `--best-effort "<reason>"` and never with `c
 - New checks that are not about CI itself. The only checks added are the CI self-checks (policy gate, script tests, actionlint) and fatal UBSan if D2 says so. In particular: no doc-link check in CI, no clang-tidy, no coverage, no sanitizer build of the GUI tiers (the 0011 Story 04.0 hand-off is declined here; a candidate for a later milestone), no fuzzing in CI (`docs/dev/fuzzing.md` keeps it local-only).
 - Running `smbios_gui` or the `gui-local` tier on CI, `xvfb-run`, or software GL.
 - Self-hosted runners, or running macOS/Windows jobs locally. `act` is documented as a Linux-only local aid at most, not as a required tool.
-- The release workflow (milestone 0012 Story 03.0) and the binding jobs (milestone 0013). They are not built here. They must adopt RC1-RC5 when they are built (see Dependency graph).
+- The bodies of the `package`/`verify`/`publish` stages (milestone 0012) and the binding legs (milestone 0013). They are not built here. This milestone fixes their contracts (SC1-SC4, RC1-RC5, P1-P13) and the shared entry workflow they plug into (ADR 0005). There is no separate `release.yml`.
+- An actual TeamCity (or other CI) configuration. This milestone builds the portability seams (reporter backends, neutral names, policy rules). The migration itself follows ADR 0005's checklist if it is ever requested.
 - Pinning a full runner image. Hosted images are updated weekly, even under a fixed label. This milestone pins the label and the tools that decide behaviour, and records `ImageVersion` (RC4).
 
 ## Open questions for the maintainer
@@ -177,10 +263,18 @@ flowchart TD
     C --> D["Story 04.0<br/>Summaries, triggers, probe pattern, docs"]
     A --> D
     D --> M["Milestone exit<br/>parity C01-C22, bounded logs measured,<br/>negative proofs on 3 OSes"]
+    ADR["ADR 0005<br/>unified pipeline + portability"] -.-> A
+    ADR -.-> B
+    C --> P12["Milestone 0012 workflow work<br/>package / verify / publish stages<br/>(Stories 03.0, 04.0)"]
+    D --> P12
+    C --> P13["Milestone 0013 binding legs"]
 ```
 
 02.0 Task 01 (pinning) does not need the step runner and can start in parallel with 01.0 Tasks 02-03. 04.0 Task 03 (probe template) can start as soon as 02.0 has fixed the pinned labels.
 
-**Relation to milestones 0012 and 0013.** Both have specs that edit `ci.yml` or add workflows: 0012 Story 03.0 `release.yml`, and the CI tasks of 0013 Stories 01.0 and 04.0. Neither has started. Recommended order: land this milestone first, so their jobs are written once on RC1-RC5 rather than added to a workflow that is about to be replaced. Their specs then need a one-line amendment ("use `scripts/ci/ci_step.py`; obey the policy gate"). That amendment is a follow-up for whoever starts them, not part of this milestone.
+**Relation to milestones 0012 and 0013 (ADR 0005).** This milestone is the foundation of one pipeline. 0012 owns the `package`/`verify`/`publish` stage definitions, and 0013's binding jobs are legs of those stages. Both consume SC1-SC4, RC1-RC5 and P1-P13 instead of writing their own workflow conventions.
+
+- **0012:** its workflow work (Story 03.0 Tasks 01-03 and all of Story 04.0) depends on this milestone's Stories 01.0-03.0 and on Story 04.0 Task 02's tier table. 0012 Stories 01.0/02.0 (CMake install/export, port files) do not depend on this milestone.
+- **0013:** its CI tasks (Story 01.0 Task 03, Story 04.0 Task 04) have not been amended yet. They still name `ci.yml` and `-latest` runners, and whoever starts 0013 amends them to ADR 0005.
 
 Depends on: milestone 0011 (C15-C20 exist as specified there), 0008 (C01), 0009 (C02, C07, C08).

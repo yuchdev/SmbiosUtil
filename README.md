@@ -73,18 +73,36 @@ If there is none, clone one (a full clone, not `--depth 1`, because `vcpkg.json`
 [`CMakePresets.json`](CMakePresets.json) defines one preset per platform (`windows`, `linux`, `macos`), each wiring `CMAKE_TOOLCHAIN_FILE` to vcpkg's toolchain file automatically:
 
 ```bash
-export VCPKG_ROOT=/path/to/vcpkg     # or VCPKG_ROOT env var already set by vcpkg's own install
-cmake --preset macos                  # or linux / windows
+export VCPKG_ROOT=/path/to/vcpkg        # or VCPKG_ROOT env var already set by vcpkg's own install
+cmake --preset {preset_name}            # macos|linux|windows
+cmake --build --preset {preset_name}
+```
+
+#### macOS 
+
+```bash
+export VCPKG_ROOT=~/.vcpkg
+cmake --preset macos
 cmake --build --preset macos
 ```
 
 Binaries land at `smbios/bin/smbios` (the CLI) and `libsmbios/bin/*` (test executables), relative to the build directory.
 
+### Build with no presets
+
 Fallback, if you're not using presets (an older CMake, or a one-off toolchain path):
 
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_TOOLCHAIN_FILE=<vcpkg_root>/scripts/buildsystems/vcpkg.cmake
+cmake .. -DCMAKE_TOOLCHAIN_FILE=<vcpkg_root>/scripts/buildsystems/vcpkg.cmake 
+cmake --build .
+```
+
+#### macOS 
+
+```bash
+mkdir build && cd build
+cmake .. -DCMAKE_TOOLCHAIN_FILE=~/.vcpkg/scripts/buildsystems/vcpkg.cmake 
 cmake --build .
 ```
 

@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "about": "Fixture.",
+  "jobs": [],
+  "callers": [
+    {
+      "file": "ci.yml",
+      "job": "publish-staging",
+      "tier": "staging",
+      "permissions": [
+        "id-token: write"
+      ]
+    }
+  ]
+}

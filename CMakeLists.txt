@@ -85,6 +85,20 @@ endif()
 
 find_package(Boost ${BOOST_MIN_VERSION} REQUIRED)
 
+# macOS: Apple clang searches /usr/local/include (where a Homebrew Boost
+# lives) BEFORE any -isystem directory, so headers of a Homebrew Boost
+# silently shadow the vcpkg Boost that the libraries are linked from. A
+# header/library version mismatch then fails at link time (observed:
+# undefined boost::program_options::arg, Homebrew 1.90 headers vs vcpkg
+# 1.92 libs). Plain -I directories ARE searched before the default system
+# paths, so on macOS imported-target include directories (Boost, imgui,
+# glfw) are passed as -I rather than -isystem. Must be set before the
+# targets that consume them are created. Cost: warnings from those headers
+# are no longer suppressed.
+if(APPLE)
+    set(CMAKE_NO_SYSTEM_FROM_IMPORTED ON)
+endif()
+
 # Language standard: C++20, strictly (no GNU/MS extensions), uniformly for
 # every target configured below (libsmbios, its per-OS/legacy libraries,
 # the smbios CLI, and the tests/* executables). Setting these as directory-scope variables before the

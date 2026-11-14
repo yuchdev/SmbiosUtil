@@ -1,7 +1,7 @@
 # 01 - Freeze the check inventory and measure the log baseline
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-13)
 
 ## Objective
 
@@ -30,6 +30,6 @@ None.
 
 ## Success criteria
 
-- [ ] Inventory table matches `ci.yml` at HEAD. Drift is recorded in `expected -> actual` form, or "no drift" is recorded.
-- [ ] `status.md` records, per job and leg, for one green and (if retained) one failing run: total log bytes, total log lines, the lines produced by project-owned `run:` steps versus third-party actions, and the job duration. It also records the median duration of the last 5 green runs per job (input to Story 02.0 Task 03's step budgets).
-- [ ] C05 and E11 are confirmed or withdrawn, in writing.
+- [x] Inventory table matches `ci.yml` at HEAD. Drift is recorded in `expected -> actual` form, or "no drift" is recorded.
+- [x] `status.md` records, per job and leg, for one green and (if retained) one failing run: total log bytes, total log lines, the lines produced by project-owned `run:` steps versus third-party actions, and the job duration. It also records the median duration of the last 5 green runs per job (input to Story 02.0 Task 03's step budgets).
+- [x] C05 and E11 are confirmed or withdrawn, in writing.

@@ -1,0 +1,156 @@
+# Reusable `gui` job (milestone 0014, Story 03.0 Task 03; ADR 0005 D8).
+# Rebuilds the old ci.yml `gui-build` job. Inventory rows: C03 (vcpkg
+# cache, `gui` flavor), C11 (job and step budgets, ctest --timeout 60), C15
+# (Linux apt packages through apt_install.py: DNS-checked kernel.org mirror
+# fallback, the 0011 apt options, 10-minute step budget), C16 (configure +
+# build with the <os>-gui preset), C17 (the shipped smbios_gui is found),
+# C18 (R-7: no test-hook string in it), C19 (the gui-ci ctest set, counted
+# from JUnit) and C20 (R-8: the gui-local tier is absent, fail closed).
+# C18 and C20 are the merge-blocking proofs of
+# docs/security/2026-11-11-gui-test-tiers.md; their logic is in
+# scripts/ci/gui_guards.py. Every `run:` step is one stage-command line (P7).
+#
+# No step executes smbios_gui (milestone 0011 Story 03.0 constraint). The
+# configure step sees GITHUB_ACTIONS/CI (ci_step passes them on), so the
+# root CMakeLists.txt forces SMBIOS_GUI_LOCAL_TESTS off; the R-8 guard
+# proves it. No failure-log upload: policy P15 (CR-10) allows `logs-*`
+# uploads only in stage-build.yml, and the old gui-build job had none.
+#
+# Legs: the matrix carries only the leg name; preset, build directory,
+# ctest configuration (Debug, as the old job) and the apt flag come from
+# scripts/ci/legs.json ("job": "gui"), runner labels from
+# scripts/ci/pins.json (scripts/ci/tests/test_stage.py checks both).
+# Tiering (plan Q1): a push to a branch other than master runs only
+# linux-gui; every other event all three legs. Steps run twice where Windows
+# needs it, once per interpreter name: the run: line must be a literal
+# (P6/P7), and the Windows image has `python` but no `python3`.
+name: stage-gui
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+# Neutral names (ADR 0005 "Neutral environment names"). runner.temp is only
+# available at step level, so CI_TEMP_DIR is set on each stage step.
+env:
+  CI_PLATFORM: github
+  CI_REPORTER: github
+  CI_RUN_ID: ${{ github.run_id }}
+  CI_RUN_ATTEMPT: ${{ github.run_attempt }}
+  CI_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  CI_EVENT: ${{ github.ref_type == 'tag' && 'tag' || github.event_name == 'pull_request' && 'pr' || github.event_name == 'workflow_dispatch' && 'manual' || github.event_name }}
+  CI_REF: ${{ github.ref }}
+  CI_REF_NAME: ${{ github.ref_name }}
+  CI_COMMIT: ${{ github.sha }}
+  CI_BASE_COMMIT: ${{ github.event.pull_request.base.sha || github.event.before }}
+  CI_WORKSPACE: ${{ github.workspace }}
+
+jobs:
+  gui:
+    name: gui (${{ matrix.leg }})
+    runs-on: ${{ matrix.leg == 'windows-gui' && 'windows-2022' || matrix.leg == 'macos-gui' && 'macos-15' || 'ubuntu-24.04' }}
+    timeout-minutes: 22
+    strategy:
+      fail-fast: false
+      matrix:
+        leg: ${{ fromJSON(github.event_name == 'push' && github.ref_type == 'branch' && github.ref != 'refs/heads/master' && '["linux-gui"]' || '["linux-gui", "windows-gui", "macos-gui"]') }}
+    env:
+      CI_JOB: gui
+      CI_LEG: ${{ matrix.leg }}
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 3
+        with:
+          persist-credentials: false
+
+      # C15: GLFW/X11/autotools packages (scripts/ci/apt-packages-gui.txt)
+      # through apt_install.py; Linux only.
+      - name: Install system packages (Linux)
+        id: packages
+        if: matrix.leg == 'linux-gui'
+        run: python3 scripts/ci/stage.py build --only packages
+        timeout-minutes: 10
+        env:
+          CI_TEMP_DIR: ${{ runner.temp }}
+
+      # Pinned tools (job-local venv), RC4 header, ci_step self-test, and the
+      # `gui`-flavor vcpkg cache key as the step outputs `cache` and
+      # `cache_enabled`.
+      - name: Prepare
+        id: prepare
+        if: matrix.leg != 'windows-gui'
+        run: python3 scripts/ci/stage.py build --only prepare
+        timeout-minutes: 6
+        env:
+          CI_TEMP_DIR: ${{ runner.temp }}
+
+      - name: Prepare (Windows)
+        id: prepare-win
+        if: matrix.leg == 'windows-gui'
+        run: python scripts/ci/stage.py build --only prepare
+        timeout-minutes: 6
+        env:
+          CI_TEMP_DIR: ${{ runner.temp }}
+
+      - name: Restore vcpkg cache
+        id: cache-restore
+        if: (steps.prepare.outputs.cache_enabled || steps.prepare-win.outputs.cache_enabled) == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        timeout-minutes: 5
+        with:
+          path: ${{ runner.temp }}/vcpkg-binary-cache
+          key: ${{ fromJSON(steps.prepare.outputs.cache || steps.prepare-win.outputs.cache).key }}
+          restore-keys: ${{ fromJSON(steps.prepare.outputs.cache || steps.prepare-win.outputs.cache).restore_prefix }}
+
+      # C16: bootstrap_vcpkg.py, `cmake --preset <os>-gui` (SMBIOS_BUILD_GUI,
+      # the vcpkg `gui` feature), cache-health line, build.
+      - name: Compile
+        id: compile
+        if: matrix.leg != 'windows-gui'
+        run: python3 scripts/ci/stage.py build --only compile
+        timeout-minutes: 18
+        env:
+          CI_TEMP_DIR: ${{ runner.temp }}
+
+      - name: Compile (Windows)
+        id: compile-win
+        if: matrix.leg == 'windows-gui'
+        run: python scripts/ci/stage.py build --only compile
+        timeout-minutes: 18
+        env:
+          CI_TEMP_DIR: ${{ runner.temp }}
+
+      # C17 find the shipped smbios_gui -> C18 (R-7) hook strings -> C19 the
+      # gui-ci set (JUnit counts, --no-tests=error, --output-on-failure: the
+      # tier is fixture-free, 0011 R-5) -> C20 (R-8) local tier absent. Every
+      # step runs and reports; the stage fails if any did.
+      - name: Test
+        id: test
+        if: matrix.leg != 'windows-gui'
+        run: python3 scripts/ci/stage.py test
+        timeout-minutes: 6
+        env:
+          CI_TEMP_DIR: ${{ runner.temp }}
+
+      - name: Test (Windows)
+        id: test-win
+        if: matrix.leg == 'windows-gui'
+        run: python scripts/ci/stage.py test
+        timeout-minutes: 6
+        env:
+          CI_TEMP_DIR: ${{ runner.temp }}
+
+      # Cache writes only from a push to master or the nightly schedule
+      # (threat model CR-2, policy P15).
+      - name: Save vcpkg cache
+        id: cache-save
+        if: ((github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'schedule') && (steps.prepare.outputs.cache_enabled || steps.prepare-win.outputs.cache_enabled) == 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        timeout-minutes: 5
+        with:
+          path: ${{ runner.temp }}/vcpkg-binary-cache
+          key: ${{ fromJSON(steps.prepare.outputs.cache || steps.prepare-win.outputs.cache).key }}

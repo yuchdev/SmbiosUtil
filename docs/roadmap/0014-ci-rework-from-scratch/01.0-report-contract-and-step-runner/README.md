@@ -1,7 +1,7 @@
 # Story 01.0 - Report Contract, Step Runner and Workflow-Script Test Harness
 
 **Parent milestone:** [plan.md](../plan.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete (2026-11-13)
 **Depends on:** nothing (first story)
 
 ## Scope
@@ -18,9 +18,9 @@ No `.github/workflows/` file is changed in this story.
 
 | #  | Document | Status | Blocks |
 |----|----------|--------|--------|
-| 01 | [Freeze the check inventory and measure the log baseline](01-freeze-check-inventory-and-log-baseline.md) | ⬜ Not started | 02, Story 03.0 |
-| 02 | [Step runner implementing the report contract](02-step-runner-and-report-contract.md) | ⬜ Not started | 03, Stories 02.0-04.0 |
-| 03 | [Workflow-script test harness](03-workflow-script-test-harness.md) | ⬜ Not started | Story 02.0 Task 03, Story 03.0 |
+| 01 | [Freeze the check inventory and measure the log baseline](01-freeze-check-inventory-and-log-baseline.md) | ✅ Complete | 02, Story 03.0 |
+| 02 | [Step runner implementing the report contract](02-step-runner-and-report-contract.md) | ✅ Complete | 03, Stories 02.0-04.0 |
+| 03 | [Workflow-script test harness](03-workflow-script-test-harness.md) | ✅ Complete | Story 02.0 Task 03, Story 03.0 |
 
 ## Key constraints
 

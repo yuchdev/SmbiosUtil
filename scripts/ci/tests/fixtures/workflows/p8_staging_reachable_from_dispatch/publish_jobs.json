@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "about": "Fixture.",
+  "jobs": [
+    {
+      "file": "stage-publish.yml",
+      "job": "publish-staging-oidc",
+      "tier": "staging",
+      "permission_class": "oidc",
+      "permissions": [
+        "id-token: write"
+      ]
+    }
+  ],
+  "callers": []
+}

@@ -1,0 +1,19 @@
+# Policy-gate fixture: violates exactly P9 (stage workflow with a push trigger).
+name: stage-lint
+on:
+  push:
+permissions:
+  contents: read
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 5
+        with:
+          persist-credentials: false
+      - name: Lint
+        run: python3 scripts/ci/lint.py
+        timeout-minutes: 5

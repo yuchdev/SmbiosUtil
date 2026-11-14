@@ -3,7 +3,19 @@
 **Parent milestone:** [plan.md](../plan.md)
 **Status:** ⬜ Not started
 **Depends on:** Story 01.0 (`libsmbios` must be `install()`-able for the
-tarball to be complete - see `plan.md`'s Dependency graph note)
+tarball to be complete - see `plan.md`'s Dependency graph note); milestone
+0014 Stories 01.0-03.0 (pipeline foundation, [ADR 0005](/docs/adr/0005-unified-build-package-publish-pipeline.md))
+
+> **Amended 2026-11-12 (ADR 0005).** This story is the pipeline's
+> **`package` stage**. It is not a standalone release workflow. Its input is
+> the build stage's tested `cmake --install` tree at
+> `$CI_ARTIFACT_DIR/install/<leg>/` (0014 SC2). Its output is the D4
+> `dist/` layout: `libbios-<version>-<leg>.{tar.gz,zip}`, `.sha256` files and
+> `manifest.json`. Uploading to a GitHub Release is the `publish` stage
+> (Story 04.0). Workflow conventions (pins, permissions, step shape,
+> reporting) are defined by ADR 0005 and 0014, not here. **This story must
+> also name the shipped build configuration**, which the build stage's
+> packaging legs then build and test (0014 SC2).
 
 ## Scope
 
@@ -18,7 +30,7 @@ unwilling to add a vcpkg registry at all.
 
 | #  | Document                                                             | Status         | Blocks |
 |----|----------------------------------------------------------------------|----------------|--------|
-| 01 | [Release workflow and packaging](01-release-workflow-and-packaging.md) | ⬜ Not started | 02     |
+| 01 | [Package stage: archive the tested install tree](01-release-workflow-and-packaging.md) | ⬜ Not started | 02     |
 | 02 | [Artifact naming, checksums, and versioning](02-artifact-naming-checksums-and-versioning.md) | ⬜ Not started | 03     |
 | 03 | [Tests](03-tests.md)                                                  | ⬜ Not started | -      |
 
@@ -42,17 +54,18 @@ unwilling to add a vcpkg registry at all.
   `smbios_c`.
 - **The per-platform artifact matrix (Windows/Linux/macOS x this
   project's own compiler) is this project's own CI burden**, per the
-  ADR's own named Negative consequence - record what triggers a rebuild
-  (a new tag only, not every push) so this does not become an
-  every-push cost.
+  ADR's own named Negative consequence. Which events run it is now ADR
+  0005 D7's tier table: PRs to `master`, nightly and tags, never a branch
+  push. The archives are made from the tested build, so packaging adds no
+  rebuild.
 
 ## Files or directories created or modified by this story
 
-- `.github/workflows/release.yml` (new) or a new job added to the
-  existing `.github/workflows/ci.yml`, gated on a version-tag push
-  (implementation's choice - a separate workflow file is likely cleaner
-  given the existing file's own size and its unrelated `on: [push,
-  pull_request]` trigger).
+- `scripts/ci/stage.py`'s `package` stage, plus `scripts/ci/package_archive.py`
+  (deterministic archive, stdlib SHA-256, `manifest.json`) and its tests.
+- `.github/workflows/stage-package.yml` (reusable, one `stage.py package`
+  step per packaging leg), called from the entry workflow on the tiers
+  ADR 0005 D7 lists. **No `release.yml`** (superseded by ADR 0005 D8).
 - Documentation (exact location decided during implementation, e.g. a
   new `docs/dev/release-artifacts.md` or a section in
   `docs/cli-usage.md`) describing the artifact naming convention and how

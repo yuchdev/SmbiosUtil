@@ -1,0 +1,31 @@
+# Policy-gate fixture: violates exactly P12 (staging-tier caller without needs: verify).
+name: fixture
+on:
+  push:
+    branches: ['**']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 5
+        with:
+          persist-credentials: false
+      - name: Lint
+        run: python3 scripts/ci/lint.py
+        timeout-minutes: 5
+  verify:
+    needs: [lint]
+    uses: ./.github/workflows/stage-verify.yml
+  publish-staging:
+    needs: [lint]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    # permissions: OIDC role assumption for the staging destination (ADR 0005 D9).
+    permissions:
+      id-token: write
+    uses: ./.github/workflows/stage-publish.yml

@@ -4,6 +4,24 @@
 **Status:** ⬜ Not started
 **Depends on:** Task 01
 
+> **Amended 2026-11-12 by [ADR 0005](/docs/adr/0005-unified-build-package-publish-pipeline.md).**
+> Three things in this task are superseded:
+>
+> - **The checksum step.** The `shasum` YAML step below is withdrawn.
+>   Checksums come from `scripts/ci/package_archive.py` (Task 01; stdlib,
+>   so it also works on Windows, review L1).
+> - **The artifact name.** It is now `libbios-<version>-<leg>.<ext>`, where
+>   `<version>` is the D5 version (the tag without `v`) and `<leg>` is
+>   `<os>-<arch>`. It is no longer `libbios-<tag>-<preset>`.
+> - **Version drift.** The statement that the tag "may drift" from
+>   `SMBIOS_C_VERSION`/`LIBSMBIOS_VERSION` is **reversed**: one
+>   authoritative CMake version, checked in CI (D5; Story 04.0 Task 01).
+>
+> What remains of this task is the documentation deliverable
+> (`docs/dev/release-artifacts.md`: naming, verifying a download against
+> `.sha256`/`manifest.json`, and the supported arch/glibc baseline from
+> review M6). The illustrative YAML below is kept only as history.
+
 ## Objective
 
 Define a minimal, reproducible artifact naming convention and add

@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "about": "Policy rule P13 (milestone 0014 Story 02.0 Task 03; ADR 0005). Every uses: in a workflow must appear here. Changing an entry: run 'gh api repos/<owner>/<repo>/git/ref/tags/<version>' (dereference an annotated tag with 'gh api repos/<owner>/<repo>/git/tags/<tag sha>'), check the commit equals sha, record the date in tag_commit_verified_on. 'python3 scripts/ci/check_workflow_policy.py --verify-tags' does the lookup (network, not CI).",
+  "actions": [
+    {
+      "action": "actions/checkout",
+      "sha": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+      "version": "v7.0.1",
+      "kind": "node",
+      "justification": "Checks out the commit under test; runs with persist-credentials: false (P14).",
+      "teamcity_equivalent": "VCS root checkout (built in)",
+      "tag_commit_verified_on": "2026-11-13"
+    },
+    {
+      "action": "actions/cache/restore",
+      "sha": "55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
+      "version": "v6.1.0",
+      "kind": "node",
+      "justification": "Restores the vcpkg binary cache; restore-only on every event (Task 02 cache rules).",
+      "teamcity_equivalent": "Build Cache build feature",
+      "tag_commit_verified_on": "2026-11-13"
+    },
+    {
+      "action": "actions/cache/save",
+      "sha": "55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
+      "version": "v6.1.0",
+      "kind": "node",
+      "justification": "Saves the vcpkg binary cache, only on a master push or schedule (P15).",
+      "teamcity_equivalent": "Build Cache build feature",
+      "tag_commit_verified_on": "2026-11-13"
+    },
+    {
+      "action": "actions/cache",
+      "sha": "55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
+      "version": "v6.1.0",
+      "kind": "node",
+      "justification": "Combined restore+save, used by today's ci.yml until cutover; new workflows use cache/restore and cache/save.",
+      "teamcity_equivalent": "Build Cache build feature",
+      "tag_commit_verified_on": "2026-11-13"
+    },
+    {
+      "action": "actions/upload-artifact",
+      "sha": "cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+      "version": "v7.0.2",
+      "kind": "node",
+      "justification": "Uploads configure/build logs on failure (plan Q3, 3-day retention) and stage hand-off artifacts.",
+      "teamcity_equivalent": "artifact paths (built in)",
+      "tag_commit_verified_on": "2026-11-13"
+    }
+  ]
+}

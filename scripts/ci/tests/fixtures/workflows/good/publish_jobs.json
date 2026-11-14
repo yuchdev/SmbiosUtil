@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "about": "Fixture for test_check_workflow_policy.py.",
+  "jobs": [
+    {"file": "stage-publish.yml", "job": "publish-staging-oidc", "tier": "staging",
+     "permission_class": "oidc", "permissions": ["id-token: write"]},
+    {"file": "stage-publish.yml", "job": "publish-release-repo-write", "tier": "release",
+     "permission_class": "repo-write", "permissions": ["contents: write", "pull-requests: write"]}
+  ],
+  "callers": [
+    {"file": "ci.yml", "job": "publish-staging", "tier": "staging",
+     "permissions": ["id-token: write"]},
+    {"file": "ci.yml", "job": "publish-release", "tier": "release",
+     "permissions": ["contents: write", "pull-requests: write"]}
+  ]
+}

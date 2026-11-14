@@ -19,7 +19,7 @@ Document how CI works now, how to read it and how to debug it, then close the mi
   - the step budget table (`scripts/ci/step_budgets.json`);
   - how to add a check: write a script, call it through `ci_step`, add an inventory-style row to the table in `ci.md`, and pass the policy gate;
   - the pinned versions, and how to bump them (labels, `requirements-tools.txt` hashes, vcpkg commit);
-  - a note for milestones 0012/0013: new jobs and `release.yml` use RC1-RC5 and pass P1-P9.
+  - a note for milestones 0012/0013: their `package`/`verify`/`publish` stages and binding legs plug into the entry workflow as `stage-*.yml` + `stage.py` (ADR 0005), use RC1-RC5 and SC1-SC4, and pass P1-P13. There is no `release.yml`. The note also includes the ADR 0005 neutral env-name table and the TeamCity migration checklist link.
 - **Modify** root `CLAUDE.md`:
   - replace the description of `.github/workflows/ci.yml`'s jobs ("`build` job on Windows, `sanitizers` job on Linux/macOS") with the new topology;
   - add a one-line pointer to `docs/dev/ci.md`;

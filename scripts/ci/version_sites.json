@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "about": "Version sites checked by scripts/ci/check_versions.py (milestone 0014 plan SC3; ADR 0005 D5). 'authoritative' is the one hand-edited value: the root CMakeLists.txt project(... VERSION X.Y.Z). Until milestone 0012 adds that VERSION (a product-build change, ADR 0005 D5), 'interim_authoritative' names the site that stands in for it, and with a single site the check passes trivially (plan SC3 'Prerequisite'). Each row of 'sites' is {site, file, extractor, rule}: extractor is one of cmake_project_version, cmake_set:<VAR>, json_key:<dotted.path>; rule 'equal' requires the literal to equal the authoritative value, 'derived' additionally accepts a reference to ${PROJECT_VERSION}/${CMAKE_PROJECT_VERSION} (and fails on any other variable). Milestone 0012 adds rows for LIBSMBIOS_VERSION, the port vcpkg.json and the registry baseline.",
+  "authoritative": {
+    "site": "root project() VERSION",
+    "file": "CMakeLists.txt",
+    "extractor": "cmake_project_version"
+  },
+  "interim_authoritative": "SMBIOS_C_VERSION",
+  "sites": [
+    {
+      "site": "SMBIOS_C_VERSION",
+      "file": "smbios_c/CMakeLists.txt",
+      "extractor": "cmake_set:SMBIOS_C_VERSION",
+      "rule": "derived"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 # 03 - `gui` job and the R-7/R-8 guard port
 
 **Parent story:** [README.md](README.md)
-**Status:** ⬜ Not started
+**Status:** ✅ Complete locally (runner checks and the security-auditor R-7/R-8 review pending)
 **Depends on:** Task 02
 
 ## Objective
@@ -57,5 +57,26 @@ def main(argv: Sequence[str]) -> int: ...
 ## Success criteria
 
 - [ ] C15-C20 present with identical gate semantics. The threat model review records PASS for the R-7/R-8 port.
-- [ ] Each fail-closed branch has a test that proves it fails.
-- [ ] No step executes `smbios_gui`.
+- [x] Each fail-closed branch has a test that proves it fails.
+- [x] No step executes `smbios_gui`.
+
+## As-built notes (2026-11-13)
+
+**Files.** Created: `scripts/ci/gui_guards.py`, `.github/workflows/stage-gui.yml`, `scripts/ci/tests/test_gui_guards.py` (48 tests). Modified: `scripts/ci/stage.py` (job `gui`; `build` step `packages` (C15); `test` steps `gui-binary`/`gui-hooks`/`gui-ci`/`gui-local`; per-job step lists `JOB_STEPS`/`steps_for`; `gui` cache flavor), `scripts/ci/legs.json` (legs `linux-gui`/`windows-gui`/`macos-gui`, `"job": "gui"`, `config: Debug`, `apt_packages` on Linux; tiers), `scripts/ci/step_budgets.json` (job key `gui-build` renamed `gui`, same medians; `gui/*` steps), `.github/workflows/ci-next.yml` (`gui` job, `needs: lint`), `scripts/ci/tests/test_stage.py` (+7 tests; tier table and workflow lists include `gui`), `docs/dev/ci.md` (budget tables). `ci.yml` and all product C++/CMake files are unchanged.
+
+**Verification (local).** `python3 scripts/ci/run_tests.py`: `ok: scripts/ci tests: 359 tests`; `python3 scripts/ci/lint.py --skip-tests`: actionlint ok on 5 workflows, policy ok; `check_workflow_policy.py` on `ci-next.yml` + the four `stage-*.yml`: ok (P1-P15). Mutation check (scratch copies, not committed): weakening any of seven guard branches (missing-line, ctest exit, more than one line, directories skipped, `casefold`, chunk carry, non-regular-file check) makes `test_gui_guards.py` fail. Against existing local trees (no rebuild): `build/macos-gui` shipped `smbios_gui` -> `ok: no test hook strings` (bash `grep -a -c -F` also 0); the twin `smbios_gui_autoexit` -> `expected 0 -> 2` (a real-binary negative proof); `local-tier-absent` on that non-CI tree -> red with 10/10 ctest entries and 4 paths, as R-8 requires outside CI.
+
+**Semantic differences from the old bash (all equal or stronger).**
+- R-7 counts occurrences, not lines (equivalent for "must be 0"); a symlinked, non-regular or unreadable binary fails closed before `open` (a FIFO cannot block).
+- R-7 checks every `*/smbios_gui/bin/smbios_gui[.exe]` found (the old step checked only `find | head -n1`); `find-binary` reports the first in sorted order.
+- R-8 `Total Tests:` accepts surrounding whitespace (spec), but needs **exactly one** such line and ctest exit 0 (CR-12; the old bash took the first line). ctest missing or timing out (60 s) fails closed.
+- R-8 file walk compares names with `casefold()` (old `find -name` was case-sensitive) and lists symlinks without following them.
+- All three R-8 checks run and report together; C17-C20 all run even after an earlier failure (the old step stopped at the first).
+
+**Decisions and deviations.**
+- **GUI legs are legs, not a stage** (as Task 02's sanitizer legs): SC1's stage names are fixed. `stage.py build --only packages` is the C15 step (apt only on CI; a local run prints `skip:`).
+- **Labels.** RC1 adds `: ` after the label, so the lines read `ok: smbios_gui: <path> (<n> bytes) (<t>s)`, `ok: no test hook strings in the shipped smbios_gui (<t>s)`, `ok: tests gui-ci: ...`, `ok: no gui-local tests configured (<t>s)`.
+- **Runner labels** come from `pins.json` (`windows-2022`, `macos-15`), replacing the old `windows-latest`/`macos-latest`. Job budget 22 min (P4, from the old job's medians) replaces the old 30.
+- **Q1 tiering**: a branch push runs `linux-gui` (the "three Linux legs" ruling).
+
+**Runner-only (pending).** All three `gui` legs green with the four `ok:` lines above; `apt_install.py` on ubuntu-24.04 inside this job; the `gui` cache key; whether a cold Windows GUI build fits the 22-minute budget (warm-cache medians); CI detection (`GITHUB_ACTIONS`/`CI` passed through `ci_step`) forcing the local tier off on all three OSes. The security-auditor's PASS/FAIL for the R-7/R-8 port goes in the post-implementation section of `docs/security/2026-11-13-ci-rework.md`.

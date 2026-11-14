@@ -1,0 +1,44 @@
+build (linux)	Set up job	2026-11-13T10:00:00.1234567Z Current runner version: '2.330.0'
+build (linux)	Set up job	2026-11-13T10:00:00.1234567Z Operating System
+build (linux)	Set up job	2026-11-13T10:00:00.1234567Z Ubuntu 24.04
+build (linux)	Checkout	2026-11-13T10:00:00.1234567Z ##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+build (linux)	Checkout	2026-11-13T10:00:00.1234567Z Syncing repository: owner/repo
+build (linux)	Checkout	2026-11-13T10:00:00.1234567Z ##[endgroup]
+build (linux)	Prepare	2026-11-13T10:00:00.1234567Z ##[group]Run python3 scripts/ci/stage.py build --only prepare
+build (linux)	Prepare	2026-11-13T10:00:00.1234567Z python3 scripts/ci/stage.py build --only prepare
+build (linux)	Prepare	2026-11-13T10:00:00.1234567Z shell: /usr/bin/bash -e {0}
+build (linux)	Prepare	2026-11-13T10:00:00.1234567Z env:
+build (linux)	Prepare	2026-11-13T10:00:00.1234567Z   CI_PLATFORM: github
+build (linux)	Prepare	2026-11-13T10:00:00.1234567Z ##[endgroup]
+build (linux)	Prepare	2026-11-13T10:00:00.1234567Z env: build/linux image=- | cmake 4.4.4 | ctest 4.4.4 | ninja 1.13.2
+build (linux)	Prepare	2026-11-13T10:00:00.1234567Z ok: ci_step self-test (0.1s)
+build (linux)	Prepare	2026-11-13T10:00:00.1234567Z ok: pinned tools: cmake, ninja from requirements-tools.txt (12.0s)
+build (linux)	Prepare	2026-11-13T10:00:00.1234567Z info: vcpkg cache key: vcpkg-default-ubuntu-24.04
+build (linux)	Restore vcpkg cache	2026-11-13T10:00:00.1234567Z ##[group]Run actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+build (linux)	Restore vcpkg cache	2026-11-13T10:00:00.1234567Z Cache restored from key: k
+build (linux)	Restore vcpkg cache	2026-11-13T10:00:00.1234567Z ##[endgroup]
+build (linux)	Compile	2026-11-13T10:00:00.1234567Z ##[group]Run python3 scripts/ci/stage.py build --only compile
+build (linux)	Compile	2026-11-13T10:00:00.1234567Z python3 scripts/ci/stage.py build --only compile
+build (linux)	Compile	2026-11-13T10:00:00.1234567Z shell: /usr/bin/bash -e {0}
+build (linux)	Compile	2026-11-13T10:00:00.1234567Z env:
+build (linux)	Compile	2026-11-13T10:00:00.1234567Z   CI_PLATFORM: github
+build (linux)	Compile	2026-11-13T10:00:00.1234567Z ##[endgroup]
+build (linux)	Compile	2026-11-13T10:00:00.1234567Z ok: vcpkg bootstrap: 00c5775211f4 (20.0s)
+build (linux)	Compile	2026-11-13T10:00:00.1234567Z info: vcpkg cache: exact
+build (linux)	Compile	2026-11-13T10:00:00.1234567Z ok: configure (30.0s)
+build (linux)	Compile	2026-11-13T10:00:00.1234567Z ok: build (100.0s)
+build (linux)	Test	2026-11-13T10:00:00.1234567Z ##[group]Run python3 scripts/ci/stage.py test
+build (linux)	Test	2026-11-13T10:00:00.1234567Z python3 scripts/ci/stage.py test
+build (linux)	Test	2026-11-13T10:00:00.1234567Z shell: /usr/bin/bash -e {0}
+build (linux)	Test	2026-11-13T10:00:00.1234567Z env:
+build (linux)	Test	2026-11-13T10:00:00.1234567Z   CI_PLATFORM: github
+build (linux)	Test	2026-11-13T10:00:00.1234567Z ##[endgroup]
+build (linux)	Test	2026-11-13T10:00:00.1234567Z skip: tests unprivileged: run by the sanitizers job on this OS (C13)
+build (linux)	Test	2026-11-13T10:00:00.1234567Z info: sysfs: DMI 0400 root
+build (linux)	Test	2026-11-13T10:00:00.1234567Z ok: cli formats: text non-empty, xml 40, json 40, yaml 40, csv 300; no-flag == text (3.0s)
+build (linux)	Test	2026-11-13T10:00:00.1234567Z ##[warning]best-effort: tests live-table: a virtualized runner's firmware may not expose an SMBIOS table (exit 8)
+build (linux)	Test	2026-11-13T10:00:00.1234567Z --- tests live-table: last 2 lines ---
+build (linux)	Test	2026-11-13T10:00:00.1234567Z 1/3 Test #1: smbios_integration_test ...***Failed
+build (linux)	Test	2026-11-13T10:00:00.1234567Z 66% tests passed, 1 tests failed out of 3
+build (linux)	Post Checkout	2026-11-13T10:00:00.1234567Z Post job cleanup.
+build (linux)	Complete job	2026-11-13T10:00:00.1234567Z Cleaning up orphan processes

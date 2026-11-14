@@ -1,0 +1,5 @@
+Running 12 test cases...
+/src/tests/unit/synthetic_test.cpp(88): error: in "SyntheticSuite/SizeDecodesTestCase": check size == 8192 has failed [4096 != 8192]
+/src/tests/unit/synthetic_test.cpp(97): fatal error: in "SyntheticSuite/StringIndexTestCase": critical check idx < 3 has failed
+
+*** 2 failures are detected in the test module "synthetic_unit_test"

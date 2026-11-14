@@ -4,6 +4,12 @@ Sources: `tests/CMakeLists.txt`, `tests/gui/CMakeLists.txt`, the root
 `CMakeLists.txt` and `.github/workflows/ci.yml`. Mermaid, not rendered
 locally.
 
+Diagram 6b documents the **as-is** single `ci.yml`. The planned rework
+(milestone 0014 with [ADR 0005](/docs/adr/0005-unified-build-package-publish-pipeline.md))
+replaces it with an entry workflow plus reusable `stage-*.yml` workflows and
+adds package, verify and publish stages on the same pipeline (no separate
+release workflow); see [diagram 7](07-build-package-publish-pipeline.md).
+
 ## 6a. Which tests are registered, and when
 
 ```mermaid
@@ -25,7 +31,7 @@ flowchart TD
 and live table. Run a tier with
 `ctest --test-dir build/<os>-gui -L gui-ci|gui-local|gui`.
 
-## 6b. CI jobs (`.github/workflows/ci.yml`, on push and pull request)
+## 6b. CI jobs, as-is (`.github/workflows/ci.yml`, on push and pull request)
 
 ```mermaid
 flowchart LR
