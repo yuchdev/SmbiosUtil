@@ -8,9 +8,9 @@
      "permission_class": "repo-write", "permissions": ["contents: write", "pull-requests: write"]}
   ],
   "callers": [
-    {"file": "ci-next.yml", "job": "publish-staging", "tier": "staging",
+    {"file": "ci.yml", "job": "publish-staging", "tier": "staging",
      "permissions": ["id-token: write"]},
-    {"file": "ci-next.yml", "job": "publish-release", "tier": "release",
+    {"file": "ci.yml", "job": "publish-release", "tier": "release",
      "permissions": ["contents: write", "pull-requests: write"]}
   ]
 }

@@ -4,7 +4,7 @@
 Reads ``scripts/ci/inventory.json`` (plan.md's Phase-0 inventory, kept equal
 to it by ``tests/test_parity_check.py``) and proves each row against the tree:
 
-- the entry workflow (``ci-next.yml``, ``ci.yml`` after cutover) calls the
+- the entry workflow (``ci.yml``; ``ci-next.yml`` before the cutover) calls the
   row's stage workflow, whose matrix holds every leg the row needs;
 - for each leg, ``stage.py`` is run **in-process, as a dry run**, once per
   stage-command line the stage workflow runs on that leg (its ``if:`` on
@@ -120,11 +120,11 @@ class Tree:
     scan_dirs: Tuple[Path, ...] = ()
 
     def entry_workflow(self) -> Path:
-        """Return the entry workflow: ``ci-next.yml`` until cutover, then ``ci.yml``."""
+        """Return the entry workflow: ``ci.yml`` (``ci-next.yml`` before the cutover)."""
         if self.entry is not None:
             return self.entry
-        nxt = self.workflows_dir / "ci-next.yml"
-        return nxt if nxt.is_file() else self.workflows_dir / "ci.yml"
+        main = self.workflows_dir / "ci.yml"
+        return main if main.is_file() else self.workflows_dir / "ci-next.yml"
 
 
 def load_inventory(path: Path = INVENTORY_FILE) -> List[Dict[str, Any]]:
@@ -764,7 +764,7 @@ def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="parity_check.py", description="Inventory parity gate.")
     p.add_argument("--inventory", default=str(INVENTORY_FILE), help="inventory data file")
     p.add_argument("--workflows-dir", default=str(WORKFLOWS_DIR), help="workflow directory")
-    p.add_argument("--entry", default=None, help="entry workflow (default ci-next.yml, else ci.yml)")
+    p.add_argument("--entry", default=None, help="entry workflow (default ci.yml, else ci-next.yml)")
     p.add_argument("--table", action="store_true", help="print the row-to-step mapping")
     return p
 

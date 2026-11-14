@@ -1,6 +1,6 @@
 # Reusable `lint` stage (milestone 0014, Story 03.0 Task 01; ADR 0005 D8).
 # One Linux job, one stage-command step: RC4 header, ci_step self-test,
-# lint.py (scripts/ci tests, actionlint, policy gate on ci-next.yml and
+# lint.py (scripts/ci tests, actionlint, policy gate on ci.yml and
 # stage-*.yml), check_versions.py (SC3), C01 c-versions isolation, C02 doc
 # samples. Every other job of the pipeline `needs:` this one, so a broken
 # workflow, script or policy fails before the expensive legs start.

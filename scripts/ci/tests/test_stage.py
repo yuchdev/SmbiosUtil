@@ -390,7 +390,7 @@ class LegsDataTests(unittest.TestCase):
 
     def test_RealWorkflowsPassThePolicyGate(self) -> None:
         policy = gate.load_policy()
-        for name in ("ci-next.yml",) + STAGE_WORKFLOWS:
+        for name in ("ci.yml",) + STAGE_WORKFLOWS:
             with self.subTest(workflow=name):
                 found = gate.check_workflow(WORKFLOWS / name, gate.ALLOWED_WORKFLOW_FILES, policy)
                 self.assertEqual([v.render() for v in found], [])

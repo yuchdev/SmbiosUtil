@@ -91,8 +91,7 @@ class _TreeCase(unittest.TestCase):
         self.wf = self.tmp / "workflows"
         self.wf.mkdir()
         for path in pc.WORKFLOWS_DIR.glob("*.yml"):
-            if path.name != "ci.yml":
-                shutil.copy(path, self.wf / path.name)
+            shutil.copy(path, self.wf / path.name)
 
     def edit(self, name: str, fn: Callable[[str], str]) -> None:
         path = self.wf / name

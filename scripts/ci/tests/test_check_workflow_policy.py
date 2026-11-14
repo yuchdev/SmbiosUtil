@@ -477,7 +477,7 @@ class YamlSubset(unittest.TestCase):
 
     def test_UnsupportedYamlIsAViolation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "ci-next.yml"
+            path = Path(tmp) / "ci.yml"
             path.write_text("on: push\nanchors: &a 1\n", encoding="utf-8")
             (v,) = gate.check_workflow(path, gate.ALLOWED_WORKFLOW_FILES, gate.load_policy())
             self.assertEqual((v.rule, v.location), ("yaml", "line 2"))

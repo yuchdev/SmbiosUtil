@@ -87,8 +87,8 @@ EXIT_USAGE = 2
 EXIT_INTERNAL = 70
 
 #: P9: the only workflow file names allowed under ``.github/workflows/``.
-#: ``ci-next.yml`` is removed from this list at the Story 03.0 Task 04 cutover.
-ALLOWED_WORKFLOW_FILES: Tuple[str, ...] = ("ci.yml", "ci-next.yml", "stage-*.yml")
+#: (``ci-next.yml`` left this list at the Story 03.0 Task 04 cutover.)
+ALLOWED_WORKFLOW_FILES: Tuple[str, ...] = ("ci.yml", "stage-*.yml")
 _STAGE_FILE = re.compile(r"^stage-[a-z0-9][a-z0-9-]*\.yml$")
 _LOCAL_STAGE_USES = re.compile(r"^\./\.github/workflows/stage-[a-z0-9][a-z0-9-]*\.yml$")
 STAGE_PUBLISH_USES = "./.github/workflows/stage-publish.yml"
@@ -103,8 +103,8 @@ DEBUG_SWITCHES: Tuple[str, ...] = ("ACTIONS_STEP_DEBUG", "ACTIONS_RUNNER_DEBUG")
 STAGE_SCRIPT = "scripts/ci/stage.py"
 BOOTSTRAP_SCRIPTS: Tuple[str, ...] = ("scripts/ci/ci_step.py", "scripts/ci/lint.py")
 #: Where the bootstrap scripts may be called directly: the lint job, the lint
-#: stage workflow, and the pre-cutover ``ci-next.yml`` (before ``stage.py``).
-BOOTSTRAP_FILES: Tuple[str, ...] = ("ci-next.yml", "stage-lint.yml")
+#: stage workflow, and the entry workflow ``ci.yml`` (before ``stage.py``).
+BOOTSTRAP_FILES: Tuple[str, ...] = ("ci.yml", "stage-lint.yml")
 BOOTSTRAP_JOBS: Tuple[str, ...] = ("lint",)
 _PYTHONS: Tuple[str, ...] = ("python3", "python")
 #: P7: characters a run: line may contain. No quotes, ``$``, ``;``, ``&``,

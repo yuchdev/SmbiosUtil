@@ -179,11 +179,8 @@ class SourceTests(unittest.TestCase):
         self.assertEqual(sets["unprivileged"].args, ("-R", UNPRIVILEGED_RE))
         self.assertEqual(sets["live_table"].args, ("-R", LIVE_TABLE_RE))
         self.assertEqual(sets["gui_ci"].args, ("-L", "gui-ci"))
-        old = (REPO_ROOT / ".github" / "workflows" / "ci.yml")
-        if old.exists():  # deleted at the Task 04 cutover
-            text = old.read_text(encoding="utf-8")
-            self.assertIn(UNPRIVILEGED_RE, text)
-            self.assertIn(LIVE_TABLE_RE, text)
+        # The old ci.yml these sets were copied from was deleted at the Story 03.0
+        # Task 04 cutover; its text is in git history (before commit "cutover").
         self.assertTrue(sets["live_table"].live_table)
         self.assertFalse(sets["live_table"].output_on_failure)
 

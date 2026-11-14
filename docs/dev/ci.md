@@ -8,7 +8,7 @@ This page grows with milestone 0014. Story 04.0 Task 04 owns its final shape. So
 python3 scripts/ci/stage.py <lint|build|test> [--leg <leg>] [--only <step>]   # python on Windows
 ```
 
-Every project-owned workflow step is one such line (plan SC1, policy P7); `.github/workflows/ci-next.yml` calls the reusable `stage-lint.yml`, `stage-build.yml` and `stage-sanitizers.yml`. Locally the same command runs with the plain reporter and temporary directories; the leg defaults to the host OS (`linux`, `macos`, `windows`), and the build stage uses the host cmake/ninja instead of the pinned venv.
+Every project-owned workflow step is one such line (plan SC1, policy P7); `.github/workflows/ci.yml` calls the reusable `stage-lint.yml`, `stage-build.yml` and `stage-sanitizers.yml`. Locally the same command runs with the plain reporter and temporary directories; the leg defaults to the host OS (`linux`, `macos`, `windows`), and the build stage uses the host cmake/ninja instead of the pinned venv.
 
 | Stage | Steps (`--only`) | Inventory rows |
 |-------|------------------|----------------|
@@ -34,7 +34,7 @@ It runs three steps through the step runner. On success it prints one `ok:` line
 2. actionlint 1.7.12, through `scripts/ci/install_actionlint.py --run`. The first run downloads the pinned release asset for the host into `build/ci-tools/`. Its SHA-256 is checked against the value in the script. Only the single `actionlint` member is extracted, into a fresh temporary directory. Later runs re-hash and reuse the cached archive. If `shellcheck` is on `PATH`, actionlint also checks `run:` blocks; the `ok:` line says whether it was found.
 3. `scripts/ci/check_workflow_policy.py`: the policy gate below.
 
-Until the Story 03.0 cutover the workflows under test are `.github/workflows/ci-next.yml` and the reusable `stage-*.yml` files it calls. While none exists, step 2 prints one `skip:` line.
+The workflows under test are `.github/workflows/ci.yml` (since the Story 03.0 cutover) and the reusable `stage-*.yml` files it calls. While none exists, step 2 prints one `skip:` line.
 
 ## Workflow policy gate (P1-P15)
 

@@ -14,7 +14,7 @@ RC1 lines::
 3. ``check_workflow_policy.py`` (P1-P15).
 
 Until the Story 03.0 cutover the workflows under test are
-``.github/workflows/ci-next.yml`` and the reusable ``stage-*.yml`` files it
+``.github/workflows/ci.yml`` and the reusable ``stage-*.yml`` files it
 calls (Story 03.0 Task 01); while none exists, the actionlint step prints one
 ``skip:`` line and the policy gate still checks the data files, the workflow
 directory (P9) and ``scripts/ci`` (P11). Exit: 0 when every step
@@ -40,7 +40,7 @@ REPO_ROOT = _HERE.parents[1]
 WORKFLOWS_DIR = REPO_ROOT / ".github" / "workflows"
 #: Workflows under test: the entry workflow, then the stage workflows in name
 #: order. After cutover the entry workflow is ci.yml.
-ENTRY_WORKFLOW = WORKFLOWS_DIR / "ci-next.yml"
+ENTRY_WORKFLOW = WORKFLOWS_DIR / "ci.yml"
 
 
 def workflows_under_test() -> List[Path]:
@@ -84,7 +84,7 @@ def main(argv: Sequence[str]) -> int:
             log_dir=log_dir, reporter=reporter, results_file=results,
             timeout_s=ACTIONLINT_TIMEOUT_S).exit)
     else:
-        ci_step._emit(reporter.step_skip("actionlint", "no workflow under test yet (ci-next.yml)"))
+        ci_step._emit(reporter.step_skip("actionlint", "no workflow under test yet (ci.yml)"))
 
     exits.append(ci_step.run_step(
         "workflow policy", py + [str(_HERE / "check_workflow_policy.py"), "--reporter", "plain",

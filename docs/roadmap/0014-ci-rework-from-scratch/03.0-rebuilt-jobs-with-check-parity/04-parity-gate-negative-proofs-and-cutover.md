@@ -1,7 +1,7 @@
 # 04 - Parity gate, negative proofs and cutover
 
 **Parent story:** [README.md](README.md)
-**Status:** 🔶 In progress: local part done
+**Status:** 🔶 In progress: proofs and cutover done on runners; settings checklist and first post-cutover run open
 **Depends on:** Tasks 01-03
 
 ## Objective
